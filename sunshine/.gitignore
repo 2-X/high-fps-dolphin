@@ -1,0 +1,5 @@
+# GitHub hard-rejects files >100MB — transfer these by direct copy (or set up git-lfs)
+textures/*.zip
+# game images never go in git
+*.rvz
+*.iso

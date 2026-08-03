@@ -1,0 +1,1 @@
+b6d8bc299ee7d03496d624b2e6b9a18d70522435 Merge pull request #14726 from JosJuice/gcadapter-deregister-on-thread-end

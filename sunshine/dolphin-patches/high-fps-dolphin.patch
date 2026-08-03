@@ -1,0 +1,397 @@
+diff --git a/Source/Core/Core/HW/SystemTimers.cpp b/Source/Core/Core/HW/SystemTimers.cpp
+index 1790a97f05..2f08e13039 100644
+--- a/Source/Core/Core/HW/SystemTimers.cpp
++++ b/Source/Core/Core/HW/SystemTimers.cpp
+@@ -78,8 +78,15 @@ void SystemTimersManager::DSPCallback(Core::System& system, u64 userdata, s64 cy
+ static int GetAudioDMACallbackPeriod(u32 cpu_core_clock, u32 aid_sample_rate_divisor)
+ {
+   // System internal sample rate is fixed at 32KHz * 4 (16bit Stereo) / 32 bytes DMA
+-  return static_cast<u64>(cpu_core_clock) * aid_sample_rate_divisor /
+-         (Mixer::FIXED_SAMPLE_RATE_DIVIDEND * 4 / 32);
++  u64 period = static_cast<u64>(cpu_core_clock) * aid_sample_rate_divisor /
++               (Mixer::FIXED_SAMPLE_RATE_DIVIDEND * 4 / 32);
++  // Route A high-fps audio compensation: when the console is run faster than real-time to
++  // render high framerates (EmulationSpeed > 1), slow the audio subsystem by the same factor
++  // so DSP/AI audio plays at correct wall-clock tempo instead of N* fast.
++  const float speed = Config::Get(Config::MAIN_EMULATION_SPEED);
++  if (speed > 1.0f)
++    period = static_cast<u64>(period * speed);
++  return static_cast<int>(period);
+ }
+ 
+ void SystemTimersManager::AudioDMACallback(Core::System& system, u64 userdata, s64 cycles_late)
+diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.cpp b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
+index 248146e2b6..c52b5d7a8e 100644
+--- a/Source/Core/VideoCommon/FramebufferShaderGen.cpp
++++ b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
+@@ -691,4 +691,41 @@ std::string GenerateImGuiPixelShader(bool linear_space_output)
+   return code.GetBuffer();
+ }
+ 
++std::string GenerateFrameBlendVertexShader()
++{
++  ShaderCode code;
++  EmitVertexMainDeclaration(code, 0, 0, false, 1, 0, "#define id gl_VertexID");
++  code.Write("{{\n"
++             "  v_tex0 = float3(float((id << 1) & 2), float(id & 2), 0.0f);\n"
++             "  opos = float4(v_tex0.xy * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);\n");
++
++  // NDC space is flipped in Vulkan/GL.
++  if (GetAPIType() == APIType::Vulkan || GetAPIType() == APIType::OpenGL)
++    code.Write("  opos.y = -opos.y;\n");
++
++  code.Write("}}\n");
++  return code.GetBuffer();
++}
++
++std::string GenerateFrameBlendPixelShader()
++{
++  ShaderCode code;
++  EmitUniformBufferDeclaration(code);
++  code.Write("{{\n"
++             "  float4 blend_factor;\n"
++             "}};\n\n");
++  EmitSamplerDeclarations(code, 0, 2, false);
++  EmitPixelMainDeclaration(code, 1, 0);
++  code.Write("{{\n"
++             "  float4 prev = ");
++  EmitSampleTexture(code, 0, "v_tex0");
++  code.Write(";\n"
++             "  float4 cur = ");
++  EmitSampleTexture(code, 1, "v_tex0");
++  code.Write(";\n"
++             "  ocol0 = mix(prev, cur, blend_factor.x);\n"
++             "}}\n");
++  return code.GetBuffer();
++}
++
+ }  // namespace FramebufferShaderGen
+diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.h b/Source/Core/VideoCommon/FramebufferShaderGen.h
+index c97fec8991..ff505af8d9 100644
+--- a/Source/Core/VideoCommon/FramebufferShaderGen.h
++++ b/Source/Core/VideoCommon/FramebufferShaderGen.h
+@@ -26,4 +26,9 @@ std::string GenerateEFBRestorePixelShader();
+ std::string GenerateImGuiVertexShader();
+ std::string GenerateImGuiPixelShader(bool linear_space_output = false);
+ 
++// Frame-interpolation blend (Sunshine high-fps): fullscreen triangle that outputs
++// mix(prev_frame, current_frame, blend_factor.x) sampling two XFB textures.
++std::string GenerateFrameBlendVertexShader();
++std::string GenerateFrameBlendPixelShader();
++
+ }  // namespace FramebufferShaderGen
+diff --git a/Source/Core/VideoCommon/Present.cpp b/Source/Core/VideoCommon/Present.cpp
+index 41d05f3652..27c5d485d0 100644
+--- a/Source/Core/VideoCommon/Present.cpp
++++ b/Source/Core/VideoCommon/Present.cpp
+@@ -14,16 +14,27 @@
+ #include "InputCommon/ControllerInterface/ControllerInterface.h"
+ 
+ #include "Present.h"
++#include "VideoCommon/AbstractFramebuffer.h"
+ #include "VideoCommon/AbstractGfx.h"
++#include "VideoCommon/AbstractPipeline.h"
++#include "VideoCommon/AbstractShader.h"
++#include "VideoCommon/AbstractTexture.h"
+ #include "VideoCommon/FrameDumper.h"
+ #include "VideoCommon/FramebufferManager.h"
++#include "VideoCommon/FramebufferShaderGen.h"
+ #include "VideoCommon/OnScreenUI.h"
+ #include "VideoCommon/PostProcessing.h"
++#include "VideoCommon/RenderState.h"
+ #include "VideoCommon/VertexManagerBase.h"
+ #include "VideoCommon/VideoConfig.h"
+ #include "VideoCommon/VideoEvents.h"
+ #include "VideoCommon/Widescreen.h"
+ 
++#include <algorithm>
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++
+ std::unique_ptr<VideoCommon::Presenter> g_presenter;
+ 
+ namespace VideoCommon
+@@ -168,8 +179,41 @@ bool Presenter::FetchXFB(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_heigh
+ void Presenter::ViSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height, u64 ticks,
+                        TimePoint presentation_time)
+ {
++  const int interp = GetInterpolationFactor();
++
++  // Hold the currently-displayed XFB (with an extra content lock so the texture
++  // cache can't recycle it inside FetchXFB) so we can interpolate toward the new one.
++  RcTcacheEntry prev_candidate;
++  if (interp > 1 && m_xfb_entry)
++  {
++    prev_candidate = m_xfb_entry;
++    prev_candidate->AcquireContentLock();
++  }
++
+   bool is_duplicate = FetchXFB(xfb_addr, fb_width, fb_stride, fb_height, ticks);
+ 
++  bool interp_ready = false;
++  if (interp > 1)
++  {
++    const bool geom_ok =
++        prev_candidate && m_xfb_entry && prev_candidate->texture && m_xfb_entry->texture &&
++        prev_candidate->texture->GetWidth() == m_xfb_entry->texture->GetWidth() &&
++        prev_candidate->texture->GetHeight() == m_xfb_entry->texture->GetHeight() &&
++        prev_candidate->texture->GetFormat() == m_xfb_entry->texture->GetFormat();
++    if (!is_duplicate && geom_ok)
++    {
++      if (m_prev_xfb_entry)
++        m_prev_xfb_entry->ReleaseContentLock();
++      m_prev_xfb_entry = prev_candidate;  // keeps the extra content lock taken above
++      m_prev_valid = true;
++      interp_ready = true;
++    }
++    else if (prev_candidate)
++    {
++      prev_candidate->ReleaseContentLock();  // not retaining this one; drop the extra lock
++    }
++  }
++
+   PresentInfo present_info{
+       .present_count = m_present_count++,
+       .emulated_timestamp = ticks,
+@@ -212,13 +256,189 @@ void Presenter::ViSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height,
+ 
+   video_events.before_present_event.Trigger(present_info);
+ 
+-  if (!is_duplicate || !g_ActiveConfig.bSkipPresentingDuplicateXFBs)
++  if (interp > 1 && interp_ready && m_prev_valid)
+   {
++    // Distinct frame: stream K-1 blended sub-frames across the real distinct-frame
++    // interval, then present the real frame (with OSD) via the normal path.
++    PresentInterpolatedSubframes(present_info.intended_present_time);
+     Present(&present_info);
++    m_prev_distinct_present_time = present_info.intended_present_time;
+     ProcessFrameDumping(ticks);
+-
+     video_events.after_present_event.Trigger(present_info);
+   }
++  else if (interp > 1 && is_duplicate && m_prev_valid)
++  {
++    // Duplicate content while interpolating (30fps game emitting 60Hz XFBs):
++    // it's already covered by the blended stream, so don't present a static copy.
++  }
++  else if (!is_duplicate || !g_ActiveConfig.bSkipPresentingDuplicateXFBs)
++  {
++    Present(&present_info);
++    ProcessFrameDumping(ticks);
++    video_events.after_present_event.Trigger(present_info);
++  }
++}
++
++int Presenter::GetInterpolationFactor()
++{
++  if (m_interp_factor < 0)
++  {
++    m_interp_factor = 1;
++    if (const char* env = std::getenv("DOLPHIN_FRAME_INTERP"))
++      m_interp_factor = std::clamp(std::atoi(env), 1, 8);
++    std::fprintf(stderr, "[FRAME_INTERP] factor = %d (env %s)\n", m_interp_factor,
++                 std::getenv("DOLPHIN_FRAME_INTERP") ? "set" : "unset");
++    std::fflush(stderr);
++  }
++  return m_interp_factor;
++}
++
++bool Presenter::EnsureBlendResources(const AbstractTexture* ref)
++{
++  if (!m_blend_vs)
++  {
++    m_blend_vs = g_gfx->CreateShaderFromSource(
++        ShaderStage::Vertex, FramebufferShaderGen::GenerateFrameBlendVertexShader(), nullptr,
++        "Frame blend vertex shader");
++    if (!m_blend_vs)
++      return false;
++  }
++  if (!m_blend_ps)
++  {
++    m_blend_ps = g_gfx->CreateShaderFromSource(
++        ShaderStage::Pixel, FramebufferShaderGen::GenerateFrameBlendPixelShader(), nullptr,
++        "Frame blend pixel shader");
++    if (!m_blend_ps)
++      return false;
++  }
++
++  const AbstractTextureFormat fmt = ref->GetFormat();
++  if (!m_blend_scratch_tex || m_blend_scratch_tex->GetWidth() != ref->GetWidth() ||
++      m_blend_scratch_tex->GetHeight() != ref->GetHeight() ||
++      m_blend_scratch_tex->GetFormat() != fmt)
++  {
++    m_blend_scratch_fb.reset();
++    const TextureConfig cfg(ref->GetWidth(), ref->GetHeight(), 1, 1, 1, fmt,
++                            AbstractTextureFlag_RenderTarget, AbstractTextureType::Texture_2DArray);
++    m_blend_scratch_tex = g_gfx->CreateTexture(cfg, "Frame blend scratch");
++    if (!m_blend_scratch_tex)
++      return false;
++    m_blend_scratch_fb = g_gfx->CreateFramebuffer(m_blend_scratch_tex.get(), nullptr);
++    if (!m_blend_scratch_fb)
++      return false;
++  }
++
++  if (!m_blend_pipeline || m_blend_pipeline_format != fmt)
++  {
++    AbstractPipelineConfig cfg = {};
++    cfg.vertex_shader = m_blend_vs.get();
++    cfg.geometry_shader = nullptr;
++    cfg.pixel_shader = m_blend_ps.get();
++    cfg.rasterization_state = RenderState::GetNoCullRasterizationState(PrimitiveType::Triangles);
++    cfg.depth_state = RenderState::GetNoDepthTestingDepthState();
++    cfg.blending_state = RenderState::GetNoBlendingBlendState();
++    cfg.framebuffer_state = RenderState::GetColorFramebufferState(fmt);
++    cfg.usage = AbstractPipelineUsage::Utility;
++    m_blend_pipeline = g_gfx->CreatePipeline(cfg);
++    if (!m_blend_pipeline)
++      return false;
++    m_blend_pipeline_format = fmt;
++  }
++  return true;
++}
++
++const AbstractTexture* Presenter::RenderBlendToScratch(float t)
++{
++  if (!m_xfb_entry || !m_xfb_entry->texture || !m_prev_xfb_entry || !m_prev_xfb_entry->texture)
++    return nullptr;
++
++  AbstractTexture* const cur = m_xfb_entry->texture.get();
++  if (!EnsureBlendResources(cur))
++    return nullptr;
++
++  g_gfx->SetFramebuffer(m_blend_scratch_fb.get());
++  g_gfx->SetViewportAndScissor(MathUtil::Rectangle<int>{
++      0, 0, static_cast<int>(m_blend_scratch_tex->GetWidth()),
++      static_cast<int>(m_blend_scratch_tex->GetHeight())});
++  g_gfx->SetPipeline(m_blend_pipeline.get());
++  g_gfx->SetTexture(0, m_prev_xfb_entry->texture.get());
++  g_gfx->SetTexture(1, cur);
++  g_gfx->SetSamplerState(0, RenderState::GetLinearSamplerState());
++  g_gfx->SetSamplerState(1, RenderState::GetLinearSamplerState());
++
++  const float uniforms[4] = {t, 0.0f, 0.0f, 0.0f};
++  g_vertex_manager->UploadUtilityUniforms(uniforms, sizeof(uniforms));
++  g_gfx->Draw(0, 3);
++
++  return m_blend_scratch_tex.get();
++}
++
++void Presenter::PresentInterpolatedSubframes(TimePoint present_time)
++{
++  const int K = m_interp_factor;
++  auto& core_timing = Core::System::GetInstance().GetCoreTiming();
++
++  // Spacing between the two most recent *distinct* content frames. For a 30fps
++  // game emitting 60Hz XFBs this is ~33ms; the blends must span this whole window,
++  // not just the idle gap before the next XFB (which would burst-then-stall).
++  DT interval = present_time - m_prev_distinct_present_time;
++  const DT lo = std::chrono::milliseconds(4);
++  const DT hi = std::chrono::milliseconds(60);
++  if (interval < lo || interval > hi)
++    interval = std::chrono::microseconds(16667);  // first frame / hitch: fall back to ~60Hz
++
++  const TimePoint base = Clock::now();
++
++  g_vertex_manager->Flush();
++  UpdateDrawRectangle();
++
++  int presented = 0;
++  for (int i = 1; i < K; ++i)
++  {
++    const float t = static_cast<float>(i) / static_cast<float>(K);
++
++    g_gfx->BeginUtilityDrawing();
++    const AbstractTexture* blended = RenderBlendToScratch(t);
++    if (!blended)
++    {
++      static bool warned = false;
++      if (!warned)
++      {
++        std::fprintf(stderr, "[FRAME_INTERP] blend produced no texture (shader/pipeline "
++                             "creation failed) -- interpolation inactive\n");
++        std::fflush(stderr);
++        warned = true;
++      }
++      break;
++    }
++
++    if (g_gfx->BindBackbuffer({{0.0f, 0.0f, 0.0f, 1.0f}}))
++    {
++      MathUtil::Rectangle<int> render_target_rc = GetTargetRectangle();
++      MathUtil::Rectangle<int> render_source_rc = AdjustForCustomCrop(m_xfb_rect);
++      AdjustRectanglesToFitBounds(&render_target_rc, &render_source_rc, m_backbuffer_width,
++                                  m_backbuffer_height);
++      RenderXFBToScreen(render_target_rc, blended, render_source_rc);
++    }
++
++    // Pace evenly across the distinct-frame interval (steady ~120Hz cadence).
++    core_timing.SleepUntil(base + interval * i / K);
++    {
++      std::lock_guard<std::mutex> guard(m_swap_mutex);
++      g_gfx->PresentBackbuffer();
++    }
++    ++presented;
++  }
++
++  static u64 s_heartbeat = 0;
++  if (presented > 0 && (s_heartbeat++ % 60) == 0)
++  {
++    const double iv_ms =
++        std::chrono::duration_cast<std::chrono::microseconds>(interval).count() / 1000.0;
++    std::fprintf(stderr, "[FRAME_INTERP] active: +%d blends across %.1fms distinct-frame interval\n",
++                 presented, iv_ms);
++    std::fflush(stderr);
++  }
+ }
+ 
+ void Presenter::ImmediateSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height)
+diff --git a/Source/Core/VideoCommon/Present.h b/Source/Core/VideoCommon/Present.h
+index 91ba870967..e4d435093c 100644
+--- a/Source/Core/VideoCommon/Present.h
++++ b/Source/Core/VideoCommon/Present.h
+@@ -17,6 +17,9 @@
+ #include <tuple>
+ 
+ class AbstractTexture;
++class AbstractShader;
++class AbstractPipeline;
++class AbstractFramebuffer;
+ struct SurfaceInfo;
+ enum class DolphinKey;
+ 
+@@ -114,6 +117,15 @@ private:
+   // Returns true the contents have changed since last time
+   bool FetchXFB(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height, u64 ticks);
+ 
++  // --- Frame interpolation (Sunshine high-fps; env DOLPHIN_FRAME_INTERP=N, 1=off) ---
++  int GetInterpolationFactor();
++  // Ensures the blend shaders/pipeline and a scratch render target matching `ref` exist.
++  bool EnsureBlendResources(const AbstractTexture* ref);
++  // Renders mix(prev_xfb, current_xfb, t) into the scratch texture; returns it (or nullptr).
++  const AbstractTexture* RenderBlendToScratch(float t);
++  // Presents K-1 blended sub-frames, pacing them across the idle time up to present_time.
++  void PresentInterpolatedSubframes(TimePoint present_time);
++
+   void ProcessFrameDumping(u64 ticks) const;
+ 
+   void OnBackBufferSizeChanged();
+@@ -193,6 +205,18 @@ private:
+   TimePoint m_next_swap_estimated_time{Clock::now()};
+ 
+   std::atomic_bool m_immediate_swap_happened_this_field{};
++
++  // --- Frame interpolation state ---
++  int m_interp_factor = -1;  // -1 = not yet read from env; 1 = off
++  RcTcacheEntry m_prev_xfb_entry;
++  bool m_prev_valid = false;
++  TimePoint m_prev_distinct_present_time{};  // present time of the previous *distinct* frame
++  std::unique_ptr<AbstractShader> m_blend_vs;
++  std::unique_ptr<AbstractShader> m_blend_ps;
++  std::unique_ptr<AbstractPipeline> m_blend_pipeline;
++  AbstractTextureFormat m_blend_pipeline_format = AbstractTextureFormat::Undefined;
++  std::unique_ptr<AbstractTexture> m_blend_scratch_tex;
++  std::unique_ptr<AbstractFramebuffer> m_blend_scratch_fb;
+ };
+ 
+ }  // namespace VideoCommon

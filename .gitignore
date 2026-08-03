@@ -1,0 +1,8 @@
+# upstream clones — reproduced on the PC (see README), not vendored:
+#   dolphin/ = dolphin-emu clone + our patch (sunshine/dolphin-patches/ has patch + commit hash)
+#   sms/     = doldecomp/sms clone (unmodified)
+dolphin/
+sms/
+# unrelated project
+work/excitetruck/
+.DS_Store
