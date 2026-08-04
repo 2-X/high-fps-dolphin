@@ -3,6 +3,9 @@
 Everything lives in **[sunshine/README.md](sunshine/README.md)** — read that first.
 It has the full state, the Gecko codes, the address map, PC import steps, and the 360Hz roadmap.
 
+Separate VR track: **[HANDOFF-VR-DIORAMA.md](HANDOFF-VR-DIORAMA.md)** — Quest 3 miniature
+third-person diorama via DolphinXR (independent of the high-FPS work).
+
 Two dependencies are NOT vendored here (reproduce on the PC):
 
 ```bash
