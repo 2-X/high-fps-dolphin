@@ -6,3 +6,6 @@ sms/
 # unrelated project
 work/excitetruck/
 .DS_Store
+# downloaded by work/quest/install-to-quest.sh, not vendored
+work/quest/*.apk
+work/quest/manifest_tmp/

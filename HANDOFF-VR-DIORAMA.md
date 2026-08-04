@@ -25,6 +25,12 @@ pinched hands to pan the camera. Mostly, though, the camera stays parked.
 
 ## Phase 1 — Install on the Quest 3 (no code, ~30 min)
 
+**Scripted:** `work/quest/install-to-quest.sh` does all of the below from Mac or PC
+(git-bash) — downloads the APK if missing, installs it, pushes the RVZ, then pushes
+the 120fps Gecko codes (`GameSettings/GMSE01.ini`) and the `.gci` save into the app's
+user folder (`/sdcard/Android/data/org.dolphinemu.dolphinemu.quest.debug/files/`).
+Manual steps for reference:
+
 1. Free developer account at developer.oculus.com, then Meta Horizon phone app →
    Devices → Quest 3 → Headset Settings → **Developer Mode** on → reboot headset.
 2. On the PC: install adb (`winget install Google.PlatformTools` or use SideQuest).
@@ -82,6 +88,34 @@ to the same free-look/world-scale state the settings UI already writes.
    - One hand pinched → drag to pan/orbit.
    Estimated a few hundred lines in one subsystem. Exact file/function touchpoints in
    the DolphinXR tree have NOT been mapped yet — that is the first task of this phase.
+
+## 120fps Sunshine in VR — status and realistic paths
+
+The 120fps sim-rate hack is a **Gecko code**, so it runs on any Dolphin including
+DolphinXR — the install script pushes `GMSE01.ini` and the codes appear in the game's
+Cheats menu on the Quest. But three separate things must hold for true 120fps VR:
+
+1. **CPU: can the device run Sunshine at 2x sim rate?**
+   - Quest 3 standalone: *doubtful.* The Mac's much faster CPU was already at its
+     ceiling at 2x; the XR2 Gen 2 is far weaker. Worth one empirical test (toggle the
+     TRUE-FIX code in Cheats and watch the fps counter) but expect it to fall short.
+   - Windows PC: *yes* — that CPU is the 360fps-roadmap machine; 2x is comfortable.
+2. **Display: 120Hz output.** Quest 3 supports 120Hz but apps must request it; unknown
+   whether the DolphinXR debug APK does (check in-headset; if not, it's a small change
+   in our own build). Quest Link from the PC supports 120Hz mode.
+3. **Audio: correct tempo at 2x needs our DMA patch** (`sunshine/dolphin-patches/`),
+   which stock DolphinXR lacks → audio will be wrong-tempo on the Quest test build.
+   Fix = port the patch into a custom DolphinXR build (same toolchain as Phase 3;
+   DolphinXR is forked from mainline dolphin-emu, so the patch may apply with fuzz —
+   check `UPSTREAM_COMMIT.txt` vs their base).
+
+**Realistic ranking:** (a) PC running DolphinXR Windows build + Quest Link at 120Hz —
+most likely to actually deliver 120fps VR; (b) custom Quest APK with patch + 120Hz
+request — real effort, CPU probably still the wall; (c) stock Quest APK — test rig only.
+
+Softener: in **diorama mode 120fps matters much less** — head tracking is already
+120Hz-smooth via reprojection regardless of game fps; the sim rate only affects how
+smoothly Mario animates inside the miniature.
 
 ## Relationship to the high-FPS project
 
