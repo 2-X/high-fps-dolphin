@@ -1,0 +1,83 @@
+$particle rate fix (60Hz emitter stepping at 180fps)
+C22887A8 00000006
+806D9FB8 28030000
+41820010 8063005C
+70600001 4082000C
+C002DD68 EC21002A
+FC00081E 60000000
+60000000 00000000
+C2288D30 00000006
+806D9FB8 28030000
+41820010 8063005C
+70600001 4082000C
+C002DD68 EC21002A
+FC00081E 60000000
+60000000 00000000
+C2288DEC 00000006
+806D9FB8 28030000
+41820010 8063005C
+70600001 4082000C
+C002DD68 EC21002A
+FC00081E 60000000
+60000000 00000000
+
+--------------------------------------------------------------------------
+These three blocks REPLACE the existing three-line particle blocks in the
+180fps bundle:
+
+    C22887A8 00000002        C2288D30 00000002        C2288DEC 00000002
+    C002DD68 EC21002A        C002DD68 EC21002A        C002DD68 EC21002A
+    FC00081E 00000000        FC00081E 00000000        FC00081E 00000000
+
+WHAT THEY PATCH
+  TMarioParticleManager::perform      (hook 0x802887A8)
+  TEmitterViewObj::perform            (hook 0x80288D30)
+  TEmitterIndirectViewObj::perform    (hook 0x80288DEC)
+
+  All three are (src/System/EmitterViewObj.cpp):
+
+      if (cue & CUE_CALC_ANIM)
+          for (int i = SMSGetAnmFrameRate(); i > 0; --i)
+              emitterMgr->calc();          // one 60 Hz JPA tick
+
+  SMSGetAnmFrameRate() = 1/G.  Stock G=0.5 -> 2 ticks per CALC_ANIM, and
+  CALC_ANIM fires once per rendered frame at 30 fps => 60 ticks/s. Correct.
+
+  At G=3.0, 1/G = 0.3333 and fctiwz truncates it to 0 -> particles freeze.
+  The old three-line block worked around that by adding 1.0 first, giving
+  exactly 1 tick per CALC_ANIM. But under v8 CALC_ANIM fires once per
+  SUBSTEP (119.88 Hz, it is gated on "last substep"), so particles ran at
+  119.88 ticks/s -- 2x too fast.
+
+WHAT THIS DOES INSTEAD
+  Add 1.0 only on even substeps, so the tick count alternates 1,0,1,0 and
+  the emitters advance at 119.88/2 = 59.94 ticks/s -- correct.
+
+  Parity comes from gpMarDirector->unk5C (the substep counter incremented
+  unconditionally at 0x80299A24). gpMarDirector = 0x8040E178 = -0x6048(r13),
+  located by signature (27 sites load it and read +0x64 / +0x4C).
+
+      806D9FB8  lwz    r3, -0x6048(r13)   ; gpMarDirector
+      28030000  cmplwi r3, 0
+      41820010  beq    ->lfs              ; null (boot/menus) -> old behaviour
+      8063005C  lwz    r3, 0x5c(r3)       ; substep counter
+      70600001  andi.  r0, r3, 1
+      4082000C  bne    ->fctiwz           ; odd substep -> add nothing -> 0 ticks
+      C002DD68  lfs    f0, -0x2298(r2)    ; 1.0  (verified: 0x80414908 = 3f800000)
+      EC21002A  fadds  f1, f1, f0
+      FC00081E  fctiwz f0, f1             ; ORIGINAL INSTRUCTION
+      60000000  nop
+      60000000  nop
+      00000000  PAD (code handler overwrites the last word)
+
+  r3/r0/f0/f1 are all dead at each hook site (checked: each site reloads r3
+  at the top of its own loop body, and f1 is not read after the fctiwz).
+
+  Also correct at 120fps (budget 1800/120 = 15 = drain -> 1 substep/frame,
+  CALC_ANIM at 119.88 Hz, parity halves it to 59.94). NOT correct at stock
+  30fps -- there CALC_ANIM lands on the 4th substep every frame, so the
+  parity bit is always even; but the +1.0 workaround was already wrong at
+  stock, and this bundle is 180-only.
+
+UNVERIFIED: not yet run. Boot-hang risk is nil (no control-flow change
+beyond two forward branches), but the visual result is untested.

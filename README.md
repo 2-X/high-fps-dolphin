@@ -1,6 +1,8 @@
 # high-fps-dolphin — Super Mario Sunshine high-FPS project
 
 Everything lives in **[sunshine/README.md](sunshine/README.md)** — read that first.
+PC work has started: **[sunshine/HANDOFF-PC.md](sunshine/HANDOFF-PC.md)** has the current
+state, the perf findings, and what to do next.
 It has the full state, the Gecko codes, the address map, PC import steps, and the 360Hz roadmap.
 
 Separate VR track: **[HANDOFF-VR-DIORAMA.md](HANDOFF-VR-DIORAMA.md)** — Quest 3 miniature

@@ -1,0 +1,2 @@
+[03:51:59] popolog armed — waiting for Dolphin + SMS boot
+[03:52:28] popolog armed - waiting for Dolphin + SMS boot

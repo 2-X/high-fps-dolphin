@@ -9,3 +9,8 @@ work/excitetruck/
 # downloaded by work/quest/install-to-quest.sh, not vendored
 work/quest/*.apk
 work/quest/manifest_tmp/
+dolphin-bin/
+# VR side-quest tooling — re-downloadable binaries (adb platform-tools, DolphinVR apk)
+vr-bin/
+__pycache__/
+*.ini.bak

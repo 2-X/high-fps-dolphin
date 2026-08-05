@@ -1,0 +1,25 @@
+# Opus 5's alternative input fix (NOT installed; v9 gameLoop-gate is installed and user-confirmed working).
+# Rate-independent rollback variant: extends the v8 C2 at 0x80299958 to 18 lines;
+# on the zero-substep path rewinds all three latches (static mPadButton[0] @0x80404484,
+# meaning latch +0xD0/D4/D8, halfword latch +0xDC/DE/E0) then falls into the v8 exit.
+# Kept for reference: correct at 120/240/360 without prediction, but regenerates the
+# same edge next frame (per-frame consumers may see one edge twice — traced as benign).
+C2299958 00000012
+801A0054 2C00000F
+40800078 3C608040
+80834484 80A34488
+80C3448C 7C842878
+7C843378 90834484
+807A0018 80630000
+808300D0 80A300D4
+80C300D8 7C842878
+7C843378 908300D0
+A08300DC A0A300DE
+A0C300E0 7C842878
+7C843378 B08300DC
+A01A004C 60004000
+B01A004C 3BA00000
+3D808029 618C9C00
+7D8903A6 4E800420
+3B9C0001 60000000
+60000000 00000000

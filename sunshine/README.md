@@ -1,5 +1,27 @@
 # Super Mario Sunshine — High-FPS Project (Mac → PC migration)
 
+> **🍎 ON THE MACBOOK? Read [HANDOFF-MAC.md](HANDOFF-MAC.md) FIRST (2026-08-04).**
+> It is the return-migration router: Mac setup, which Gecko bundle at 120fps
+> (⚠️ NOT `$180fps v12` — its input gate breaks at 120), the one-shot 180 attempt
+> protocol, and how to continue the Poink work at 120 (needs the gcmem.py macOS port).
+
+> **▶ ACTIVE TASK: [HANDOFF-POINK.md](HANDOFF-POINK.md)** — 180fps plays well (input fixed
+> v9, music fixed v12, both user-confirmed). Current bug: Bianco 5 Poinks fly ~1/8 the
+> distance to Petey. Actor fully RE'd (TPopo); next step is one instrumented gameplay
+> capture with `research/scripts/popolog.py`. That doc also carries the v13 backlog of
+> confirmed frame-rate bugs (splash gravity rate², truncation stall, …).
+>
+> Previous task (done): [HANDOFF-INPUT-BUG.md](HANDOFF-INPUT-BUG.md) — dropped inputs at
+> 180fps + music freeze; keep for the scheduler mechanism, build paths, and launch command.
+> Remaining smaller issue tracked there: Bianco windmills extra loud (§13.3).
+
+> **⚠️ Read [HANDOFF-PC.md](HANDOFF-PC.md) first (2026-08-02).** Dolphin is now installed
+> and running on the PC. That session invalidated several assumptions in §6's roadmap below:
+> the bottleneck is Dolphin's **Video thread** (command-bound), not the PPC JIT and not the
+> GPU; graphics settings and emulated CPU overclock are both no-ops; and the framerate is
+> **not paced at all**, which is a correctness bug the Mac only masked by being CPU-limited.
+> Current state: 290–330 fps in Plaza on Vulkan.
+
 **Goal:** Super Mario Sunshine (USA, GMSE01) at high framerates with correct speed,
 working M portals, correct audio, and all effects. Achieved **120fps fully working**
 on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the PC.**
@@ -128,7 +150,9 @@ git apply path/to/high-fps-dolphin.patch
 # then normal Windows Dolphin build (Visual Studio)
 ```
 
-At 360Hz the audio patch's tempo factor may need generalizing — it was written for 2x.
+~~At 360Hz the audio patch's tempo factor may need generalizing — it was written for 2x.~~
+**Stale — the patch reads `Config::Get(Config::MAIN_EMULATION_SPEED)` at runtime and
+generalizes to any speed (verified in source; HANDOFF-PC §6).**
 
 ## 5. Research toolkit (`research/`)
 
