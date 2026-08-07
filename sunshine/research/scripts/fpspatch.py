@@ -254,6 +254,93 @@ BGM_DSP_LIMIT = "0440CDB4 00000000"
 # default. See PERF-PLAYBOOK.md "MEASURE FIRST".
 SUN_PROBE = "0402E28C 60000000"
 
+# ---- Noki Bay pollution-counting 30Hz gate ----------------------------------
+# ~39% of the emulation thread in Noki Ep.1 is blocked in synchronous GPU->CPU
+# readbacks (ReadTexels / GXReadPixMetric / PeekEFBColor) driven by pollution
+# degree-counting, which runs once per RENDERED frame. The counting is native
+# 30Hz work, so the divisor here is N = FPS/30 = 2G, NOT G: 4 at 120fps, 6 at
+# 180, 8 at 240. Gated-out frames blr immediately and hold the last count; the
+# visible goop draw (the else branch) is never gated.
+#
+# Two independent counters in the OS low arena, so no cue-ordering assumptions:
+#   0x800016E0 obj counter (ticked once per obj cue), 0x800016E4 tex counter.
+# (0x800016F0 is the camera code's scratch — do not collide.)
+# The shipping v1 hardcoded `andi. r0,r11,3`, i.e. 1-in-4, correct only at
+# 120fps; at 180 that is not even a valid 1-in-6 test. Rebuilt on _rate_gate so
+# the branch offsets track the gate length.
+NOKI_OBJ_CTR, NOKI_TEX_CTR = 0x16E0, 0x16E4
+
+def noki_gate(fps):
+    """Pollution-counting gate at native 30Hz. None when FPS/30 is not integral."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)   # r4 is live (the cue); r12 is free here
+    L = len(gate)
+    i_check_tex, i_gate_tex, i_skip, i_cont = 8 + L, 16 + L, 20 + 2 * L, 21 + 2 * L
+    def beq(at, to):  return 0x41820000 | (((to - at) * 4) & 0xFFFC)
+    def bne(at, to):  return 0x40820000 | (((to - at) * 4) & 0xFFFC)
+    def b(at, to):    return 0x48000000 | (((to - at) * 4) & 0x03FFFFFC)
+    w  = [0x548C01CF,                          # rlwinm. r12,r4,0,7,7   obj cue?
+          beq(1, i_check_tex),
+          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_OBJ_CTR,
+          0x396B0001, 0x90000000 | (11 << 21) | (12 << 16) | NOKI_OBJ_CTR]
+    w += gate
+    w += [bne(6 + L, i_skip), b(7 + L, i_cont),
+          0x548C018D,                          # rlwinm. r12,r4,0,6,6   tex cue?
+          beq(9 + L, i_cont),
+          0x548C863F,                          # rlwinm. r12,r4,16,24,31  layer
+          bne(11 + L, i_gate_tex),
+          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR,
+          0x396B0001, 0x90000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR,
+          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR]
+    w += gate
+    w += [bne(18 + 2 * L, i_skip), b(19 + 2 * L, i_cont),
+          0x4E800020,                          # blr — gated out, hold last count
+          0x7C0802A6]                          # mflr r0 (the overwritten original)
+    return _c2(0x8019D8C8, w)
+
+
+# ---- Poink premature-explosion gate (v14, Bianco 5) -------------------------
+# Poink's flight is ended early by an anim-cue-driven push to the Explosion
+# nerve at flyTimer ~9; stock fires at ~36, far enough to reach Petey. Hook
+# TNervePopoExplosion::execute's first-tick block: if the pig is mid-flight
+# (+0xF0 bit0x80) and flyTimer(+0x19C) < 40, revert spine+0x14 to the Fly nerve
+# and bctr to the epilogue, cancelling the explosion.
+#
+# RATE-INDEPENDENT despite the bare 40. flyTimer increments per SPINE tick, and
+# the substep scheduler holds CUE_MOVE invariant across G — so flyTimer ticks at
+# the same wall-clock rate at every framerate and 40 keeps meaning what it meant
+# at stock. It is the anim CUE that fires G x too fast, not the timer. (Scaling
+# this threshold by G would be wrong; see memory "high-fps bug surface".)
+POINK = """C20E5E44 00000009
+801F00F0 70000080
+41820038 801F019C
+2C000028 4080002C
+3C008040 6000D95C
+901E0014 38000001
+901E0020 38600000
+3C00800E 60006000
+7C0903A6 4E800420
+C022A460 00000000"""
+
+# ---- Blue coin lifetime (v6) ------------------------------------------------
+# G=2 ONLY, and deliberately not generalized. The gate holds TCoin::perform's
+# --mStateTimer on 1 substep in 4, but the 3/4 keep ratio was *calibrated* on
+# this machine against a measured ~40/sec substep rate, not derived from G (the
+# sim is CPU-bound at roughly 1.33x, so the coin's substep rate is not a clean
+# 60*G). Emitting it at another G would silently ship a wrong 20s timer. The
+# embedded 3CE04000 gate word (float 2.0) self-disables it anywhere else anyway.
+BLUECOIN = """C21BE880 00000008
+3CC08041 80C667B8
+3CE04000 7C063800
+4082001C 80AD9FB8
+28050000 41820010
+80A5005C 70A50003
+4182000C 901D0104
+48000008 907D0104
+60000000 00000000"""
+
 # ---- HUD perpetual-stars fix (v4 = v2 + v3 + watchdog) ----------------------
 # Pause/unpause leaks JPA emitters three separate ways: the coin-counter and
 # pause-menu emitters are orphaned in pauseOut (v2); TPauseMenu2 re-creates the
@@ -386,7 +473,7 @@ def integer_g(fps):
 
 
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
-          stars=True, sun_probe=False):
+          stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -403,6 +490,14 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         parts += [BGM_DSP_LIMIT, BGM_TEMPO_GUARD]
     if stars:
         parts.append(STARFIX)
+    if poink:
+        parts.append(POINK)
+    if noki:
+        ng = noki_gate(fps)
+        if ng:
+            parts.append(ng)
+    if bluecoin and g == 2:                    # calibrated at G=2 only — see BLUECOIN
+        parts.append(BLUECOIN)
     if sun_probe:
         parts.append(SUN_PROBE)
     return "\n".join(parts)
@@ -443,6 +538,9 @@ def main():
     ap.add_argument("--no-substep", action="store_true", help="omit substep granularity (stock*G); sim takes one step per frame")
     ap.add_argument("--no-audio", action="store_true", help="omit the BGM fixes (DSP voice-limiter kill + tempo guard)")
     ap.add_argument("--no-stars", action="store_true", help="omit the HUD perpetual-stars fix (v4)")
+    ap.add_argument("--no-noki", action="store_true", help="omit the Noki pollution-counting gate (native 30Hz, divisor FPS/30)")
+    ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
+    ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--check", action="store_true", help="structural-validate the C2 blocks and exit")
     a = ap.parse_args()
@@ -451,7 +549,9 @@ def main():
     title = f"$SMS {a.fps:g}fps bundle (fpspatch{'' if not a.no_forceopen else ', no-ForceOpen'})"
     bundle = build(a.fps, forceopen=not a.no_forceopen, anmrate_fix=not a.no_anmrate,
                    substep=not a.no_substep, audio=not a.no_audio,
-                   stars=not a.no_stars, sun_probe=a.sun_probe)
+                   stars=not a.no_stars, sun_probe=a.sun_probe,
+                   noki=not a.no_noki, poink=not a.no_poink,
+                   bluecoin=not a.no_bluecoin)
 
     if a.check:
         nblocks, errs = check(bundle)
