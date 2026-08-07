@@ -188,6 +188,105 @@ def timerfix(fps):
     return "\n".join(lines)
 
 
+def _c2(addr, words):
+    """Format a C2 block: pad so the handler-clobbered 00000000 lands last."""
+    words = list(words)
+    if len(words) % 2 == 0:
+        words.append(NOP)                      # keep the branch-back on its own slot
+    words.append(0x00000000)
+    out = [f"C2{addr & 0x01FFFFFF:06X} {len(words) // 2:08X}"]
+    for i in range(0, len(words), 2):
+        out.append(f"{words[i]:08X} {words[i + 1]:08X}")
+    return "\n".join(out)
+
+
+# ---- Substep granularity (the 180fps v8 lineage) ----------------------------
+# TMarDirector's substep scheduler runs a fixed-point accumulator whose stock
+# constants are 600 and 5 (verified against research/main.dol):
+#   0x8029985C  li    r3,600        38600258
+#   0x80299974  addi  r0,r3,-5      3803FFFB
+#   0x80299980  cmpwi r0,5          2C000005
+# Scaling both by G subdivides each native tick into G substeps, which is what
+# makes the sim advance smoothly at G x 60 Hz instead of taking one giant step
+# per frame. The shipping "$180fps v8" bundle used 1800/-15/15 — exactly stock*G
+# at G=3 — so the rule is simply stock*G, with no other constant involved.
+# The C2 @0x80299958 carries the same 5*G threshold and skips the substep when
+# the accumulator has not yet earned one.
+
+def substep_granularity(g):
+    tick, thresh = 600 * g, 5 * g
+    words = [0x801A0054,                       # lwz   r0,0x54(r26)   accumulator
+             0x2C000000 | thresh,              # cmpwi r0,5G
+             0x40800024,                       # bge   -> original insn (skip 9)
+             0xA01A004C,                       # lhz   r0,0x4C(r26)
+             0x60004000,                       # ori   r0,r0,0x4000   zero-substep flag
+             0xB01A004C,                       # sth   r0,0x4C(r26)
+             0x3BA00000,                       # li    r29,0
+             0x3D808029, 0x618C9C00,           # lis/ori r12,0x80299C00
+             0x7D8903A6, 0x4E800420,           # mtctr r12 ; bctr  -> epilogue
+             0x3B9C0001]                       # addi  r28,r28,1     (original insn)
+    return "\n".join([
+        f"0429985C {0x38600000 | tick:08X}",           # li    r3,600G
+        f"04299974 {0x38030000 | (-thresh & 0xFFFF):08X}",  # addi  r0,r3,-5G
+        f"04299980 {0x2C000000 | thresh:08X}",         # cmpwi r0,5G
+        _c2(0x80299958, words),
+    ])
+
+
+# ---- BGM tempo guard (v12) --------------------------------------------------
+# JASystem outer tempo proportion reads 0.0 across some scene transitions and
+# the sequence stalls; substitute 1.0. Pure value guard, no rate constant.
+BGM_TEMPO_GUARD = """C231B8C8 00000003
+C0030018 C1A2FA18
+FC006800 40820008
+C0028018 00000000"""
+
+# DSP voice-limiter kill: DSP_LIMIT_RATIO (f32 @0x8040CDB4) misfires under the
+# 2x-slowed audio DMA period and silences every sequenced BGM note on birth.
+# Zeroing it removes the load-shedding heuristic. Rate-independent.
+BGM_DSP_LIMIT = "0440CDB4 00000000"
+
+# Sun lens-flare occlusion sampler: 17 synchronous GXPeekZ EFB readbacks per
+# frame, N x too often at high FPS. NOP the single call. Rate-independent.
+# OPT-IN ONLY (--sun-probe): profiling showed this recovers no measurable frame
+# time (the Noki stall was the pollution readback, not this) and it does break
+# the flare, which then draws through geometry. Kept for reference, off by
+# default. See PERF-PLAYBOOK.md "MEASURE FIRST".
+SUN_PROBE = "0402E28C 60000000"
+
+# ---- HUD perpetual-stars fix (v4 = v2 + v3 + watchdog) ----------------------
+# Pause/unpause leaks JPA emitters three separate ways: the coin-counter and
+# pause-menu emitters are orphaned in pauseOut (v2); TPauseMenu2 re-creates the
+# item sparkle every bounce loop without deleting the old one (v3); and banner
+# emitters whose cleanup milestone is skipped strand forever (v4 watchdog).
+# All three are rate-independent. Note the watchdog's 600.0f age threshold
+# (0x44160000) is 10s only if emitters actually age at 60 Hz — which is exactly
+# what _rate_gate() now guarantees at every G. Under the old fixed 1-in-2 gate
+# it was 10s at 120fps but 6.7s at 180fps.
+STARFIX = """C214A850 00000007
+809D0124 8064011C
+60630001 9064011C
+806D9FB8 806300AC
+80630110 28030000
+41820010 8083011C
+60840001 9083011C
+809D0144 00000000
+C2155D8C 00000004
+80DF0110 28060000
+41820010 80E6011C
+60E70001 90E6011C
+806DA024 00000000
+C2324EB8 00000009
+806DA024 7C03E840
+40820034 807E01E8
+2C030000 40820028
+807E011C 70600001
+4082001C 809E0010
+3C004416 7C040040
+4081000C 60630001
+907E011C 7FC3F378
+60000000 00000000"""
+
 PROXIMITY_GLOW = """C21EBA60 0000000C
 816D9F4C C04B0000
 C01F0010 EC420028
@@ -280,17 +379,32 @@ def framerate_word(fps):
     return struct.pack(">f", fps / 60.0).hex().upper()
 
 
-def build(fps, forceopen=True, anmrate_fix=True):
+def integer_g(fps):
+    """G = FPS/60 as an int when it is exact, else None (no exact gate exists)."""
     g = fps / 60.0
-    gate_g = int(round(g)) if g >= 2 and abs(g - round(g)) < 1e-9 else 2
+    return int(round(g)) if g >= 2 and abs(g - round(g)) < 1e-9 else None
+
+
+def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
+          stars=True, sun_probe=False):
+    g = integer_g(fps)
+    gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
     if forceopen:
         parts.insert(2, FORCEOPEN)
+    if substep:
+        parts.append(substep_granularity(gate_g))
     tf = timerfix(fps)
     if tf:
         parts.append(tf)
     if anmrate_fix:
         parts.append(anmrate())
+    if audio:
+        parts += [BGM_DSP_LIMIT, BGM_TEMPO_GUARD]
+    if stars:
+        parts.append(STARFIX)
+    if sun_probe:
+        parts.append(SUN_PROBE)
     return "\n".join(parts)
 
 
@@ -326,12 +440,18 @@ def main():
     ap.add_argument("-o", "--out", help="write bundle to file (default: stdout)")
     ap.add_argument("--no-forceopen", action="store_true", help="v3-style: omit ForceOpen so story-locked M gates stay closed")
     ap.add_argument("--no-anmrate", action="store_true", help="omit the 15 raw anim-rate /(2G) fixes (incl. Petey, ex-v16)")
+    ap.add_argument("--no-substep", action="store_true", help="omit substep granularity (stock*G); sim takes one step per frame")
+    ap.add_argument("--no-audio", action="store_true", help="omit the BGM fixes (DSP voice-limiter kill + tempo guard)")
+    ap.add_argument("--no-stars", action="store_true", help="omit the HUD perpetual-stars fix (v4)")
+    ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--check", action="store_true", help="structural-validate the C2 blocks and exit")
     a = ap.parse_args()
 
     m = a.fps / 60.0
     title = f"$SMS {a.fps:g}fps bundle (fpspatch{'' if not a.no_forceopen else ', no-ForceOpen'})"
-    bundle = build(a.fps, forceopen=not a.no_forceopen, anmrate_fix=not a.no_anmrate)
+    bundle = build(a.fps, forceopen=not a.no_forceopen, anmrate_fix=not a.no_anmrate,
+                   substep=not a.no_substep, audio=not a.no_audio,
+                   stars=not a.no_stars, sun_probe=a.sun_probe)
 
     if a.check:
         nblocks, errs = check(bundle)
@@ -341,9 +461,10 @@ def main():
         print("OK" if not errs else "FAILED")
         sys.exit(0 if not errs else 1)
 
-    if a.fps % 60 != 0:
-        print(f"# WARNING: {a.fps:g} is not a multiple of 60 — particle parity gives an "
-              f"approximate emitter rate.", file=sys.stderr)
+    if integer_g(a.fps) is None:
+        print(f"# WARNING: {a.fps:g}/60 is not an integer >= 2 — the emitter and substep "
+              f"gates fall back to 1-in-2 and will NOT hold 60 Hz at this rate.",
+              file=sys.stderr)
 
     header = (f"# ---- paste into GameSettings/GMSE01.ini [Gecko], enable the title in "
               f"[Gecko_Enabled] ----\n"
