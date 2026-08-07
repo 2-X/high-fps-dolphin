@@ -2,38 +2,35 @@
 """fpspatch.py — generate the Super Mario Sunshine (GMSE01) high-FPS Gecko bundle
 for ANY target framerate.
 
-The key finding behind this tool: the working high-fps bundle is almost entirely
-**framerate-independent**. Retargeting from 120 to 180 to 240 changes exactly two
-things:
+Set G = FPS/60. Retargeting rescales FOUR independent things, and an earlier
+version of this docstring was wrong to claim it was only the framerate word —
+that assumption is exactly how the fixed 1-in-2 particle gate shipped at 180fps:
 
-  1. the "framerate global" at 0x804167B8  →  float(FPS/60)   (one Gecko word)
-  2. Dolphin's EmulationSpeed              →  FPS/60
+  1. the "framerate global" at 0x804167B8  →  float(G), plus EmulationSpeed = G
+  2. the emitter gate                      →  1 substep in G      (_rate_gate)
+  3. substep granularity                   →  stock 600/5 scaled by G
+  4. the Noki pollution gate               →  1 frame in FPS/30 (= 2G, not G)
 
-Everything else is either (a) a hook that READS that global and therefore
-auto-scales, or (b) a parity/distance-based fix that is correct at every rate:
+Rate-INDEPENDENT, and correct as-is at every G:
+  * hooks that READ the framerate global and self-scale — the 15 raw anim-rate
+    /(2G) fixes, and the game-clock fix (v15), which divides OSCheckStopwatch
+    ticks by G (shift for powers of two, long division for 180)
+  * M-portal glow (XZ-distance reimpl) and ForceOpen (calls the real startOpen)
+  * BGM DSP voice-limiter kill + tempo guard; the HUD stars fix
+  * the Poink gate — its bare `cmpwi 40` looks rate-tied but flyTimer runs on
+    substep-invariant spine ticks, so 40 keeps its stock meaning at every G
 
-  * particle/emitter rate  → 1-in-G substep gate → exactly 60 Hz at any integer
-    G. NOTE this one IS rate-dependent and is regenerated per FPS: the older
-    hand-written block used a fixed 1-in-2 parity mask, which is only 60 Hz at
-    G=2 (90 Hz at 180fps, 120 Hz at 240fps). Both it and the even older "+0.5"
-    blocks from TRUE-FIX v2 (2x too fast at 120 — the level-load
-    "flash-invisible on reconstitute" bug) are superseded by _rate_gate().
-  * M-portal glow          → XZ-distance proximity reimpl (no rate constant)
-  * M-portal ForceOpen     → calls the real startOpen (no rate constant)
-  * game-clock fix (v15)   → divides OSCheckStopwatch ticks by FPS/60 (races,
-    countdowns, verdict times — the clocks are timebase-based and run G-times
-    fast; see timerfix() below). Auto-scales: shift for 2/4, /3 division for 180.
-
-So "do we need a per-FPS patcher?" → yes, but a tiny one: pick FPS, it stamps the
-one constant and assembles the rest. Genuinely per-FPS *deeper* rate bugs (splash
-gravity rate², truncation stalls — the v13 backlog) are not in the core bundle;
-add them here as FPS-specific fixes when they land.
+Deliberately NOT generalized: the blue-coin lifetime fix, calibrated against this
+machine's measured substep rate rather than derived from G, so it is emitted only
+at 120fps.
 
 Usage:
-  fpspatch.py 120                 # print the 120fps bundle + EmulationSpeed
-  fpspatch.py 180 -o out.txt      # write the 180fps bundle to a file
-  fpspatch.py 240 --no-forceopen  # v3-style: respect story locks (no ForceOpen)
-  fpspatch.py 120 --check         # structural-validate every C2 block
+  fpspatch.py 120                  # print the 120fps bundle + EmulationSpeed
+  fpspatch.py 180 -o out.txt       # write the 180fps bundle to a file
+  fpspatch.py 240 --no-forceopen   # v3-style: respect story locks (no ForceOpen)
+  fpspatch.py 180 --check          # validate structure, decoding and constants
+  fpspatch.py 180 --emit-ini       # full GMSE01.ini fragment, ready to merge
+  fpspatch.py 180 --bare -o c.txt  # hex only, for gecko.py add --code-file
 """
 import argparse, struct, sys
 
@@ -503,6 +500,24 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     return "\n".join(parts)
 
 
+def emit_ini(fps, title, bundle):
+    """A paste-ready GMSE01.ini fragment: [Core] speed/audio plus the code, listed
+    and ticked. AudioPreservePitch fixes pitch; correct *tempo* additionally needs
+    the SystemTimers.cpp audio-DMA patch in dolphin-patches/ (it scales the DMA
+    period by EmulationSpeed at runtime, so one build is correct at every rate)."""
+    m = fps / 60.0
+    return (f"# ---- GMSE01.ini fragment for {fps:g}fps — merge into the USER ini at\n"
+            f"# ~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini\n"
+            f"# Dolphin MUST be fully quit first: it rewrites this file on close.\n"
+            f"[Core]\n"
+            f"EmulationSpeed = {m:g}\n"
+            f"EnableCheats = True\n"
+            f"AudioPreservePitch = True\n"
+            f"[Gecko]\n"
+            f"{title}\n{bundle}\n"
+            f"[Gecko_Enabled]\n{title}\n")
+
+
 def _iter_codes(bundle):
     """Walk a bundle yielding ('C2', addr, body_words) and ('04', addr, value)."""
     words = []
@@ -628,7 +643,9 @@ def main():
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
-    ap.add_argument("--check", action="store_true", help="structural-validate the C2 blocks and exit")
+    ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
+    ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
+    ap.add_argument("--check", action="store_true", help="validate structure, decodability and rate constants, then exit")
     a = ap.parse_args()
 
     m = a.fps / 60.0
@@ -641,8 +658,13 @@ def main():
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)
+        cave = sum(len(p) for k, _, p in _iter_codes(bundle) if k == "C2")
         print(f"{a.fps:g}fps bundle: {nblocks} C2 blocks checked "
               f"(structure + decode + rate constants)")
+        print(f"  C2 cave usage: {cave} words / {cave * 4} bytes — Dolphin's cave is "
+              f"small and overflow fails SILENTLY (codes just don't run). If blocks "
+              f"stop taking effect, drop optional ones (--no-stars, --no-poink, "
+              f"--no-bluecoin) before suspecting the code itself.")
         for e in errs:
             print("  ERROR:", e)
         print("OK" if not errs else "FAILED")
@@ -653,15 +675,27 @@ def main():
               f"gates fall back to 1-in-2 and will NOT hold 60 Hz at this rate.",
               file=sys.stderr)
 
-    header = (f"# ---- paste into GameSettings/GMSE01.ini [Gecko], enable the title in "
-              f"[Gecko_Enabled] ----\n"
-              f"# ALSO set EmulationSpeed = {m:g} in BOTH Dolphin.ini and GMSE01.ini "
-              f"[Core] (per-game overrides).\n"
-              f"# framerate global 0x804167B8 = {framerate_word(a.fps)} (= float {m:g})\n")
-    text = f"{header}{title}\n{bundle}\n"
+    if a.bare:
+        # hex pairs only — gecko.py's `add` rejects any other line
+        text = bundle + "\n"
+    elif a.emit_ini:
+        text = emit_ini(a.fps, title, bundle)
+    else:
+        header = (f"# ---- paste into GameSettings/GMSE01.ini [Gecko], enable the title in "
+                  f"[Gecko_Enabled] ----\n"
+                  f"# ALSO set EmulationSpeed = {m:g} in BOTH Dolphin.ini and GMSE01.ini "
+                  f"[Core] (per-game overrides).\n"
+                  f"# framerate global 0x804167B8 = {framerate_word(a.fps)} (= float {m:g})\n")
+        text = f"{header}{title}\n{bundle}\n"
+
     if a.out:
         open(a.out, "w").write(text)
         print(f"wrote {a.out}  (EmulationSpeed to set: {m:g})", file=sys.stderr)
+        if a.bare:
+            print(f"install with:  python3 sunshine/gecko/skill/gecko.py add "
+                  f'--title "{title[1:]}" --code-file {a.out} --enable', file=sys.stderr)
+            print("Dolphin MUST be fully quit first — it rewrites the INI on close.",
+                  file=sys.stderr)
     else:
         sys.stdout.write(text)
 
