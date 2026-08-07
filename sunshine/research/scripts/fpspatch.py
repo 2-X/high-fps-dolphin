@@ -230,6 +230,57 @@ def substep_granularity(g):
     ])
 
 
+# ---- SMSGetAnmFrameRate stub (v11) ------------------------------------------
+# 0x802A7BD8 is SMSGetAnmFrameRate() = 60.0f / SMSGetVSyncTimesPerSec(), i.e.
+# 60/(60*G) = 1/G, with 215 callers. Stubbing its prologue to `lfs f1,-0x7FD8(r2)
+# ; blr` makes it return a hard 0.5f.
+#
+# That is correct BECAUSE substep_granularity pins the sim: with numerator 600G
+# and quantum 5G, each direct() adds 600G/(60G) = 10 (always an exact divide) and
+# each substep costs 5G, so the sim runs 60G * 10/(5G) = 120 Hz at EVERY G. The
+# right return is therefore 60/120 = 0.5 regardless of framerate, whereas the
+# stock formula would give 1/G and run anims 1.5x slow at 180fps.
+#
+# So it is a no-op at G=2 (1/G is already 0.5) and a real fix at G>=3 — which is
+# why v11 introduced it for the 180fps line. It is only valid alongside the
+# substep retune, hence build() ties it to `substep`.
+ANMRATE_STUB = """042A7BD8 C0228028
+042A7BDC 4E800020"""
+
+# ---- Input latch (v9) -------------------------------------------------------
+# TApplication::gameLoop @0x802A5F50 calls TMarioGamePad::read() @0x802A8054
+# once per DISPLAYED frame, so at high FPS a press/release edge is reported
+# several times per sim step. This hook skips the pad read on frames that will
+# not advance the sim and zeroes mTrigger(+0x1C)/mRelease(+0x20) on all four
+# pads, leaving held state (mButton) intact — mirroring what stock direct()
+# already does for its own non-first substeps.
+#
+# The 0x803DF0C8 compare is TMarDirector's VTABLE address (a runtime type check
+# so the gate is inert on logo/menu/movie directors), not a rate value.
+#
+# The threshold is the one rate-dependent constant. A frame runs a substep when
+# remainder + 10 >= quantum, i.e. remainder >= 5G - 10. The shipped v9 hardcoded
+# 5, which is exactly 5*3-10 — correct at G=3 and nowhere else. At G=2 the
+# threshold must be 0: the remainder is always 0 there (one substep per frame),
+# so a literal 5 would skip the pad read on EVERY frame and kill input entirely.
+# That is why this is opt-in: the generalization is derived, not yet confirmed
+# in-game.
+def input_latch(g):
+    thresh = 5 * g - 10
+    words = [0x807F0004, 0x2C030000, 0x4182005C,      # mDirector; null -> read()
+             0x80830000, 0x3CA0803D, 0x60A5F0C8,      # vptr vs TMarDirector vtable
+             0x7C042800, 0x40820048,                  # not TMarDirector -> read()
+             0x80830054,                              # lwz r4,0x54(r3)  accumulator
+             0x2C040000 | (thresh & 0xFFFF),          # cmpwi r4,5G-10
+             0x4080003C,                              # bge -> read()
+             0x38C00000]                              # li r6,0
+    for off in (0x20, 0x24, 0x28, 0x2C):              # mGamePads[0..3]
+        words += [0x80BF0000 | off, 0x90C5001C, 0x90C50020]
+    words += [0x48000014,                             # b -> after the call
+              0x3D80802A, 0x618C8054, 0x7D8903A6, 0x4E800421]   # bctrl read()
+    return _c2(0x802A600C, words)
+
+
 # ---- BGM tempo guard (v12) --------------------------------------------------
 # JASystem outer tempo proportion reads 0.0 across some scene transitions and
 # the sequence stalls; substitute 1.0. Pure value guard, no rate constant.
@@ -406,7 +457,16 @@ C05F00D0 60000000
 # Sites confirmed by disasm sweep (animrate_disasm.py) + per-site verification.
 # The stack-load site 0x80270204 (rate <- 0x120(r1), THinokuri2-area) is EXCLUDED:
 # its provenance is a stack spill, not a param — needs manual confirmation first.
-ANMRATE_GLOBAL_DISP = -0x3c8 & 0xFFFF          # framerate global via r2 (SDA)
+# r2 (SDA2) = 0x80416BA0, verified from __init_registers @0x8000536C and
+# corroborated by the dolphin-gecko skill's own note that 0.5f @0x8040EBC8 is
+# -0x7FD8(r2). The framerate global 0x804167B8 is therefore -0x3E8(r2).
+# THIS WAS -0x3C8, which is 0x804167D8 = a plain 60.0f constant, NOT the global:
+# every anmrate block computed rate/(60+60) = rate/120 instead of rate/(2G) —
+# roughly 30x too slow at 120fps — and, because 60.0f is a constant, it fired
+# even with the fps codes off instead of self-disabling. The in-game-confirmed
+# $Petey v16 block used the absolute form (lis/lwz 0x804167B8) and was correct;
+# the generator regressed it.
+ANMRATE_GLOBAL_DISP = -0x3e8 & 0xFFFF          # framerate global via r2 (SDA2)
 
 def _lfs(frD, rA, d):   return (48 << 26) | (frD << 21) | (rA << 16) | (d & 0xFFFF)
 def _stfs(frS, rA, d):  return (52 << 26) | (frS << 21) | (rA << 16) | (d & 0xFFFF)
@@ -428,10 +488,13 @@ ANMRATE_SITES = [
     (0x80244B88, "store", 0xD3E3000C),   # 0x80244800
     (0x8011763C, "store", 0xD003000C),   # 0x801175fc (rate in f0)
     (0x801176EC, "store", 0xD003000C),   # 0x801176bc (rate in f0)
-    # lfs f1 before MActor::setFrameRate  (rate = f1)
-    (0x802054D4, "load", 0xC03F01D0),    # 0x80205354 cluster, +0x1d0(r31)
-    (0x802054E8, "load", 0xC03F01D0),
-    (0x80205620, "load", 0xC03F01D0),
+    # REMOVED — the three "lfs f1,0x1d0(r31) before MActor::setFrameRate" sites
+    # 0x802054D4 / 0x802054E8 / 0x80205620. Field +0x1D0 is smoothed toward a
+    # target that is ALREADY multiplied by SMSGetAnmFrameRate() (0x80205530
+    # `bl 0x802A7BD8` then `fmuls f30,f0,f1`, stored via the helper at
+    # 0x80028BD4 hooked in at 0x80205614). Scaling the load again double-divides.
+    # animrate-master.md / animrate-disasm.md only ever tagged these SUSPECT,
+    # never confirmed — consistent with them being wrong.
 ]
 
 def _anmrate_block(addr, mode, orig):
@@ -470,14 +533,18 @@ def integer_g(fps):
 
 
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
-          stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True):
+          stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
+          input_latch_fix=False):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
     if forceopen:
         parts.insert(2, FORCEOPEN)
     if substep:
-        parts.append(substep_granularity(gate_g))
+        # the stub is only valid while the substep retune pins the sim at 120 Hz
+        parts += [substep_granularity(gate_g), ANMRATE_STUB]
+    if input_latch_fix:
+        parts.append(input_latch(gate_g))
     tf = timerfix(fps)
     if tf:
         parts.append(tf)
@@ -554,6 +621,8 @@ def _implied_divisor(words, ctr):
 
 
 PARTICLE_HOOKS = (0x802887A8, 0x80288D30, 0x80288DEC)
+SDA2 = 0x80416BA0              # r2, from __init_registers @0x8000536C
+FRAMERATE_GLOBAL = 0x804167B8  # = -0x3E8(r2)
 
 def check(bundle, fps=None):
     """Validate a bundle three ways: C2 block structure, capstone-decodability of
@@ -624,6 +693,21 @@ def check(bundle, fps=None):
         if n != want_n:
             errs.append(f"Noki gate: encodes 1-in-{n}, expected 1-in-{want_n} (FPS/30)")
 
+    # Every anmrate block must reach the framerate global through r2, never a
+    # neighbouring constant in the SDA2 pool — the -0x3C8/-0x3E8 slip read 60.0f
+    # and silently divided by 120 instead of 2G.
+    for site, _, _ in ANMRATE_SITES:
+        body = codes.get(("C2", site))
+        if body is None:
+            continue
+        for w in body:
+            if (w >> 26) == 48 and ((w >> 16) & 31) == 2:        # lfs frX,d(r2)
+                va = SDA2 + struct.unpack(">h", struct.pack(">H", w & 0xFFFF))[0]
+                if va != FRAMERATE_GLOBAL:
+                    errs.append(f"anmrate @{site:08X}: lfs reads 0x{va:08X}, not the "
+                                f"framerate global 0x{FRAMERATE_GLOBAL:08X}")
+                break
+
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
 
@@ -642,6 +726,7 @@ def main():
     ap.add_argument("--no-noki", action="store_true", help="omit the Noki pollution-counting gate (native 30Hz, divisor FPS/30)")
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
+    ap.add_argument("--input-latch", action="store_true", help="lock pad reads to sim frames (v9); threshold 5G-10 is derived, NOT yet confirmed in-game")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -654,7 +739,7 @@ def main():
                    substep=not a.no_substep, audio=not a.no_audio,
                    stars=not a.no_stars, sun_probe=a.sun_probe,
                    noki=not a.no_noki, poink=not a.no_poink,
-                   bluecoin=not a.no_bluecoin)
+                   bluecoin=not a.no_bluecoin, input_latch_fix=a.input_latch)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)
