@@ -87,12 +87,30 @@ player, removes (N−1)/N of the cost.
 3. Re-execute the overwritten entry instruction on the run-path; end the block with the single
    `00000000` branch-back (see the Gecko C2 gotchas in `README.md`).
 
-**Rate divisor by target** (the `andi. r0,r11,MASK` value = N−1):
-| Target fps | multiplier N | mask |
+**Rate divisor by target.** An `andi.` mask only implements "1 in N" when **N is a power of
+two** — `x & (N-1)` equals `x mod N` only in that case. For any other N you need a real
+modulo. `x & 5` is *not* `x mod 6`: it is zero for x = 0, 2, 8, 10, … — a garbage gate firing
+at the wrong cadence, not a 1-in-6 gate. (An earlier version of this table said to use mask
+`5` for 180 and `11` for 360; both were wrong.)
+
+| Target fps | multiplier N | gate |
 |---|---|---|
-| 120 | 4 | `3` |
-| 180 | 6 | `5` |
-| 360 | 12 | `11` |
+| 120 | 4 | `andi. r0,r11,3` |
+| 240 | 8 | `andi. r0,r11,7` |
+| 180 | 6 | modulo (below) |
+| 360 | 12 | modulo (below) |
+
+The modulo form — five instructions, no scratch state, exact for every N (`r11` = counter,
+`r0`/`r4` scratch; a following `bne` skips the work):
+```
+li    r4,N          ; 38800000|N
+divwu r0,r11,r4     ; q = ctr / N
+mullw r0,r0,r4      ; q * N
+subf. r0,r0,r11     ; ctr - q*N = ctr mod N, sets CR0
+bne   skip
+```
+`fpspatch.py`'s `_rate_gate(g)` emits exactly this (mask when the multiplier is a power of
+two, modulo otherwise) — reuse it rather than hand-assembling.
 
 Tie it to the fps-active discriminator (`0x804167B8 == 2.0f`) if you want it to self-disable
 when the hack is off — the same guard the timer/anim codes use.

@@ -12,10 +12,12 @@ things:
 Everything else is either (a) a hook that READS that global and therefore
 auto-scales, or (b) a parity/distance-based fix that is correct at every rate:
 
-  * particle/emitter rate  → parity fix (substep-parity gate → exactly 60 Hz at
-    any multiple of 60fps). This is the CORRECT version; the older "+0.5" blocks
-    shipped in TRUE-FIX v2 run emitters 2x too fast at 120 (the level-load
-    "flash-invisible on reconstitute" bug). This tool always emits the parity fix.
+  * particle/emitter rate  → 1-in-G substep gate → exactly 60 Hz at any integer
+    G. NOTE this one IS rate-dependent and is regenerated per FPS: the older
+    hand-written block used a fixed 1-in-2 parity mask, which is only 60 Hz at
+    G=2 (90 Hz at 180fps, 120 Hz at 240fps). Both it and the even older "+0.5"
+    blocks from TRUE-FIX v2 (2x too fast at 120 — the level-load
+    "flash-invisible on reconstitute" bug) are superseded by _rate_gate().
   * M-portal glow          → XZ-distance proximity reimpl (no rate constant)
   * M-portal ForceOpen     → calls the real startOpen (no rate constant)
   * game-clock fix (v15)   → divides OSCheckStopwatch ticks by FPS/60 (races,
@@ -46,20 +48,70 @@ C20066EC 00000002
 C2C28028 EC2105B2
 FEC00890 00000000"""
 
-def _parity_block(hook):
-    # EmitterViewObj.cpp: for(i=SMSGetAnmFrameRate(); i>0; --i) emitter->calc().
-    # Add 1.0 only on even substeps (gpMarDirector->unk5C & 1) so the emitter
-    # advances at exactly 59.94 Hz — correct at 120 AND 180 (parity, not a const).
-    return f"""{hook} 00000006
-806D9FB8 28030000
-41820010 8063005C
-70600001 4082000C
-C002DD68 EC21002A
-FC00081E 60000000
-60000000 00000000"""
+# ---- generic 1-in-G substep gate --------------------------------------------
+# EmitterViewObj.cpp: for(i=SMSGetAnmFrameRate(); i>0; --i) emitter->calc().
+# SMSGetAnmFrameRate() returns 1/G, so fctiwz truncates it to 0 substeps of work;
+# injecting +1.0 on a chosen substep is what actually advances the emitter. The
+# substep clock ticks at 60*G Hz, so to hold the emitter at its native 60 Hz the
+# +1.0 must land on exactly 1 substep in G.
+#
+# The shipping 120fps block hardcoded `andi. r0,r3,1` — a fixed 1-in-2 gate that
+# yields 60*G/2 = 30*G Hz. That is 60 Hz ONLY at G=2; it runs emitters 1.5x too
+# fast at 180fps and 2x too fast at 240fps. (The previous docstring's claim that
+# parity was "correct at 120 AND 180 (parity, not a const)" was wrong — a fixed
+# /2 is just as rate-specific as the "+0.5" constant it replaced.)
+#
+# _rate_gate emits a true 1-in-G test, leaving CR0 set so `bne` == "skip":
+#   * G a power of two -> `andi. r0,r3,G-1` (byte-identical to the old block at
+#     G=2, so the proven 120fps bundle is unchanged)
+#   * otherwise        -> ctr - (ctr/G)*G, an exact modulo. Required for G=3
+#     (180fps): no AND mask can express mod 3.
 
-def particles():
-    return "\n".join(_parity_block(h) for h in ("C22887A8", "C2288D30", "C2288DEC"))
+def _li(rD, imm):        return (14 << 26) | (rD << 21) | (imm & 0xFFFF)
+def _andi_(rA, rS, imm): return (28 << 26) | (rS << 21) | (rA << 16) | (imm & 0xFFFF)
+def _divwu(rD, rA, rB):  return (31 << 26) | (rD << 21) | (rA << 16) | (rB << 11) | (459 << 1)
+def _mullw(rD, rA, rB):  return (31 << 26) | (rD << 21) | (rA << 16) | (rB << 11) | (235 << 1)
+def _subf_(rD, rA, rB):  return (31 << 26) | (rD << 21) | (rA << 16) | (rB << 11) | (40 << 1) | 1
+
+def _rate_gate(g, ctr=3, tmp=0, tmp2=4):
+    """Instructions setting CR0 from (ctr mod g); a following `bne` skips the work.
+    `ctr` holds the substep counter on entry and is preserved."""
+    if g & (g - 1) == 0:                       # power of two -> single mask
+        return [_andi_(tmp, ctr, g - 1)]
+    return [_li(tmp2, g),                      # li    r4,G
+            _divwu(tmp, ctr, tmp2),            # divwu r0,r3,r4   q = ctr/G
+            _mullw(tmp, tmp, tmp2),            # mullw r0,r0,r4   q*G
+            _subf_(tmp, tmp, ctr)]             # subf. r0,r0,r3   ctr - q*G = ctr%G
+
+LWZ_DIRECTOR = 0x806D9FB8   # lwz   r3,-0x6048(r13)   gpMarDirector
+CMPLWI_R3_0  = 0x28030000   # cmplwi r3,0
+LWZ_UNK5C    = 0x8063005C   # lwz   r3,0x5C(r3)       substep counter
+LFS_ONE      = 0xC002DD68   # lfs   f0,-0x2298(r2)    1.0f
+FADDS_F1_F0  = 0xEC21002A   # fadds f1,f1,f0
+FCTIWZ_F0_F1 = 0xFC00081E   # the overwritten original instruction
+NOP          = 0x60000000
+
+def _parity_block(hook, g):
+    gate = _rate_gate(g)
+    # layout: [dir load, cmplwi, beq->ADD] [unk5C load, gate..., bne->SKIP] [ADD] [SKIP]
+    words = ([LWZ_DIRECTOR, CMPLWI_R3_0, 0] + [LWZ_UNK5C] + gate + [0]
+             + [LFS_ONE, FADDS_F1_F0] + [FCTIWZ_F0_F1])
+    i_beq, i_bne = 2, 4 + len(gate)
+    i_add = i_bne + 1                          # null director falls here: do the add
+    i_skip = i_add + 2
+    words[i_beq] = 0x41820000 | (((i_add - i_beq) * 4) & 0xFFFC)   # beq -> ADD
+    words[i_bne] = 0x40820000 | (((i_skip - i_bne) * 4) & 0xFFFC)  # bne -> SKIP
+    words += [NOP, NOP]                        # preserve the proven 120fps cave layout
+    if len(words) % 2 == 0:
+        words.append(NOP)                      # keep the branch-back on its own slot
+    words.append(0x00000000)                   # handler clobbers the last word
+    out = [f"{hook} {len(words) // 2:08X}"]
+    for i in range(0, len(words), 2):
+        out.append(f"{words[i]:08X} {words[i + 1]:08X}")
+    return "\n".join(out)
+
+def particles(g):
+    return "\n".join(_parity_block(h, g) for h in ("C22887A8", "C2288D30", "C2288DEC"))
 
 FORCEOPEN = """C21EB034 00000007
 88030070 700B0001
@@ -229,7 +281,9 @@ def framerate_word(fps):
 
 
 def build(fps, forceopen=True, anmrate_fix=True):
-    parts = [base(framerate_word(fps)), particles(), PROXIMITY_GLOW]
+    g = fps / 60.0
+    gate_g = int(round(g)) if g >= 2 and abs(g - round(g)) < 1e-9 else 2
+    parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
     if forceopen:
         parts.insert(2, FORCEOPEN)
     tf = timerfix(fps)
