@@ -503,30 +503,116 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     return "\n".join(parts)
 
 
-def check(bundle):
-    """Structural-validate: every C2 header's line count matches, and each C2
-    block ends in 00000000 (the code-handler clobbers the last word — trap #2)."""
-    lines = [l.split()[:2] for l in bundle.splitlines() if l.strip()]
+def _iter_codes(bundle):
+    """Walk a bundle yielding ('C2', addr, body_words) and ('04', addr, value)."""
     words = []
-    for l in lines:
-        words.extend(l)
-    i, errs, nblocks = 0, [], 0
-    while i < len(words):
+    for line in bundle.splitlines():
+        line = line.strip()
+        if not line or line[0] in "#$":
+            continue
+        words.extend(line.split()[:2])
+    i = 0
+    while i + 1 < len(words):
         w = words[i]
         if w.startswith("C2"):
-            nblocks += 1
-            n = int(words[i + 1], 16)                 # 8-byte lines that follow
-            body = words[i + 2 : i + 2 + 2 * n]
-            if len(body) != 2 * n:
-                errs.append(f"{w}: truncated (want {2*n} body words, got {len(body)})")
-            elif body[-1] != "00000000":
-                errs.append(f"{w}: last word {body[-1]} != 00000000 (handler will clobber a real instr)")
+            n = int(words[i + 1], 16)
+            body = [int(x, 16) for x in words[i + 2: i + 2 + 2 * n]]
+            yield "C2", 0x80000000 | int(w[2:], 16), body
             i += 2 + 2 * n
-        elif w.startswith("04"):
-            i += 2
         else:
+            yield "04", 0x80000000 | int(w[2:], 16), int(words[i + 1], 16)
             i += 2
-    return nblocks, errs
+
+
+def _implied_divisor(words, ctr):
+    """Recover the 1-in-N divisor a block's gate actually encodes, straight from
+    the emitted words — deliberately independent of _rate_gate so the check can
+    disagree with the generator."""
+    for j, w in enumerate(words):
+        if (w >> 26) == 28 and ((w >> 21) & 31) == ctr:          # andi. rX,ctr,N-1
+            return (w & 0xFFFF) + 1
+        if (w >> 26) == 14 and not ((w >> 16) & 31) and j + 1 < len(words):
+            nxt = words[j + 1]                                    # li tmp,N ; divwu _,ctr,tmp
+            if (nxt >> 26) == 31 and ((nxt >> 1) & 0x3FF) == 459 and ((nxt >> 16) & 31) == ctr:
+                return w & 0xFFFF
+    return None
+
+
+PARTICLE_HOOKS = (0x802887A8, 0x80288D30, 0x80288DEC)
+
+def check(bundle, fps=None):
+    """Validate a bundle three ways: C2 block structure, capstone-decodability of
+    every cave word, and — when fps is given — that each rate-derived constant
+    matches the framerate actually requested."""
+    errs, n_c2 = [], 0
+    try:
+        from capstone import Cs, CS_ARCH_PPC, CS_MODE_32, CS_MODE_BIG_ENDIAN
+        md = Cs(CS_ARCH_PPC, CS_MODE_32 | CS_MODE_BIG_ENDIAN)
+    except ImportError:
+        md = None
+        errs.append("NOTE: capstone not installed — instruction decoding skipped")
+
+    codes = {}
+    for kind, addr, payload in _iter_codes(bundle):
+        codes[(kind, addr)] = payload
+        if kind != "C2":
+            continue
+        n_c2 += 1
+        tag = f"C2 @{addr:08X}"
+        if not payload:
+            errs.append(f"{tag}: empty body"); continue
+        if payload[-1] != 0:
+            errs.append(f"{tag}: last word {payload[-1]:08X} != 00000000 — the handler "
+                        f"clobbers it, so a real instruction would be destroyed")
+        # Trap that crashed blue-coin v1..v4: interior padding must be nop, never a
+        # second zero word (every path has to converge on the single branch-back).
+        for j, w in enumerate(payload[:-1]):
+            if w == 0:
+                errs.append(f"{tag}: interior 00000000 at word {j} — use 60000000 (nop)")
+        if md:
+            body = payload[:-1]
+            code = b"".join(struct.pack(">I", w) for w in body)
+            got = sum(1 for _ in md.disasm(code, 0))
+            if got != len(body):
+                errs.append(f"{tag}: capstone decoded only {got}/{len(body)} words "
+                            f"— undecodable word in the cave")
+
+    if fps is None:
+        return n_c2, errs
+
+    g = integer_g(fps)
+    gate_g = g or 2
+    want_fr = int(framerate_word(fps), 16)
+    got_fr = codes.get(("04", 0x804167B8))
+    if got_fr is not None and got_fr != want_fr:
+        errs.append(f"framerate global: {got_fr:08X} != {want_fr:08X} (float {fps/60:g})")
+
+    for hook in PARTICLE_HOOKS:
+        body = codes.get(("C2", hook))
+        if body is None:
+            continue
+        n = _implied_divisor(body, ctr=3)
+        if n != gate_g:
+            errs.append(f"particle gate @{hook:08X}: encodes 1-in-{n}, expected 1-in-{gate_g} "
+                        f"(emitters would run at {60*gate_g/(n or 1):g} Hz, not 60)")
+
+    if ("04", 0x8029985C) in codes:
+        for addr, want, what in ((0x8029985C, 0x38600000 | 600 * gate_g, "li r3,600G"),
+                                 (0x80299974, 0x38030000 | (-5 * gate_g & 0xFFFF), "addi r0,r3,-5G"),
+                                 (0x80299980, 0x2C000000 | 5 * gate_g, "cmpwi r0,5G")):
+            if codes.get(("04", addr)) != want:
+                errs.append(f"substep {what} @{addr:08X}: {codes[('04', addr)]:08X} != {want:08X}")
+
+    body = codes.get(("C2", 0x8019D8C8))
+    if body is not None:
+        n, want_n = _implied_divisor(body, ctr=11), int(fps // 30)
+        if n != want_n:
+            errs.append(f"Noki gate: encodes 1-in-{n}, expected 1-in-{want_n} (FPS/30)")
+
+    if ("C2", 0x801BE880) in codes and g != 2:
+        errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
+
+    return n_c2, errs
 
 
 def main():
@@ -554,8 +640,9 @@ def main():
                    bluecoin=not a.no_bluecoin)
 
     if a.check:
-        nblocks, errs = check(bundle)
-        print(f"{a.fps:g}fps bundle: {nblocks} C2 blocks checked")
+        nblocks, errs = check(bundle, a.fps)
+        print(f"{a.fps:g}fps bundle: {nblocks} C2 blocks checked "
+              f"(structure + decode + rate constants)")
         for e in errs:
             print("  ERROR:", e)
         print("OK" if not errs else "FAILED")
