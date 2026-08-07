@@ -1,0 +1,34 @@
+# Noki Bay Ep.1 perf — ISOLATION TEST v1 (throwaway diagnostic, not a shipping fix)
+#
+# HYPOTHESIS (from OverlayStats, Delfino vs Noki L1 vs Noki L2):
+#   Noki Ep.1 ("Uncork the Waterfall") is video-thread bound on FIFO state-change
+#   floods, NOT geometry/fill/readback. L1 issues 8196 BP + 1490 XF loads (~4x the
+#   fast level, ~8x Delfino) while drawing the LEAST geometry (149kB vtx, 3380 DL
+#   prims). EFB peeks = 0 everywhere (readback theory dead).
+#   Suspected source: the goop/pollution rendering. Each pollution piece's draw path
+#   calls initGX() -> ReInitializeGX() (full pipeline reset) + ~25 GXSet* calls, once
+#   per piece per frame. Fully-polluted L1 = max pieces = max floods.
+#
+# THIS TEST kills the animated goop-WAVE surface draw only (TPollutionLayerWave),
+# the big polluted-water lake. Cleaning logic is in a different function
+# (TPollutionLayer::perform) and is untouched.
+#
+# TARGET (USA GMSE01, fingerprint-verified against sunshine/research/main.dol):
+#   TPollutionLayerWave::perform  0x801A1E3C  (size 0x40)
+#     801a1e44 rlwinm. r0,r4,0,0x1c,0x1c   ; cue & CUE_DRAW (0x8)
+#     801a1e54 beq 0x801a1e68              ; original: skip draw if bit clear
+#     801a1e5c bl 0x801a2000               ; initGX()  (ReInitializeGX flood)
+#     801a1e64 bl 0x801a1e7c               ; draw()    (wavy goop quads)
+#   PAL ref: perform 0x8019A6C4 / draw 0x8019A704 / initGX 0x8019A888 (contiguous)
+#
+# EDIT: flip the conditional beq into an unconditional branch => draw path never runs.
+#   0x801A1E54  0x41820014 (beq +0x14)  ->  0x48000014 (b +0x14)
+#
+# EXPECTED: goop-wave lake stops rendering (visibly gone). If Ep.1 fps jumps toward
+# 119 -> the wave draw IS the bottleneck; ship a 60Hz-gate version of this same hook.
+# If fps unchanged -> pivot to the counter/stamp system (drawSyncCallback) instead.
+#
+# Rate-agnostic. Fully reversible (remove the line). Diagnostic only.
+
+$Noki goop-wave draw KILL (isolation test)
+041A1E54 48000014

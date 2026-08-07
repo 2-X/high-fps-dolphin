@@ -1,0 +1,19 @@
+$Poink premature-explosion gate v14 (Bianco5 high-fps)
+# CORRECTED fix. Burst-capture proved bit0x80 stays SET all flight -> the v13
+# collision-latch theory was wrong. The flight is ended by an EXTERNAL push to the
+# Explosion nerve at flyTimer ~9 (an anim-cue-driven trigger firing 4x too fast at
+# 120fps; stock fires at ~36 = far enough to reach Petey). Hook TNervePopoExplosion::
+# execute first-tick block @0x800e5e44: if the pig is mid-flight (+0xF0 bit0x80) and
+# flyTimer(+0x19c) < 40 (0x28; tuned: 36 fell just short of Petey), revert spine+0x14 to the Fly nerve object (0x8040d95c),
+# set spine+0x20=1 (Fly continues, no relaunch), and bctr to the epilogue 0x800e6000
+# to cancel this explosion. Net: explosion can't fire before flyTimer 36 = stock behavior.
+C20E5E44 00000009
+801F00F0 70000080
+41820038 801F019C
+2C000028 4080002C
+3C008040 6000D95C
+901E0014 38000001
+901E0020 38600000
+3C00800E 60006000
+7C0903A6 4E800420
+C022A460 00000000

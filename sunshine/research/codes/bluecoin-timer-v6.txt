@@ -1,0 +1,50 @@
+# $Blue coin timer fix v6 (120fps) [GMSE01] — SHIPPABLE, rate-calibrated.
+#
+# STATUS (2026-08-07): v5 confirmed the mechanism in-game (coin no longer instant,
+# no crash) but ran LONG: 30s vs the 20s stock target. v6 recalibrates the gate
+# from 1/2-rate to 3/4-rate to hit stock. Awaiting final confirm (~20s).
+#
+# WHY 3/4 (calibration, not theory): with the 1/2-rate gate the full 600-tick
+# lifetime measured 30s in Delfino Plaza, so the coin's perform substep runs
+# ~40/sec at 120fps here (NOT a clean 4x — the sim is CPU-bound ~1.33x; matches
+# the project's "hardware ceiling" note). time = 600 / (40 * keep):
+#     keep 1/2 -> 30s (v5)   keep 3/4 -> 20s (v6, stock)   keep 1 -> 15s
+# Stock target = 600 ticks / 30fps native = 20s (unk150=120 appear + unk14C=480
+# disappear, from TItem::initMapObj; TCoin::perform --mStateTimer @0x801BE880).
+#
+# GATE: decrement on 3 of every 4 substeps, hold on 1 of 4 (when unk5C&3 == 0).
+# Self-disables unless framerate global 0x804167B8 == 2.0f (120fps). r6/r7 = fps
+# gate, r5 = rate test; r0=oldTimer-1 and r3=oldTimer are the store values and
+# MUST survive (v5's first cut clobbered r0 -> coins died instantly). r4 untouched.
+#
+#   lis    r6,0x8041 ; lwz r6,0x67B8(r6)   # framerate global
+#   lis    r7,0x4000 ; cmpw r6,r7          # == 2.0f (120fps) ?
+#   bne    STORE_DEC                        # not 120fps -> stock decrement
+#   lwz    r5,-0x6048(r13)                  # gpMarDirector
+#   cmplwi r5,0 ; beq STORE_DEC             # no director -> stock decrement
+#   lwz    r5,0x5C(r5) ; andi. r5,r5,3      # unk5C & 3 (test in r5)
+#   beq    HOLD                             # ==0 (1 of 4) -> hold value (no --)
+# STORE_DEC: stw r0,0x104(r29) ; b END      # 3 of 4: real --mStateTimer
+# HOLD:      stw r3,0x104(r29)              # hold old value; falls into branch-back
+# END:  (nop) 00000000                      # handler overwrites last word
+#
+# C2 LAYOUT: only the LAST word is the branch-back; every other 00000000 is a live
+# cave word. All paths converge on the last word (STORE_DEC branches to the nop
+# before it; HOLD falls through). Interior padding = nop (60000000), never a 2nd
+# 00000000. (coinhook_assemble.py asserts this. This is what crashed v1..v4.)
+#
+# LIMITATIONS: tuned to THIS machine's ~40/sec substep rate; if the sim rate
+# changes materially the coin lifetime scales with it (longer if fps dips — which
+# is harmless: still reachable). Hooks ONLY TCoin::perform (0x801BE880). 180/240
+# fall back to stock decrement (gate word is 3.0f/4.0f != 2.0f).
+#
+$Blue coin timer fix v6 (120fps) [GMSE01]
+C21BE880 00000008
+3CC08041 80C667B8
+3CE04000 7C063800
+4082001C 80AD9FB8
+28050000 41820010
+80A5005C 70A50003
+4182000C 901D0104
+48000008 907D0104
+60000000 00000000

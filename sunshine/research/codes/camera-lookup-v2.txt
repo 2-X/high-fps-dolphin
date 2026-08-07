@@ -1,0 +1,79 @@
+# $Camera look-up extension v2 (USA GMSE01) — v1 + flat-ground sky-gazing
+#
+# v1 (hooks B+A below) banks C-stick overflow past the old ~5deg floor into an
+# extra-pitch accumulator E and subtracts it from the final camera pitch —
+# see camera-lookup-v1.txt for the full mechanism writeup.
+#
+# v2 FIX: on flat open ground the camera-ground revision (execGroundCheck_,
+# camera kept >= groundY + 144 [30 when aiming FLUDD]) eats the downward
+# swing, capping the view near horizontal. Two more hooks compensate with the
+# EXACT height the revision stole:
+#  Hook D @0x80020408 (the revision store stfs f1,0x84(r30) in
+#    execGroundCheck_; f1=raised y, f0=intended y): when E>0, record
+#    deficit = f1-f0 into scratch+0x1C. E==0 -> stock ground behavior.
+#  Hook C @0x80024828 (bl execCameraInbetween in calcPosAndAt_, the final
+#    lookat handoff; at-copy on stack, y @0x228(r1)): lookat.y += deficit,
+#    then zero it (same-frame consume; straight-line from the ground check).
+#    The bl is re-emitted as lis/mtctr/bctrl (C2 cave relocates the block, a
+#    relative bl would retarget).
+# Geometry note: raising the lookat by the stolen height restores ~the
+# intended tilt angle (mirror of the blocked drop). Ledges/water/air have no
+# revision -> deficit 0 -> pure v1 swing; partial revisions blend smoothly.
+# Cutscenes: fix/definite modes skip BOTH calcSlopeAngleX_ and the ground
+# check -> fully stock even with E banked.
+#
+# Scratch 0x800016F0..0x1F, magic 'CMEX' @+4; +0x1C = deficit.
+# Regenerate: venv/bin/python scripts/camcode.py [--cap DEG] --check
+$Camera look-up extension v2 (sky-gaze on flat ground, +60deg)
+C202510C 00000018
+3CA08000 60A516F0
+80C50004 3CE0434D
+60E74558 7C063800
+41820038 38C00000
+90C50000 90C5001C
+3CC0460E 60C64800
+90C50008 3CC03D4C
+60C6CCCD 90C5000C
+3CC0462A 60C6AAAB
+90C50018 90E50004
+C0450000 C0650008
+EC821028 FC002000
+40800020 EC4010FC
+FC002090 C0A50018
+FC022800 40810040
+FC402890 48000038
+FC022000 40810034
+FC002000 4081002C
+C0A5000C FC002800
+40810008 FC002890
+EC4010FC FC002090
+FC022000 40800008
+FC402090 D0450000
+D01F00A8 00000000
+C2024D1C 00000007
+3C608000 606316F0
+80830004 3CA0434D
+60A54558 7C042800
+40820018 C0030000
+FC20001E D8230010
+80830014 7C040050
+B01E0000 00000000
+C2020408 00000008
+3C608000 606316F0
+80830004 3CA0434D
+60A54558 7C042800
+4082001C C0430000
+EC621028 FC021800
+4081000C EC410028
+D043001C D03E0084
+60000000 00000000
+C2024828 00000009
+3CE08000 60E716F0
+81070004 3D20434D
+61294558 7C084800
+4082001C C047001C
+C0610228 EC63102A
+D0610228 39000000
+9107001C 3CE08002
+60E7682C 7CE903A6
+4E800421 00000000

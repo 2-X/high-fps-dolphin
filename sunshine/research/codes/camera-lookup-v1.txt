@@ -1,0 +1,65 @@
+# $Camera look-up extension v1 (USA GMSE01) — C-stick vertical range unlock
+#
+# PROBLEM: the third-person camera can barely tilt up. The C-stick vertical
+# axis drives a 0..1 "X-rot ratio" (CPolarSubCamera+0xA8) lerped between the
+# per-camera-kind params XAngleMin(~+5deg)..XAngleMax(~+55deg) — the camera
+# NEVER goes below ~5deg above Mario's plane, so you always look level/down.
+# Distance, cushion, at-offset, follow speeds all lerp on the SAME ratio, so
+# widening the ratio range or lowering XAngleMin warps zoom/framing everywhere
+# (ratio -0.3 would even drive camera distance negative). Decomp refs:
+# sms/src/Camera/cameragc.cpp rotateX_ByStickY_, calcSlopeAngleX_,
+# calcPosAndAt_; params from /Camera/*.prm via TCamSaveKindParam.
+#
+# FIX (two C2 hooks, framerate-independent, works at 60/120/180):
+#  1) rotateX_ByStickY_ @0x8002510C (stfs of the UNclamped new ratio, f0):
+#     bank the below-floor overflow into an extra-pitch accumulator E
+#     (s16-angle units x9106/ratio, cap 60deg), pin the ratio at the floor
+#     while E>0, and when the stick comes back down drain E first
+#     (rate-limited 0.05 ratio/frame) before the normal ratio rises.
+#  2) calcSlopeAngleX_ tail @0x80024D1C (final target pitch in r0, the same
+#     additive channel the slope camera uses): pitch -= E, BEFORE the game's
+#     own hard clamp at +-87deg (mSLLimitMinAngleX) — so it can never flip.
+#
+# Behavior is bit-identical to stock until you hold the stick past the old
+# limit. Camera-collision (ground-height revision, 144 units, 30 when aiming
+# FLUDD) still applies: on flat open ground the extra tilt is geometry-capped
+# near horizontal; ledges/slopes/water/airborne give the full downward swing.
+# Cutscene/fixed/definite cameras skip calcSlopeAngleX_ -> unaffected.
+#
+# Scratch: 0x800016F0..0x8000170F (below Gecko handler @0x80001800, unused by
+# SMS + OS), magic 'CMEX' @+4 guards one-time init. Regenerate with:
+#   venv/bin/python scripts/camcode.py [--cap DEG] --check
+$Camera look-up extension (C-stick past floor, +60deg)
+C202510C 00000018
+3CA08000 60A516F0
+80C50004 3CE0434D
+60E74558 7C063800
+41820034 38C00000
+90C50000 3CC0460E
+60C64800 90C50008
+3CC03D4C 60C6CCCD
+90C5000C 3CC0462A
+60C6AAAB 90C50018
+90E50004 C0450000
+C0650008 EC821028
+FC002000 40800020
+EC4010FC FC002090
+C0A50018 FC022800
+40810040 FC402890
+48000038 FC022000
+40810034 FC002000
+4081002C C0A5000C
+FC002800 40810008
+FC002890 EC4010FC
+FC002090 FC022000
+40800008 FC402090
+D0450000 D01F00A8
+60000000 00000000
+C2024D1C 00000007
+3C608000 606316F0
+80830004 3CA0434D
+60A54558 7C042800
+40820018 C0030000
+FC20001E D8230010
+80830014 7C040050
+B01E0000 00000000

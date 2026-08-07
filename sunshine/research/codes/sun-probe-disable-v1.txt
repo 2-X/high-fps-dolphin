@@ -1,0 +1,52 @@
+# $Sun lens-flare EFB-probe disable v1 (120fps Noki Bay perf fix)
+#
+# SYMPTOM: Noki Bay drops to ~105fps at 120fps while every other area holds
+# 119 stable. Sample of the running Dolphin/Metal process showed the CPU-GPU
+# thread spending ~36% of its time blocked in waitUntilCompleted:
+#
+#   28  AbstractStagingTexture::ReadTexels -> Metal::StagingTexture::Flush -> waitUntilCompleted
+#    3  FramebufferManager::PeekEFBColor -> waitUntilCompleted
+#    5  PerfQuery::FlushResults
+#
+# ROOT CAUSE (USA GMSE01, decomp-verified via sms/src/Camera/sunmodel.cpp):
+# TSunModel::getZBufValue does 17 synchronous GXPeekZ (EFB depth readback)
+# calls per frame for the sun lens-flare occlusion sampler:
+#
+#   void TSunModel::getZBufValue() {
+#     bool indoor = gpCameraMario->isMarioIndoor();
+#     for (int i = 0; i < 17; ++i) {           // 17 sample points (unkB4)
+#       *it2 = 0;
+#       if (!indoor && it->x != -1 && it->y != -1) {
+#         u32 depth; GXPeekZ(it->x, it->y, &depth);   // <-- sync GPU stall
+#         if (depth == 0xffffff) *it2 = 1;             // segment occluded
+#       }
+#     }
+#   }
+#
+# It runs every frame from TSunMgr::drawSyncCallback (when the sun is active,
+# unk14). Noki Bay is worst because the lens flare is large and constantly
+# on-screen over the water. Each GXPeekZ is a full GPU pipeline flush on Metal
+# (waitUntilCompleted); on Vulkan the same copies are deferred and don't stall,
+# which is why the PC never showed this. The config fix EFBAccessTileSize=64
+# (caches the EFB tiles so the 17 samples hit cache) recovers most of the gap;
+# this code removes the peeks entirely for a flat fix on both backends.
+#
+# ADDRESSES (USA GMSE01, fingerprint-verified, JP delta via PAL symbols):
+#   TSunMgr::drawSyncCallback = 0x8002E270 (JP 0x8035DCF0, PAL 0x8002E328)
+#   TSunModel::getZBufValue   = 0x8002EA70 (JP 0x8035E4F0, PAL 0x8002EB28)
+#   GXPeekZ                   = 0x8035DCF0 (inlined-able; called via bl)
+# Caller edge: 0x8002E28C  bl 0x8002EA70  (word 480007E5, capstone-verified).
+#
+# FIX: NOP the single bl at 0x8002E28C so getZBufValue is never called. The
+# occlusion array (unk180, actor+0x180) keeps its zero-init -> all flare
+# segments stay "visible" -> the lens flare always renders fully and never
+# hides behind geometry. Cosmetic-only regression (flare shows through walls
+# when looking at the sun through a building — rare and barely noticeable);
+# gameplay unaffected. Removes all 17 synchronous EFB readbacks per frame.
+#
+# SAFE: rate-agnostic. Works at 30/60/120/180/360. Disables cleanly (no
+# globals written, no per-frame hooks). The sun actor, its brightness/color
+# contribution (TSunMgr::getAddColor), and the flare drawing itself are all
+# untouched — only the per-segment occlusion sampling is removed.
+$Sun lens-flare EFB-probe disable v1 (Noki Bay 120fps perf fix)
+0402E28C 60000000

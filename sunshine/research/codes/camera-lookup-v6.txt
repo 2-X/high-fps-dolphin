@@ -1,0 +1,110 @@
+# # v3: fixes the post-DIVE stuck state (user repro: after a dive the view
+# snaps to the ground cap but stick-up is dead until a full down-then-up
+# cycle). Cause: the dive path writes the X-rot ratio directly, desyncing it
+# from the banked E (E sat at cap = stick-up no-op). Fix in hook A: while
+# E>0 the stick path keeps ratio pinned at exactly 0, so ratio > 0.05 there
+# means the game wrote it -> zero E + deficit (the visible snap stays, the
+# bank re-arms instantly; stick-down smooth unwind unaffected).
+# v4: v3's ratio threshold missed the real dive mechanism — diving switches
+# camera MODE (CAMERA_MODE_DIVING); the mode change recomputes the ratio to a
+# small positive value BELOW the 0.05 threshold, so E stayed saturated and
+# stick-up was dead (user repro'd on v3). Hook A now tracks mMode (+0x50) in
+# scratch+0x20 and zeroes E+deficit on ANY camera-mode change — every
+# game-driven transition (dive in/out, doors, area cams, Y-look) natively
+# snaps the view, so the bank re-arms at exactly those moments. The ratio
+# check is kept for same-mode external writes (wall-check unk28=unk30).
+# v5 ROOT CAUSE (live gcmem capture, camwatch.py): a SECOND camera object
+# also runs rotateX/calcSlopeAngleX_/calcPosAndAt_/execGroundCheck_ every
+# frame (its mMode alternates 5/18/45 vs the main cam). v3's ratio check and
+# v4's mode tracker both saw the other object's state and zeroed the bank
+# EVERY FRAME -> extension fully dead (E never accumulated; confirmed live:
+# ratio pinned, E=0 under held stick). v1/v2 "worked" only because they kept
+# no cross-frame state. Fix: every hook is gated on this == gpCamera
+# (0x8040D0A8, found by candidate-xref scan); the v4 mode-change zeroing is
+# now correct and the dive-recovery logic can actually operate.
+# v6 — THE ACTUAL DIVE FIX (root cause from live captures 3-5, camwatch.py):
+# the land belly-dive never changes camera mode; the stuck state is the
+# game's cushion "moment definite" HOLD in calcPosAndAt_: when
+# CAMERA_FLAG_UNK100 is clear + unk250(follow-speed, lerps on ratio->
+# FollowSpeedXmin at pinned ratio 0) > 0 + no yaw input + camera settled
+# close (post-dive), it reuses the PREVIOUS camera position, discarding the
+# extended pitch — hysteretic until the camera distance grows again ("look
+# down enough"). Captures showed E at cap + hookA applying (-47 deg target)
+# while chased pitch froze at -2 deg. Fix: hook A's apply branch also sets
+# CAMERA_FLAG_UNK100 (u16 unk64 @+0x64; game clears it each frame before
+# this hook runs, sets it itself on any free move) — the hold and the yaw
+# self-plant are suppressed ONLY while E > 0; stock the instant E drains.
+$Camera look-up extension v6 (sky-gaze on flat ground, +60deg)
+C202510C 0000001B
+3CA08041 80A5D0A8
+7C05F800 408200C0
+3CA08000 60A516F0
+80C50004 3CE0434D
+60E74558 7C063800
+4182003C 38C00000
+90C50000 90C5001C
+90C50020 3CC0460E
+60C64800 90C50008
+3CC03D4C 60C6CCCD
+90C5000C 3CC0462A
+60C6AAAB 90C50018
+90E50004 C0450000
+C0650008 EC821028
+FC002000 40800020
+EC4010FC FC002090
+C0A50018 FC022800
+40810040 FC402890
+48000038 FC022000
+40810034 FC002000
+4081002C C0A5000C
+FC002800 40810008
+FC002890 EC4010FC
+FC002090 FC022000
+40800008 FC402090
+D0450000 D01F00A8
+60000000 00000000
+C2024D1C 00000015
+3C608041 8063D0A8
+7C03E800 40820090
+3C608000 606316F0
+80830004 3CA0434D
+60A54558 7C042800
+40820074 809D0050
+80A30020 7C042800
+41820018 90830020
+38800000 90830000
+9083001C 48000050
+C0030000 EC200028
+FC000800 40810040
+C05D00A8 C063000C
+FC021800 40810014
+38800000 90830000
+9083001C 48000020
+FC20001E D8230010
+80830014 7C040050
+A09D0064 60840100
+B09D0064 B01E0000
+60000000 00000000
+C2020408 0000000A
+3C608041 8063D0A8
+7C03F000 40820038
+3C608000 606316F0
+80830004 3CA0434D
+60A54558 7C042800
+4082001C C0430000
+EC621028 FC021800
+4081000C EC410028
+D043001C D03E0084
+60000000 00000000
+C2024828 0000000B
+3CE08041 80E7D0A8
+7C07F800 40820038
+3CE08000 60E716F0
+81070004 3D20434D
+61294558 7C084800
+4082001C C047001C
+C0610228 EC63102A
+D0610228 39000000
+9107001C 3CE08002
+60E7682C 7CE903A6
+4E800421 00000000

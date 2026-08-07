@@ -1,0 +1,65 @@
+# Noki Bay Ep.1 perf fix — Pollution-counting 30Hz gate v1  (SHIPPING FIX)
+#
+# ROOT CAUSE (measured via macOS `sample` of the CPU-GPU thread, in-level):
+#   ~39% of the emulation thread is blocked in synchronous GPU->CPU readbacks
+#   (-[MTLCommandBuffer waitUntilCompleted]) driven by the pollution/goop
+#   degree-counting, which runs ONCE PER RENDERED FRAME. SMS is a 30fps game;
+#   at 120fps these readbacks fire 4x as often as the game was designed for.
+#   Ep.1 ("Uncork the Waterfall") starts fully polluted -> maximal counting ->
+#   caps at ~105fps. Ep.2 has no goop -> no readbacks -> holds 120.
+#   Sampled readback paths (all in the pollution counting):
+#     AbstractStagingTexture::ReadTexels  1079   (EFB->RAM coverage readback, countTexDegree)
+#     PerfQuery::FlushResults              189   (GXReadPixMetric, countObjDegree/drawSyncCallback)
+#     FramebufferManager::PeekEFBColor     162
+#   Confirmed: "EFB Copies to Texture Only" + "Skip EFB Access from CPU" toggles
+#   removed the first+third -> 105->115fps; residual = the GXReadPixMetric path.
+#
+# FIX: gate the ENTIRE pollution counting back to native 30Hz (run 1 frame in 4
+#   at 120fps). Removes ALL THREE readback paths on 3 of every 4 frames. The goop
+#   %/clear-detection updates at exactly the cadence the game shipped with -> no
+#   gameplay change. Lets you turn BOTH EFB Graphics hacks back OFF so goop clears
+#   normally again.
+#
+# HOOK (USA GMSE01, disasm-verified against sunshine/research/main.dol):
+#   TPollutionManager::perform  0x8019D8C8  (PAL 0x80196150)
+#     8019d8d0 rlwinm. r0,r4,0,7,7    ; cue & 0x01000000 CUE_UNK1000000 -> countObjDegree
+#     8019d8f8 rlwinm. r0,r4,0,6,6    ; cue & 0x02000000 CUE_SEMITRANSPARENT_PRIO_2 -> countTexDegree
+#     8019d900 rlwinm. r30,r4,16,24,31; layer = (cue>>16)&0xFF
+#     8019d940 bl 0x801887ac          ; else: TJointModelManager::perform (visible draw, NOT gated)
+#   C2 at entry re-executes the original `mflr r0` and branches back to +4.
+#   Two independent self-contained frame counters (no cue-ordering assumptions):
+#     objCtr @ 0x800016E0  ticked every obj-cue (once/frame); gate (objCtr&3)==0
+#     texCtr @ 0x800016E4  ticked when layer==0 (frame marker); gate (texCtr&3)==0
+#   On a gated-out frame: `blr` returns immediately (counters hold last value =
+#   native-cadence stale). Visible goop DRAW (else branch) runs every frame.
+#   Scratch 0x800016E0/E4 = OS low arena (free; distinct from camera code's 0x800016F0).
+#
+#   NOTE: divisor is fixed /4 for 120fps. At 180 (PC, 6x) use /6, at 360 (12x) use
+#   /12 — swap the `andi. r0,r11,3` masks (3 -> 5 -> 11) for those builds.
+#
+# Block (13 lines, one 00000000 branch-back, capstone-verified):
+#   rlwinm. r12,r4,0,7,7 ; beq check_tex
+#   lis r12,0x8000 ; lwz r11,0x16E0(r12) ; addi r11,r11,1 ; stw r11,0x16E0(r12)
+#   andi. r0,r11,3 ; bne skip ; b cont
+# check_tex: rlwinm. r12,r4,0,6,6 ; beq cont
+#   rlwinm. r12,r4,16,24,31 ; bne gate_tex
+#   lis r12,0x8000 ; lwz r11,0x16E4(r12) ; addi r11,r11,1 ; stw r11,0x16E4(r12)
+# gate_tex: lis r12,0x8000 ; lwz r11,0x16E4(r12) ; andi. r0,r11,3 ; bne skip ; b cont
+# skip: blr
+# cont: mflr r0 ; nop ; <branch-back>
+
+$Noki pollution counting 30Hz gate (120fps Ep.1 perf)
+C219D8C8 0000000D
+548C01CF 41820020
+3D808000 816C16E0
+396B0001 916C16E0
+71600003 4082003C
+4800003C 548C018D
+41820034 548C863F
+40820014 3D808000
+816C16E4 396B0001
+916C16E4 3D808000
+816C16E4 71600003
+40820008 48000008
+4E800020 7C0802A6
+60000000 00000000

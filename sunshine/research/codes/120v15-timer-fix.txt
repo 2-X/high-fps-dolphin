@@ -1,0 +1,40 @@
+# $Game-clock fix v15 (120fps) — race/countdown timers run 2x real time
+#
+# SYMPTOM: blooper-surfing (squid) race timer sprints ahead — user loses with
+# 1m29s despite a winning pace. Same for every HUD clock (Piantissimo races,
+# timed-switch countdowns, time-limit missions).
+#
+# ROOT CAUSE (USA GMSE01, proven by disasm): SMS game clocks are NOT frame
+# counters. They all read ONE OS-tick stopwatch: TMarDirector+0xE8
+# ("イベント用ストップウォッチ", string @0x803A283C), via OSCheckStopwatch
+# @0x80348114. Exactly 4 callers, all this stopwatch:
+#   0x80148398  TGCConsole2::setTimer(-1)  — HUD digits + finished/verdict time
+#   0x8028A194  evStartTimer (baseline +0xC8)
+#   0x8028E908  second baseline site
+#   0x802902D0  getRestTime inline — countdown/time-limit checks
+# OSTicks come from the emulated timebase, which at EmulationSpeed=2.0 advances
+# 2x real time -> every clock runs exactly 2x fast (the "4x" family — Poink anim
+# cues etc. — is the separate frame-counter path; clocks are tick-based = 2x).
+#
+# FIX: hook the single blr @0x80348180 (sole exit; r3:r4 = total ticks hi:lo).
+# If the framerate global 0x804167B8 == 2.0f (fps hack active; stock value is
+# 0.5f so the gate self-disables without the fps code), shift the 64-bit tick
+# count right by 1 = exact /2. Baselines and elapsed reads are scaled
+# identically, so subtraction stays consistent. Verdict times (evGetTime) fix
+# up automatically since they derive from the same value.
+#
+#   lis   r5, 0x8041      ; lwz r5, 0x67B8(r5)   # framerate global word
+#   lis   r6, 0x4000      ; cmpw r5, r6          # == 2.0f ?
+#   bne   +0x10 (-> blr)  ; srwi r4, r4, 1       # lo >>= 1
+#   rlwimi r4, r3, 31, 0, 0                      # lo.MSB = hi.LSB
+#   srwi  r3, r3, 1       ; blr                  # hi >>= 1, return
+#
+# At 180 (PC) the factor is 3 — needs the /3 long-division variant from
+# fpspatch.py, NOT this block (gate fails safely there: word is 3.0f != 2.0f).
+$Game-clock fix v15 (120fps timers)
+C2348180 00000005
+3CA08041 80A567B8
+3CC04000 7C053000
+40820010 5484F87E
+5064F800 5463F87E
+4E800020 00000000

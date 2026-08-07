@@ -1,0 +1,32 @@
+$SaveBox: Continue on top (blue coins) [GMSE01]
+04162FC4 3880001D
+04162FE8 3880001D
+04163074 3880001C
+04163098 3880001C
+C215CAC0 00000002
+881A02E9 68000001
+981A02E9 00000000
+
+# Swaps the two options in the in-level save box (blue coin pickup etc.) so
+# "Continue" is the top row / default and "Save and Continue" is the bottom.
+#
+# Mechanism (USA main.dol, RE'd 2026-08-06):
+# - TCardSave::initData copies option labels from /common/2d/savemessage.bmg
+#   into the select-box textboxes: sm1a/sm1b (top row) <- msg 0x1C
+#   "Save and Continue", sm2a/sm2b (bottom row) <- msg 0x1D "Continue".
+#   The four 04 writes flip the li r4,0x1C/0x1D message ids at
+#   0x80162FC4 / 0x80162FE8 (sm1a/b) and 0x80163074 / 0x80163098 (sm2a/b),
+#   so the top row now *displays* Continue.
+# - TCardSave::waitForSelect2 (USA 0x8015C414) case 5 @0x8015CAC0 maps
+#   selection 0 -> param_1 (save, PROGRESS_UNK16) / 1 -> param_2 (close box),
+#   and returns unk2E9 (caller PROGRESS_UNK2A @0x8015A8FC treats r==0 as
+#   "do the save"). The C2 hook flips unk2E9 (+0x2E9, values 0/1) in place of
+#   the original lbz r0,0x2E9(r26), so top row now *acts* as Continue and
+#   bottom as Save. r0 is the target of the replaced insn -> free scratch.
+# - Case 5 runs exactly once per confirm (unk310 always changes -> mode
+#   reset); the card-error path calls waitForSelect2(3,3) so the flip is a
+#   no-op there. sm1/sm2 panes + waitForSelect2 are used ONLY by this
+#   2-option box: pause-menu save, file select, 3-option and BM boxes use
+#   different panes/functions (sm3+, unkF4/unk254 sets). Up=0x2 selects
+#   row 0 (top), default unk2E9=0 -> cursor starts on Continue.
+# - Framerate-independent: safe with or without the 120fps bundle.

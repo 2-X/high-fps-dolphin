@@ -1,0 +1,45 @@
+# $Petey vomit-window fix v16 (120fps) — barf/mouth-open window 4x too short
+#
+# SYMPTOM: in the Petey Piranha fights (Bianco 2 / Bianco 5), the mouth-open
+# window during his goop-barf is so short you can only land water if you were
+# already spraying. Stock window ~4.7s real time; at 120fps ~1.2s.
+#
+# ROOT CAUSE (USA GMSE01, disasm-proven): the spray window is anim-frame-driven.
+# TNerveBPVomit::execute (USA 0x80093284; TU map USA = JP - 0x212E1C, verified
+# against doldecomp GMSJ01 symbols via the nerve-vtable run @0x803b43e0) plays
+# bas anim 0x15 = bosspaku_pollut_start (name table @0x803b4368, returned by
+# getBasNameTable @0x80095480) and sets the "mouth open, sprayable" flag
+# (actor+0x16C = 2) while the anim's current frame (J3DFrameCtrl+0x10) is in
+# (25, 165). TBossPakkun::changeBck (USA 0x8009548C) sets every anim's rate
+# from SMSGetAnmFrameRate (0x802A7BD8 — already corrected by the fps bundle:
+# 0.5 at 120fps), BUT then special-cases anim 0x15 and overwrites the rate with
+# the RAW mSLVomitAnmRate param (params+0x16C):
+#     800955C0  lfs  f31, 0x16c(r3)   ; r3 = params (vt+0x108)
+#     800955C8  bl   getFrameCtrl(0)  ; 0x80238f08
+#     800955CC  stfs f31, 0xc(r3)     ; frameCtrl->rate = param, UNSCALED  <-- hook
+# That param is an absolute rate tuned for stock 30Hz anim ticks. At 120fps
+# CUE_CALC_ANIM fires 4x more often, so pollut_start (and the window inside it)
+# plays 4x fast. This TU (0x8008E000..0x80098F00) is OUTSIDE the region audited
+# for raw-rate consumers during the Poink sweep.
+#
+# FIX: C2 at 0x800955CC. Do the store; if the framerate global 0x804167B8 ==
+# 2.0f (fps hack active at 120; stock 0.5f -> self-disables, 180fps 3.0f ->
+# also disables, matching v15's gate), subtract 2 from the stored float's
+# exponent (addis -0x100 on the raw bits) = exact *0.25. Valid because the
+# rate is always a positive normal float (anim must advance). 0.25 * 120Hz =
+# stock 30Hz real-time pacing; nerve spine timers are substep-invariant, so
+# the whole attack sequence returns to stock timing. r5/r6 dead here (proven
+# by liveness scan of changeBck tail).
+#
+#   stfs f31, 0xc(r3)      ; original
+#   lis r5, 0x8041 ; lwz r5, 0x67B8(r5)   ; framerate global
+#   lis r6, 0x4000 ; cmpw r5, r6          ; == 2.0f ?
+#   bne +0x10 (-> pad/branch-back)
+#   lwz r5, 0xc(r3) ; addis r5, r5, -0x100 ; stw r5, 0xc(r3)  ; rate *= 0.25
+$Petey vomit-window fix v16 (120fps)
+C20955CC 00000005
+D3E3000C 3CA08041
+80A567B8 3CC04000
+7C053000 40820010
+80A3000C 3CA5FF00
+90A3000C 00000000

@@ -1,0 +1,78 @@
+# $Blue coin timer fix v5 (120fps) [GMSE01] — SHIPPABLE, fps-gated parity.
+#
+# STATUS (2026-08-07): structurally correct (assembled + statically verified by
+# coinhook_assemble.py build_v5_gated; the layout invariant that killed v1..v4 is
+# now enforced). Needs one in-game confirm in Ricco Harbor (spray an M/X spot,
+# time the blue coin ~ should last ~16s not ~4s, no crash).
+#
+# ---------------------------------------------------------------------------
+# THE v1..v4 CRASH ROOT CAUSE (the real, subtler lesson):
+#   The Gecko C2 handler overwrites the LAST word of the block with its
+#   branch-back. Every OTHER 00000000 in the block is a LIVE cave word; if any
+#   path FALLS INTO or BRANCHES TO it, the CPU executes 0x00000000 ->
+#   "IntCPU: Unknown instruction 00000000 at PC = 800026xx".
+#   v1..v3a fell THROUGH into a dead 00000000. The prior "v4" fixed the fall-
+#   through but branched to the *second-to-last* 00000000 (pad pointed one word
+#   early) — still a dead zero -> same crash.
+#   CORRECT RULE: every path must converge on the *last* word (the branch-back),
+#   either by fall-through or by a branch that targets exactly that word. There
+#   must be only ONE 00000000 in the block (the last). For an even word count,
+#   pad the interior with nop (60000000), never a second 00000000.
+#   (coinhook_assemble.py now asserts this: no interior 00000000 allowed.)
+# ---------------------------------------------------------------------------
+#
+# SYMPTOM: blue coins that spawn when you spray an M/X spot (Ricco Harbor worst
+# case) vanish ~4x too fast at 120fps — the ~16s window collapses to ~4s.
+#
+# ROOT CAUSE (USA GMSE01, from sms-decomp src/MoveBG/Item.cpp + disasm): the
+# disappearing coin's lifetime is a FRAME COUNTER, not a stopwatch.
+# TCoin::perform (USA 0x801BE7CC) runs every CUE_MOVE substep; when
+# isStateTimerEngaged() (mStateTimer>0, field @ TItem+0x104) it does:
+#     0x801BE878  lwz  r3, 0x104(r29)   # load mStateTimer
+#     0x801BE87C  addi r0, r3, -1       # --mStateTimer
+#     0x801BE880  stw  r0, 0x104(r29)   # <-- HOOK ANCHOR (replaced by C2)
+#     0x801BE884  b    0x801BE908       # -> getColNum/touchActor (Item.cpp:287)
+# Seeded from unk14C=480 (TItem::initMapObj). At 120fps the substep runs 4x/frame
+# so the 480-tick lifetime drains in ~1 real sec. Same bug class as Poink flyTimer.
+#
+# FIX: fps-gated parity on the decrement. Gate self-disables unless the framerate
+# global 0x804167B8 == 2.0f (the 120fps signal; stock is 0.5f, so it's a no-op at
+# stock and at 180/240 where the word is 3.0f/4.0f). At 120fps, decrement only on
+# even gpMarDirector->unk5C substeps (the proven 60Hz parity from fpspatch.py
+# _parity_block) -> mStateTimer ticks once per stock frame -> real-time lifetime.
+#
+# Registers at the anchor: r0=newTimer (dead), r3=oldTimer (dead), r29=this
+# (live). Gate uses r6/r7, parity uses r5 — all dead/safe here. r4 must NOT be
+# touched (clobbering it crashes; established in prior RE).
+#
+#   lis    r6,0x8041 ; lwz r6,0x67B8(r6)   # framerate global
+#   lis    r7,0x4000 ; cmpw r6,r7          # == 2.0f (120fps) ?
+#   bne    STORE_DEC                        # not 120fps -> stock decrement
+#   lwz    r5,-0x6048(r13)                  # gpMarDirector
+#   cmplwi r5,0 ; beq STORE_DEC             # no director -> stock decrement
+#   lwz    r5,0x5C(r5) ; andi. r5,r5,1      # unk5C substep parity (test in r5:
+#   bne    HOLD                             #   r0=oldTimer-1 / r3=oldTimer MUST survive!)
+# STORE_DEC: stw r0,0x104(r29) ; b END      # even/non-120: real --mStateTimer
+# HOLD:      stw r3,0x104(r29)              # hold old value; falls into branch-back
+# END:  (nop) 00000000                      # handler overwrites last word
+#
+# LIMITATIONS:
+#  * Halves the rate (1-bit parity) — exactly right for 120fps only. 180/240 would
+#    need modulo-3/4 (and the 2.0f gate constant bumped). Those framerates fall
+#    back to stock decrement here (gate fails safe).
+#  * Hooks ONLY TCoin::perform (0x801BE880); the sibling state-timer @0x801AFCCC
+#    (different actor) is untouched.
+#  * Parity relies on gpMarDirector->unk5C being the substep counter (same field
+#    the shipping emitter fix uses). If the coin ends up 2x too slow/fast rather
+#    than crashing, re-verify unk5C semantics at this call site at runtime.
+#
+$Blue coin timer fix v5 (120fps) [GMSE01]
+C21BE880 00000008
+3CC08041 80C667B8
+3CE04000 7C063800
+4082001C 80AD9FB8
+28050000 41820010
+80A5005C 70A50001
+4082000C 901D0104
+48000008 907D0104
+60000000 00000000

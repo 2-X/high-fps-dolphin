@@ -1,0 +1,13 @@
+$Poink flight collision-gate v13 (Bianco5 high-fps)
+# TPopo Fly::execute hook @ 0x800e6228. At 120fps the collision system samples
+# 4x more often and clears the "in-flight" latch (+0xF0 bit0x80) on a thin contact
+# that stock's 30Hz check flies past -> Poink explodes ~tick 9 (887u) instead of
+# reaching Petey. Fix: re-heal bit0x80 in memory while flyTimer(+0x19C) < 30, so the
+# pig clears the contact zone; after tick 30 a real Petey collision still ends flight.
+# Diagnosis: fill=2.497(full), |v|=110.85(matches releaseSpeed formula), vel.y=+31(up),
+# Fly->Explosion timer=9 with flyLimit=1000 -> premature collision, not fill/aim/timer.
+C20E6228 00000004
+801F00F0 819F019C
+2C0C001E 4080000C
+60000080 901F00F0
+60000000 00000000

@@ -1,0 +1,78 @@
+# !!! STATUS (2026-08-07): THIS CODE CRASHES. DO NOT INSTALL AS-IS.
+# The mechanism, addresses, and RE below are all CORRECT (verified against the
+# running disc's dol). The crash is a Gecko C2 LAYOUT bug: the block's
+# "storeR3" path falls through `nop; nop` into the trailing `00000000` pad,
+# which the CPU executes as an instruction -> "Unknown instruction 00000000".
+# See HANDOFF-BLUECOIN-TIMER.md for the root-cause analysis and the v4 fix
+# (must END EVERY CODE PATH with an explicit branch, never fall into the pad).
+#
+# Crash signature in Dolphin:
+#   IntCPU: Unknown instruction 00000000 at PC = 800026xx  LR = 802fccec
+# (PC in the 0x80002xxx range = inside the Gecko code handler's cave.)
+
+$Blue coin timer fix v1 (120fps) [GMSE01] [CRASHES — see header]
+C21BE880 00000009
+3CA08041 80A567B8
+3CC04000 7C053000
+4082001C 808D9FB8
+28040000 41820010
+8084005C 70800001
+4082000C 901D0104
+48000008 907D0104
+60000000 60000000
+00000000 00000000
+
+# SYMPTOM: The blue coins that spawn when you spray a spot (the ones in front of
+# the "M" / "X" marks, esp. Ricco Harbor) vanish far too quickly at 120fps — you
+# race the timer and lose before you can reach them. Same for any timed coin
+# (TCoin/TCoinBlue): the disappear countdown ticks ~4x too fast, so the ~16s
+# stock window collapses to ~4s of real time.
+#
+# ROOT CAUSE (USA GMSE01, proven from sms-decomp src/MoveBG/Item.cpp + disasm):
+# The disappearing coin's lifetime is a FRAME COUNTER, not a stopwatch.
+# TCoin::perform (USA 0x801BE7CC) runs every CUE_MOVE substep. When
+# isStateTimerEngaged() (mStateTimer > 0, field @ TItem+0x104), it does:
+#
+#     0x801BE878  lwz  r3, 0x104(r29)      # load mStateTimer
+#     0x801BE87C  addi r0, r3, -1          # --mStateTimer
+#     0x801BE880  stw  r0, 0x104(r29)      # <-- hook anchor (the store)
+#     0x801BE884  b    0x801BE908          # -> getColNum/touchActor loop
+#                                          (Item.cpp:287-289, confirmed)
+#
+# mStateTimer is seeded from unk14C=480 (TItem::initMapObj @0x801BBAB8/0x801BE68C,
+# li r0,0x1E0; stw r0,0x14C(r31); li r0,0x78; stw r0,0x150(r31)). At 30fps the
+# substep runs once/frame; at 120fps it runs 4x/frame -> the 480-tick lifetime
+# drains in ~1 real sec instead of ~16. (Same bug class as Poink flyTimer; the
+# clock fix in 120v15 is unrelated — that covers the stopwatch-based race timers.)
+#
+# FIX: parity-gate the decrement so it ticks once per STOCK frame, not once per
+# substep. Hook the store @0x801BE880. At entry r0=newTimer (old-1), r3=oldTimer,
+# r29=this; r4/r5/r6 are free here (all dead until 0x801BE8DC in a sibling branch,
+# then r4/r12 at 0x801BE920+ which is past our branch target 0x801BE908).
+#
+#   lis   r5,0x8041 ; lwz r5,0x67B8(r5)   # framerate global (float(FPS/60))
+#   lis   r6,0x4000                       # 2.0f
+#   cmpw  r5,r6 ; bne  storeR0            # not 120fps -> stock behavior
+#   lwz   r4,-0x6048(r13)                 # gpMarDirector (0x8040E178)
+#   cmplwi r4,0 ; beq storeR0             # no director (boot edge) -> stock
+#   lwz   r4,0x5C(r4)                     # gpMarDirector->unk5C (substep counter)
+#   andi. r0,r4,1 ; bne storeR3           # ODD substep -> hold value (no dec)
+# storeR0: stw r0,0x104(r29) ; b end      # even substep (or non-120): real --
+# storeR3: stw r3,0x104(r29)              # odd substep @120: store OLD value
+# end:    nop ; nop ; 00000000            # branch-back pad
+#
+# Parity idiom (unk5C & 1) is the same proven gate the shipping emitter fix
+# (fpspatch.py _parity_block) uses to advance particle emitters at exactly 60Hz.
+# Net at 120fps: mStateTimer decrements once per 2 substeps = once per stock
+# frame -> coin lifetime matches real-time 30fps play.
+#
+# GATING / SAFETY:
+#  * Self-disables at stock: global is 0.5f != 2.0f -> bne taken -> storeR0 only.
+#  * Self-disables at other FPS (180/240): global != 2.0f -> same. For 180 you'd
+#    need a modulo-3 counter (see TODO) and the lis r6 constant bumped to 3.0f.
+#  * Scope: hooks ONLY TCoin::perform's decrement (0x801BE880), not the other
+#    state-timer site at 0x801AFCCC (a different actor) — that one is untouched.
+#  * Framerate-independent otherwise; safe to stack with the 120fps bundle.
+#
+# TODO if 180/240 are needed: replace the andi./bne parity with a modulo on a
+# 2-bit/3-bit counter (G from the global), and change lis r6 to float(G).
