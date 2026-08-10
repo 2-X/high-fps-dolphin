@@ -263,13 +263,18 @@ ANMRATE_STUB = """042A7BD8 C0228028
 #
 # The threshold is the one rate-dependent constant. A frame runs a substep when
 # remainder + 10 >= quantum, i.e. remainder >= 5G - 10. The shipped v9 hardcoded
-# 5, which is exactly 5*3-10 — correct at G=3 and nowhere else. At G=2 the
-# threshold must be 0: the remainder is always 0 there (one substep per frame),
-# so a literal 5 would skip the pad read on EVERY frame and kill input entirely.
-# That is why this is opt-in: the generalization is derived, not yet confirmed
-# in-game.
+# 5, which is exactly 5*3-10 — correct at G=3 and nowhere else. CONFIRMED
+# IN-GAME at G=3 (PC, 2026-08-09): the 180fps bundle shipped WITHOUT this block
+# and the dropped-inputs bug returned immediately (~6/10 edge presses lost);
+# re-adding the identical block fixed it — so this is default-on now, not
+# opt-in. At G=2 the threshold is 0 and the remainder is always 0 (every frame
+# runs a substep), so there are no skip frames to guard: the gate is
+# unreachable, and emitting it would only waste cave words — return None.
+# Only valid alongside substep_granularity(g), which pins budget=10/quantum=5G.
 def input_latch(g):
     thresh = 5 * g - 10
+    if thresh <= 0:
+        return None
     words = [0x807F0004, 0x2C030000, 0x4182005C,      # mDirector; null -> read()
              0x80830000, 0x3CA0803D, 0x60A5F0C8,      # vptr vs TMarDirector vtable
              0x7C042800, 0x40820048,                  # not TMarDirector -> read()
@@ -661,7 +666,7 @@ def integer_g(fps):
 
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
-          cogwheel=True, input_latch_fix=False):
+          cogwheel=True, input_latch_fix=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -670,8 +675,11 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     if substep:
         # the stub is only valid while the substep retune pins the sim at 120 Hz
         parts += [substep_granularity(gate_g), ANMRATE_STUB]
-    if input_latch_fix:
-        parts.append(input_latch(gate_g))
+        if input_latch_fix:
+            # the latch predicate reads the retuned accumulator — substep only
+            il = input_latch(gate_g)
+            if il:
+                parts.append(il)
     tf = timerfix(fps)
     if tf:
         parts.append(tf)
@@ -842,6 +850,27 @@ def check(bundle, fps=None):
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
 
+    # Input pad-latch gate (v9): a frame runs a substep when remainder >= 5G-10,
+    # so the gate's cmpwi must carry exactly that threshold. Its absence at G>=3
+    # (with the substep retune present) is the shipped-2026-08-09 regression:
+    # pad latch advances every rendered frame, sim consumes 2 of 3 -> ~1 in 3
+    # edge inputs silently eaten.
+    body = codes.get(("C2", 0x802A600C))
+    latch_thresh = 5 * gate_g - 10
+    if body is not None:
+        if latch_thresh <= 0:
+            errs.append(f"input latch emitted at G={gate_g} — threshold 5G-10 <= 0 "
+                        f"means there are no skip frames; the block is dead cave weight")
+        elif (0x2C040000 | (latch_thresh & 0xFFFF)) not in body:
+            got = next((w for w in body if (w >> 16) == 0x2C04), None)
+            errs.append(f"input latch @0x802A600C: threshold word "
+                        f"{got and f'{got:08X}'} != cmpwi r4,{latch_thresh} "
+                        f"(5G-10 at G={gate_g})")
+    elif latch_thresh > 0 and ("04", 0x8029985C) in codes:
+        errs.append(f"input latch MISSING at G={gate_g} with the substep retune "
+                    f"present — edge inputs will drop on skip frames (the "
+                    f"2026-08-09 dropped-inputs regression)")
+
     # Cogwheel SE gate: the divisor is a CONSTANT 4 at every fps (substeps are
     # pinned at 120 Hz; 120/30 native = 4), and each gated path must exit through
     # the game's own SE-skip target, encoded as lis/ori of that exact address.
@@ -882,7 +911,7 @@ def main():
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
     ap.add_argument("--no-cogwheel", action="store_true", help="omit the Noki urn-lift rope-creak SE cadence gate (constant 1-in-4 substeps)")
-    ap.add_argument("--input-latch", action="store_true", help="lock pad reads to sim frames (v9); threshold 5G-10 is derived, NOT yet confirmed in-game")
+    ap.add_argument("--no-input-latch", action="store_true", help="omit the v9 pad-latch gate (pad reads locked to sim frames; confirmed in-game at 180fps 2026-08-09 — omitting it drops ~1 in 3 edge inputs at G>=3)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -896,7 +925,7 @@ def main():
                    stars=not a.no_stars, sun_probe=a.sun_probe,
                    noki=not a.no_noki, poink=not a.no_poink,
                    bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
-                   input_latch_fix=a.input_latch)
+                   input_latch_fix=not a.no_input_latch)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)

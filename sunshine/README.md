@@ -39,7 +39,10 @@ on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the 
 > - `dolphin-config/GameSettings/GMSE01.ini` is now the **PC 180fps** config:
 >   `EmulationSpeed = 3.0`, enabled set = `$SMS 180fps bundle (fpspatch, no-ForceOpen)`
 >   (fpspatch-generated, capstone-validated; absorbs TRUE-FIX/glow, BGM, StarFix v4,
->   game-clock v15, Poink v14, Petey v16/anmrate, Noki 30Hz gate + dedupe, cogwheel SE)
+>   game-clock v15, Poink v14, Petey v16/anmrate, Noki 30Hz gate + dedupe, cogwheel SE,
+>   and — since 2026-08-09 — the v9 input pad-latch gate, now default-on in fpspatch at
+>   G>=3: the first PC 180 session shipped a bundle without it and the dropped-inputs
+>   bug returned instantly, ~6/10 edge presses; --check now flags a latch-less G>=3 bundle)
 >   **plus** the rate-agnostic QoL codes `$SaveBox: Continue on top`,
 >   `$Camera look-up extension v10`, `$FOV 62 [kris]`. Do NOT additionally enable the
 >   individual 120fps-era codes — the bundle already contains them (duplicate C2 hooks
