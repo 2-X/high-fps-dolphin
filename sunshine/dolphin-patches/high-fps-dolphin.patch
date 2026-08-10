@@ -1,8 +1,136 @@
+diff --git a/Source/Core/Core/Config/GraphicsSettings.cpp b/Source/Core/Core/Config/GraphicsSettings.cpp
+index f91b87e490..a5beac8638 100644
+--- a/Source/Core/Core/Config/GraphicsSettings.cpp
++++ b/Source/Core/Core/Config/GraphicsSettings.cpp
+@@ -57,6 +57,8 @@ const Info<bool> GFX_SHOW_NETPLAY_MESSAGES{{System::GFX, "Settings", "ShowNetPla
+ const Info<bool> GFX_LOG_RENDER_TIME_TO_FILE{{System::GFX, "Settings", "LogRenderTimeToFile"},
+                                              false};
+ const Info<bool> GFX_OVERLAY_STATS{{System::GFX, "Settings", "OverlayStats"}, false};
++const Info<bool> GFX_OVERLAY_STATS_COLLAPSED{{System::GFX, "Settings", "OverlayStatsCollapsed"},
++                                             false};
+ const Info<bool> GFX_OVERLAY_PROJ_STATS{{System::GFX, "Settings", "OverlayProjStats"}, false};
+ const Info<bool> GFX_OVERLAY_SCISSOR_STATS{{System::GFX, "Settings", "OverlayScissorStats"}, false};
+ const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION{{System::GFX, "Settings", "ShowInternalResolution"},
+diff --git a/Source/Core/Core/Config/GraphicsSettings.h b/Source/Core/Core/Config/GraphicsSettings.h
+index 502d2f0764..324064c3b6 100644
+--- a/Source/Core/Core/Config/GraphicsSettings.h
++++ b/Source/Core/Core/Config/GraphicsSettings.h
+@@ -59,6 +59,7 @@ extern const Info<bool> GFX_SHOW_NETPLAY_PING;
+ extern const Info<bool> GFX_SHOW_NETPLAY_MESSAGES;
+ extern const Info<bool> GFX_LOG_RENDER_TIME_TO_FILE;
+ extern const Info<bool> GFX_OVERLAY_STATS;
++extern const Info<bool> GFX_OVERLAY_STATS_COLLAPSED;
+ extern const Info<bool> GFX_OVERLAY_PROJ_STATS;
+ extern const Info<bool> GFX_OVERLAY_SCISSOR_STATS;
+ extern const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION;
+diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
+index 5db3c55aa8..1694ce8432 100644
+--- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
++++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
+@@ -250,6 +250,17 @@ void ZeldaUCode::HandleMailDefault(u32 mail)
+     }
+     else
+     {
++      // [hifps] A voice-skip-flag sync mail landing here (HLE thinks rendering
++      // already ended) gets misread as a command header and desyncs the whole
++      // mail protocol. Real command lists are short; flag words are dense
++      // bitmasks, so an implausible length is the tell.
++      if ((mail & 0xFFFF) > 16)
++      {
++        WARN_LOG_FMT(DSPHLE,
++                     "[hifps] WAITING-state mail {:08x} looks like a stray sync mail misread as "
++                     "a command header ({} arg mails expected) - protocol desync!",
++                     mail, mail & 0xFFFF);
++      }
+       SetMailState(MailState::WRITING_CMD);
+       m_mail_expected_cmd_mails = mail & 0xFFFF;
+     }
+@@ -506,6 +517,15 @@ void ZeldaUCode::RunPendingCommands()
+     case 0x02:
+       m_rendering_requested_frames = (cmd_mail >> 16) & 0xFF;
+       m_renderer.SetOutputVolume(cmd_mail & 0xFFFF);
++      // [hifps] The DSP-side master output volume arrives here every audio
++      // frame; log only changes. A silent level with volume 0 here (while the
++      // game-side SM_MAIN_VOLUME reads 0.75) would pin the bug on this value.
++      if ((cmd_mail & 0xFFFF) != m_dbg_last_output_volume)
++      {
++        NOTICE_LOG_FMT(DSPHLE, "[hifps] cmd02 output volume {:#x} -> {:#x} (frames/cmd={})",
++                       m_dbg_last_output_volume, cmd_mail & 0xFFFF, m_rendering_requested_frames);
++        m_dbg_last_output_volume = cmd_mail & 0xFFFF;
++      }
+       m_renderer.SetOutputLeftBufferAddr(Read32());
+       m_renderer.SetOutputRightBufferAddr(Read32());
+ 
+@@ -639,7 +659,14 @@ void ZeldaUCode::RenderAudio()
+       u16 flags = m_sync_voice_skip_flags[m_rendering_curr_voice >> 4];
+       u8 bit = 0xF - (m_rendering_curr_voice & 0xF);
+       if (flags & (1 << bit))
++      {
+         m_renderer.AddVoice(m_rendering_curr_voice);
++        m_dbg_voices_added++;
++      }
++      else
++      {
++        m_dbg_voices_skipped++;
++      }
+ 
+       m_rendering_curr_voice++;
+     }
+@@ -652,6 +679,21 @@ void ZeldaUCode::RenderAudio()
+     m_rendering_curr_voice = 0;
+     m_sync_max_voice_id = 0;
+     m_rendering_curr_frame++;
++
++    // [hifps] Periodic mixer heartbeat: a silent level with a healthy heartbeat
++    // but voices_added==0 means the sync/skip flags are wrong (BGM voices never
++    // mixed); no heartbeat at all means the ucode stopped rendering (HALTED or
++    // protocol desync). ~256 frames = a few wall-clock seconds at speed 2.0.
++    if (++m_dbg_frames_rendered % 256 == 0)
++    {
++      NOTICE_LOG_FMT(DSPHLE,
++                     "[hifps] frames={} voices added={} skipped={} (last 256 frames) "
++                     "voices/frame={} sync_second_half={}",
++                     m_dbg_frames_rendered, m_dbg_voices_added, m_dbg_voices_skipped,
++                     m_rendering_voices_per_frame, m_sync_flags_second_half);
++      m_dbg_voices_added = 0;
++      m_dbg_voices_skipped = 0;
++    }
+   }
+ 
+   if (!(m_flags & LIGHT_PROTOCOL))
+diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
+index ce712519d5..0cea573793 100644
+--- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
++++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
+@@ -293,6 +293,14 @@ private:
+   }
+   void RenderAudio();
+ 
++  // [hifps] Instrumentation for the 120fps level-BGM coin-toss silence
++  // (sunshine/HANDOFF-MUSIC-BUG.md): rendered-frame / voice counters logged
++  // periodically from RenderAudio(), plus last cmd02 output volume.
++  u32 m_dbg_frames_rendered = 0;
++  u32 m_dbg_voices_added = 0;
++  u32 m_dbg_voices_skipped = 0;
++  u32 m_dbg_last_output_volume = 0xFFFFFFFF;
++
+   // Main object handling audio rendering logic and state.
+   ZeldaAudioRenderer m_renderer;
+ };
 diff --git a/Source/Core/Core/HW/SystemTimers.cpp b/Source/Core/Core/HW/SystemTimers.cpp
-index 1790a97f05..2f08e13039 100644
+index 1790a97f05..2426c5a81d 100644
 --- a/Source/Core/Core/HW/SystemTimers.cpp
 +++ b/Source/Core/Core/HW/SystemTimers.cpp
-@@ -78,8 +78,15 @@ void SystemTimersManager::DSPCallback(Core::System& system, u64 userdata, s64 cy
+@@ -44,6 +44,8 @@ IPC_HLE_PERIOD: For the Wii Remote this is the call schedule:
+ 
+ #include "Core/HW/SystemTimers.h"
+ 
++#include <cstdlib>
++
+ #include "AudioCommon/Mixer.h"
+ #include "Common/CommonTypes.h"
+ #include "Common/Timer.h"
+@@ -78,8 +80,18 @@ void SystemTimersManager::DSPCallback(Core::System& system, u64 userdata, s64 cy
  static int GetAudioDMACallbackPeriod(u32 cpu_core_clock, u32 aid_sample_rate_divisor)
  {
    // System internal sample rate is fixed at 32KHz * 4 (16bit Stereo) / 32 bytes DMA
@@ -13,8 +141,11 @@ index 1790a97f05..2f08e13039 100644
 +  // Route A high-fps audio compensation: when the console is run faster than real-time to
 +  // render high framerates (EmulationSpeed > 1), slow the audio subsystem by the same factor
 +  // so DSP/AI audio plays at correct wall-clock tempo instead of N* fast.
++  // HIFPS_NO_AUDIO_SLOWDOWN=1 disables the scaling (audio 2x fast) — isolation test for the
++  // level-BGM coin-toss silence, see sunshine/HANDOFF-MUSIC-BUG.md §4.3.
++  static const bool s_no_audio_slowdown = std::getenv("HIFPS_NO_AUDIO_SLOWDOWN") != nullptr;
 +  const float speed = Config::Get(Config::MAIN_EMULATION_SPEED);
-+  if (speed > 1.0f)
++  if (speed > 1.0f && !s_no_audio_slowdown)
 +    period = static_cast<u64>(period * speed);
 +  return static_cast<int>(period);
  }
@@ -395,3 +526,67 @@ index 91ba870967..e4d435093c 100644
  };
  
  }  // namespace VideoCommon
+diff --git a/Source/Core/VideoCommon/Statistics.cpp b/Source/Core/VideoCommon/Statistics.cpp
+index 642df5694a..a212dcf95c 100644
+--- a/Source/Core/VideoCommon/Statistics.cpp
++++ b/Source/Core/VideoCommon/Statistics.cpp
+@@ -8,6 +8,8 @@
+ 
+ #include <imgui.h>
+ 
++#include "Core/Config/GraphicsSettings.h"
++#include "Core/Core.h"
+ #include "Core/DolphinAnalytics.h"
+ #include "Core/HW/SystemTimers.h"
+ #include "Core/System.h"
+@@ -45,11 +47,46 @@ void Statistics::SwapDL()
+ 
+ void Statistics::Display() const
+ {
+-  const float scale = ImGui::GetIO().DisplayFramebufferScale.x;
++  const ImGuiIO& io = ImGui::GetIO();
++  const float scale = io.DisplayFramebufferScale.x;
+   ImGui::SetNextWindowPos(ImVec2(10.0f * scale, 10.0f * scale), ImGuiCond_FirstUseEver);
+-  ImGui::SetNextWindowSizeConstraints(ImVec2(275.0f * scale, 400.0f * scale),
+-                                      ImGui::GetIO().DisplaySize);
+-  if (!ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoNavInputs))
++
++  // The ImGui context is recreated every time emulation starts and its own settings persistence is
++  // disabled (see OnScreenUI), so the collapsed state has to be restored by hand. FirstUseEver
++  // only applies on the window's first frame, leaving later toggles alone.
++  static bool s_collapsed = Config::Get(Config::GFX_OVERLAY_STATS_COLLAPSED);
++  ImGui::SetNextWindowCollapsed(s_collapsed, ImGuiCond_FirstUseEver);
++
++  // ImGui collapses windows vertically only, so a collapsed window's title bar keeps the full
++  // window width and stays draped across the game. Pin the width to the title bar while
++  // collapsed; the minimum size below grows it back when the window is reopened.
++  if (s_collapsed)
++  {
++    const ImGuiStyle& style = ImGui::GetStyle();
++    // Collapse arrow, then the title, with frame padding on either side.
++    const float title_width = style.FramePadding.x * 4.0f + ImGui::GetFontSize() +
++                              style.ItemInnerSpacing.x + ImGui::CalcTextSize("Statistics").x;
++    ImGui::SetNextWindowSizeConstraints(ImVec2(title_width, 0.0f),
++                                        ImVec2(title_width, io.DisplaySize.y));
++  }
++  else
++  {
++    ImGui::SetNextWindowSizeConstraints(ImVec2(275.0f * scale, 400.0f * scale), io.DisplaySize);
++  }
++
++  const bool visible = ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoNavInputs);
++  if (const bool collapsed = ImGui::IsWindowCollapsed(); collapsed != s_collapsed)
++  {
++    s_collapsed = collapsed;
++    // A config write fires every config-changed callback synchronously on the calling thread, and
++    // this runs on the video/CPU thread, so hand the write off to the host thread.
++    Core::QueueHostJob(
++        [collapsed](Core::System&) {
++          Config::SetBase(Config::GFX_OVERLAY_STATS_COLLAPSED, collapsed);
++        },
++        true);
++  }
++  if (!visible)
+   {
+     ImGui::End();
+     return;

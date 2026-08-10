@@ -19,6 +19,9 @@ Rate-INDEPENDENT, and correct as-is at every G:
   * BGM DSP voice-limiter kill + tempo guard; the HUD stars fix
   * the Poink gate — its bare `cmpwi 40` looks rate-tied but flyTimer runs on
     substep-invariant spine ticks, so 40 keeps its stock meaning at every G
+  * the cogwheel rope-creak SE gate — its bare 1-in-4 looks rate-tied but the
+    substep clock it divides is pinned at 120 Hz at every G, so 1-in-4 is the
+    native 30/sec everywhere (same reasoning as the Poink 40)
 
 Deliberately NOT generalized: the blue-coin lifetime fix, calibrated against this
 machine's measured substep rate rather than derived from G, so it is emitted only
@@ -349,6 +352,130 @@ def noki_gate(fps):
     return _c2(0x8019D8C8, w)
 
 
+# ---- Noki gate COMPANION 2: pollution EFB-copy gate (v3, the vanishing-goop fix) --
+# The per-layer pipeline built by TMarDirector::initECTGft is
+#   drawInit -> counting cue (TPollutionManager::perform, GATED) -> TEfbCtrlTex copy
+# The copy is a SEPARATE viewObj: TEfbCtrlTex::perform (USA 0x802f8bac) GXCopyTex's
+# the EFB scratch rect into the layer's pollution image EVERY frame, ungated. On
+# gated frames the sim never drew the rect, so the copy snapshots black scene EFB
+# into the map -> the map zeroes within frames of load ("no goop in the level",
+# landed stamps flash 3-7x then die). Proven 2026-08-09 by [hifps] EFBcopy->RAM
+# logging: every pollution-map flush (fmt=8/I8) was sum=0 nonzero=0 at full frame
+# cadence while the bathwater copy carried real content.
+#
+# FIX: gate the copy to the SAME cadence and phase as the counting. Hook the
+# mImagePtr null-check load in TEfbCtrlTex::perform (USA 0x802F8CF8, verified:
+# lwz r0,0x2c(r29); cmplwi 0; beq exit). Pollution instances are discriminated by
+# mTexFmt(+0x30) == GX_CTF_R8 (0x28) — set only by initECTGft for pollution layers;
+# bathwater (direct GXCopyTex), mirror and stageDisp are untouched. On gated
+# frames force r0=0 so perform's OWN null-check skips the copy; RAM keeps the last
+# pass-frame map. texCtr is read without incrementing, after the layer-0 counting
+# cue already ticked it this frame -> phases match from the first frame.
+def noki_copy_gate(fps):
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)   # r0/r12 free here; r11 = texCtr
+    L = len(gate)
+    i_bne, i_beq, i_b = 2, 5 + L, 7 + L
+    i_load = 8 + L                                 # original lwz r0,0x2c(r29)
+    i_out = 9 + L                                  # falls into the branch-back
+    w = [0x819D0030,                               # lwz    r12,0x30(r29)  mTexFmt
+         0x280C0028,                               # cmplwi r12,0x28       GX_CTF_R8?
+         0x40820000 | (((i_load - i_bne) * 4) & 0xFFFC),
+         0x3D808000,                               # lis    r12,0x8000
+         0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR]  # lwz r11,texCtr
+    w += gate                                      # cr0 <- texCtr % n
+    w += [0x41820000 | (((i_load - i_beq) * 4) & 0xFFFC),      # beq -> allow copy
+          0x38000000,                              # li r0,0: pretend no image
+          0x48000000 | (((i_out - i_b) * 4) & 0x03FFFFFC),     # b past the load
+          0x801D002C]                              # lwz r0,0x2c(r29) (original)
+    return _c2(0x802F8CF8, w)
+
+
+# ---- Noki gate COMPANION: model-stamp dedupe (v2, the Bianco freeze fix) ----
+# Gating TPollutionManager::perform lets pushModelStampTask accumulate G frames
+# of tasks, so the SAME J3DModel is queued up to G times. calcViewMtx then calls
+# model->entry() once per queue slot, and J3D's entry() is a push-front onto an
+# intrusive list: the second entry of the same packet makes packet->next point
+# at itself. J3DDrawBuffer::draw() walks that self-loop forever, streaming one
+# mat packet into the GX FIFO until Dolphin's vertex batch OOMs (~64GB) — the
+# every-time freeze on load in Bianco Ep.1 (any polluted level whose actors
+# stamp models; Noki Bay has none, which is why the gate tested clean there).
+# Root-caused 2026-08-09 from a live FIFO dump: the ring held one ~95-byte
+# packet (CALL DL 80abc880/815fb2e0 + matrix loads) repeating wall-to-wall.
+#
+# FIX: dedupe at the push. Hook pushModelStampTask (USA 0x8019B120, verified:
+# lhz r0,0x28(r3); cmplwi 0x14; bgelr) and scan the queue (slots of 8 at
+# this+0x38) for the incoming model ptr (r5); on a hit, blr — identical to the
+# stock queue-full early-return. Clobbers only volatile r10-r12; ctr untouched
+# (callers may loop on it); exits with r0 = count (the re-executed original).
+# fps-independent: duplicates exist whenever the gate batches frames.
+def noki_dedupe():
+    return _c2(0x8019B120, [
+        0xA0030028,   # lhz   r0,0x28(r3)     original insn; count
+        0x39630038,   # addi  r11,r3,0x38     cursor = &slot[0].mModel
+        0x7C0C0378,   # mr    r12,r0          remaining = count
+        0x280C0000,   # loop: cmplwi r12,0
+        0x4182001C,   # beq   cont
+        0x814B0000,   # lwz   r10,0(r11)
+        0x7C0A2840,   # cmplw r10,r5
+        0x4D820020,   # beqlr                 duplicate -> skip push
+        0x396B0008,   # addi  r11,r11,8
+        0x398CFFFF,   # addi  r12,r12,-1
+        0x4BFFFFE4,   # b     loop
+        0x60000000,   # cont: nop (falls into branch-back)
+    ])
+
+
+# ---- Noki cogwheel-lift rope-creak cadence (the urn pulley SE) ---------------
+# TCogwheel::control (USA 0x801da084) requests MSD_SE_OBJ_MR_TSUBO_PULL (0x3060,
+# JAL registration name "the rope supporting the Mare urn") on EVERY control()
+# tick while the wheel turns (|speed at +0x138| > 0.01), and TCogwheelScale::
+# control (0x801da818) requests MSD_SE_OBJ_MR_TSUBO_WATER (0x3061) every tick
+# while the pot drains. control() runs once per SUBSTEP (movement() in
+# TMarDirector::direct()), i.e. 120 Hz at every G, so the REQUEST rate is
+# rate-invariant — but JAudio collapses the request flood into one audible
+# (re)trigger per PROCESSED FRAME, so the creak fires at the render rate:
+# 30/sec stock, 120/sec at 120fps. That is the "bizarre fast rope ratchet" on
+# the Noki Ep.1 urn lifts.
+#
+# Gate both call sites to 1 substep in 4 on the director's substep counter
+# (gpMarDirector+0x5C, the same counter the particle parity gate reads): at
+# most one request per 4 substeps = 30/sec at EVERY G. The divisor is the
+# CONSTANT 120/30 = 4, not a function of G, because the substep retune pins
+# substeps at 120 Hz regardless of framerate (same reasoning as the Poink 40).
+# A shared per-object-blind counter would break with two lifts moving at once;
+# the global substep counter gives every instance the same 1-in-4 phase.
+# Gated ticks jump to the branch target the game itself uses when its own SE
+# category check fails (pure epilogue 0x801da22c / merge point 0x801da89c).
+# Clobbers only r12/ctr/cr0 — all dead at both hook points (cr0 was consumed
+# by the preceding ble, ctr is unused in both functions, r12 is volatile with
+# no local use between prologue and the SE bl).
+COGWHEEL_HOOKS = (
+    # (hook,      game's SE-skip target, overwritten original instruction)
+    (0x801DA1E8, 0x801DA22C, 0xC002DA10),   # TCogwheel:      TSUBO_PULL  (lfs f0,-0x25f0(r2))
+    (0x801DA860, 0x801DA89C, 0x806D9FBC),   # TCogwheelScale: TSUBO_WATER (lwz r3,-0x6044(r13))
+)
+
+def cogwheel_se_gate():
+    def block(hook, skip, orig):
+        return _c2(hook, [
+            0x818D9FB8,                      # lwz    r12,-0x6048(r13)  gpMarDirector
+            0x280C0000,                      # cmplwi r12,0             null: fail-open
+            0x41820020,                      # beq    CONT
+            0x818C005C,                      # lwz    r12,0x5C(r12)     substep counter
+            0x718C0003,                      # andi.  r12,r12,3
+            0x41820014,                      # beq    CONT              1-in-4: request the SE
+            0x3D800000 | (skip >> 16),       # lis    r12,hi(skip)
+            0x618C0000 | (skip & 0xFFFF),    # ori    r12,r12,lo(skip)
+            0x7D8903A6,                      # mtctr  r12
+            0x4E800420,                      # bctr   -> game's own SE-skip path
+            orig,                            # CONT: the overwritten original
+        ])
+    return "\n".join(block(*h) for h in COGWHEEL_HOOKS)
+
+
 # ---- Poink premature-explosion gate (v14, Bianco 5) -------------------------
 # Poink's flight is ended early by an anim-cue-driven push to the Explosion
 # nerve at flyTimer ~9; stock fires at ~36, far enough to reach Petey. Hook
@@ -534,7 +661,7 @@ def integer_g(fps):
 
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
-          input_latch_fix=False):
+          cogwheel=True, input_latch_fix=False):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -556,10 +683,14 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         parts.append(STARFIX)
     if poink:
         parts.append(POINK)
+    if cogwheel:
+        parts.append(cogwheel_se_gate())       # constant 1-in-4; see COGWHEEL_HOOKS
     if noki:
         ng = noki_gate(fps)
         if ng:
             parts.append(ng)
+            parts.append(noki_dedupe())        # REQUIRED companion — see noki_dedupe
+            parts.append(noki_copy_gate(fps))  # REQUIRED companion — see noki_copy_gate
     if bluecoin and g == 2:                    # calibrated at G=2 only — see BLUECOIN
         parts.append(BLUECOIN)
     if sun_probe:
@@ -711,6 +842,30 @@ def check(bundle, fps=None):
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
 
+    # Cogwheel SE gate: the divisor is a CONSTANT 4 at every fps (substeps are
+    # pinned at 120 Hz; 120/30 native = 4), and each gated path must exit through
+    # the game's own SE-skip target, encoded as lis/ori of that exact address.
+    for hook, skip, orig in COGWHEEL_HOOKS:
+        body = codes.get(("C2", hook))
+        if body is None:
+            continue
+        n = _implied_divisor(body, ctr=12)
+        if n != 4:
+            errs.append(f"cogwheel gate @{hook:08X}: encodes 1-in-{n}, expected the "
+                        f"constant 1-in-4 (substeps are 120 Hz at every G)")
+        target = None
+        for j, w in enumerate(body[:-1]):
+            if (w >> 26) == 15 and ((w >> 21) & 31) == 12 and j + 1 < len(body):
+                nxt = body[j + 1]                     # lis r12,hi ; ori r12,r12,lo
+                if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
+                    target = ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
+        if target != skip:
+            errs.append(f"cogwheel gate @{hook:08X}: skip target {target and f'{target:08X}'}"
+                        f" != the game's own SE-skip path {skip:08X}")
+        if body[-2] != orig:
+            errs.append(f"cogwheel gate @{hook:08X}: overwritten-original slot holds "
+                        f"{body[-2]:08X}, expected {orig:08X}")
+
     return n_c2, errs
 
 
@@ -726,6 +881,7 @@ def main():
     ap.add_argument("--no-noki", action="store_true", help="omit the Noki pollution-counting gate (native 30Hz, divisor FPS/30)")
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
+    ap.add_argument("--no-cogwheel", action="store_true", help="omit the Noki urn-lift rope-creak SE cadence gate (constant 1-in-4 substeps)")
     ap.add_argument("--input-latch", action="store_true", help="lock pad reads to sim frames (v9); threshold 5G-10 is derived, NOT yet confirmed in-game")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
@@ -739,7 +895,8 @@ def main():
                    substep=not a.no_substep, audio=not a.no_audio,
                    stars=not a.no_stars, sun_probe=a.sun_probe,
                    noki=not a.no_noki, poink=not a.no_poink,
-                   bluecoin=not a.no_bluecoin, input_latch_fix=a.input_latch)
+                   bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
+                   input_latch_fix=a.input_latch)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)

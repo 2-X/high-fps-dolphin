@@ -14,3 +14,8 @@ dolphin-bin/
 vr-bin/
 __pycache__/
 *.ini.bak
+
+# upscale experiment blobs — regenerable, keep out of history
+sunshine/research/preview-work/
+sunshine/research/tools/
+sunshine/research/thp-assets/

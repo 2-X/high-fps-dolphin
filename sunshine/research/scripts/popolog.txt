@@ -1,2 +1,2117 @@
-[03:51:59] popolog armed — waiting for Dolphin + SMS boot
-[03:52:28] popolog armed - waiting for Dolphin + SMS boot
+[01:46:30] popolog armed - waiting for Dolphin + SMS boot
+[01:46:30] ATTACHED to Dolphin pid 9024, MEM1 @ 0x125cb4000 — now enter Bianco 5 and latch a Poink
+[01:46:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[01:46:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[01:46:46] found 10 TPopo instance(s): 0x8163fa88 0x816446e8 0x81646a18 0x81648d58 0x8164b098 0x8164d3d8 0x8164f718 0x81651a58 0x81653d98 0x816560d8
+[01:46:46] params: releaseSpeed=80.0 flyLimit=1000 scaleMax=2.5 pumpRate=0.000080 levelLimit=1.2000000476837158
+[01:47:51] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3680,6286,-8190)
+[01:47:52] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3855,6372,-8228)
+[01:48:08] popo 0x816446e8: PossessedNozzle fill=1.036 timer=0 |v|=40.22
+[01:48:08] popo 0x816446e8: PossessedNozzle fill=1.083 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.123 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.182 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.230 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.277 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.325 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.384 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.431 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.491 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.550 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: PossessedNozzle fill=1.585 timer=0 |v|=40.22
+[01:48:09] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=1.577 timer=5 pos=(-1829,6350,-5746)
+[01:48:09]   LAUNCH: vel=(-11.20,-3.99,61.58) |v|=62.72 fill=1.577 marioDist=8758
+[01:48:09]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:09]     >>> left Fly -> Explosion at t=11
+[01:48:09] popo 0x816446e8: nerve Fly -> Explosion  fill=1.563 timer=14 pos=(-1941,6310,-5130)
+[01:48:09]   FLIGHT END after 0.09s real, distance=627 units, end-timer=5 -> Explosion
+[01:48:10] popo 0x816446e8: nerve Explosion -> Fly  fill=1.559 timer=17 pos=(-1997,6288,-4823)
+[01:48:10]   LAUNCH: vel=(-11.20,-4.44,61.58) |v|=62.75 fill=1.559 marioDist=8172
+[01:48:10]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=19 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=20 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     >>> left Fly -> Explosion at t=20
+[01:48:10] popo 0x816446e8: nerve Fly -> Explosion  fill=1.549 timer=23 pos=(-2076,6257,-4391)
+[01:48:10]   FLIGHT END after 0.06s real, distance=439 units, end-timer=17 -> Explosion
+[01:48:10] popo 0x816446e8: nerve Explosion -> Fly  fill=1.545 timer=26 pos=(-2121,6238,-4145)
+[01:48:10]   LAUNCH: vel=(-11.20,-4.74,61.58) |v|=62.77 fill=1.545 marioDist=7784
+[01:48:10]     t=27 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=32 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=33 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=34 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=35 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=36 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=37 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=38 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=39 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=40 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=41 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     t=42 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:48:10]     >>> left Fly -> Explosion at t=42
+[01:48:10] popo 0x816446e8: nerve Fly -> vt:803b2398  fill=1.231 timer=42 pos=(-2300,6161,-3160)
+[01:48:10]   FLIGHT END after 0.16s real, distance=1004 units, end-timer=26 -> vt:803b2398
+[01:48:11] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:03] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6624,-8979)
+[01:49:04] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:05] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:06] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:06] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6416,-9023)
+[01:49:06] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:49:07] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:49:07] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:07] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:07] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-4700,5415,-9687)
+[01:49:08] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:08] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:08] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:49:08] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:49:09] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:09] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:49:09] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:49:10] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:10] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:10] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:49:11] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:11] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:11] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:49:16] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:16] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:16] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:49:17] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:17] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:49:17] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:49:18] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:18] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:18] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:19] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:19] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:19] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:20] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:20] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:20] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:49:21] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3370,5415,-9660)
+[01:49:21] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:21] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:22] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:22] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:22] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:23] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:23] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:49:23] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:49:24] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:24] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:24] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:49:25] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:25] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:49:25] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:49:26] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:26] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:26] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:27] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:27] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3784,6386,-9192)
+[01:49:27] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:49:28] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3633,5415,-10909)
+[01:49:28] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3784,6382,-9182)
+[01:49:28] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:29] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3603,5415,-11561)
+[01:49:29] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3795,6410,-9036)
+[01:49:29] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:49:29] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3990,5415,-13265)
+[01:49:30] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3766,6350,-9457)
+[01:49:30] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:31] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3609,5415,-11416)
+[01:49:31] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:31] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3600,5415,-11790)
+[01:49:32] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:33] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3758,6333,-9577)
+[01:49:35] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3631,5415,-11901)
+[01:49:35] popo 0x8163fa88: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4252,5415,-15054)
+[01:49:35] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:35] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:49:35] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:49:36] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:36] popo 0x816446e8: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4249,5415,-15029)
+[01:49:36] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:49:37] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:37] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:49:37] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:49:38] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:38] popo 0x81648d58: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4272,5415,-15187)
+[01:49:38] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:49:38] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:38] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[01:49:39] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:39] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:49:39] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:49:40] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:40] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6416,-9023)
+[01:49:40] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:40] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3769,6126,-8822)
+[01:49:42] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:49:42] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:49:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[01:49:57] found 10 TPopo instance(s): 0x8163fa88 0x816446e8 0x81646a18 0x81648d58 0x8164b098 0x8164d3d8 0x8164f718 0x81651a58 0x81653d98 0x816560d8
+[01:50:35] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3852,6485,-8505)
+[01:50:35] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3858,6352,-8546)
+[01:50:35] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3858,6691,-8510)
+[01:50:35] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3855,6540,-8593)
+[01:50:35] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3975,6565,-8578)
+[01:50:35] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3824,6543,-8647)
+[01:50:36] popo 0x8164d3d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3885,6354,-8253)
+[01:50:36] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3873,6257,-8554)
+[01:50:36] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3807,6249,-8463)
+[01:50:36] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3851,6253,-8441)
+[01:50:36] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3843,6249,-8569)
+[01:50:36] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3938,6257,-8510)
+[01:50:37] popo 0x8163fa88: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4410,5415,-12748)
+[01:50:38] popo 0x81648d58: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4433,5415,-13215)
+[01:50:38] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:50:38] popo 0x81653d98: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4568,5415,-13176)
+[01:50:38] popo 0x8164d3d8: PossessedNozzle fill=1.024 timer=0 |v|=40.48
+[01:50:38] popo 0x8164d3d8: PossessedNozzle fill=1.083 timer=0 |v|=40.48
+[01:50:38] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:50:38] popo 0x8164d3d8: PossessedNozzle fill=1.131 timer=0 |v|=40.48
+[01:50:38] popo 0x8164d3d8: PossessedNozzle fill=1.178 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.238 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.285 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.345 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.392 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.451 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.499 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.546 timer=0 |v|=40.48
+[01:50:39] popo 0x81653d98: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.605 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.653 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.700 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.759 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.806 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.854 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.913 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=1.972 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.019 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.066 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.125 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.172 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.231 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.290 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.337 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.396 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.444 timer=0 |v|=40.48
+[01:50:39] popo 0x8164d3d8: PossessedNozzle fill=2.492 timer=0 |v|=40.48
+[01:50:40] popo 0x8164b098: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4988,5415,-12372)
+[01:50:40] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:50:41] popo 0x8164d3d8: nerve PossessedNozzle -> Fly  fill=2.493 timer=3 pos=(-4501,6309,-8846)
+[01:50:41]   LAUNCH: vel=(-19.41,-8.05,-89.73) |v|=92.16 fill=2.493 marioDist=11760
+[01:50:41]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     >>> left Fly -> Explosion at t=8
+[01:50:41] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.473 timer=11 pos=(-4675,6236,-9653)
+[01:50:41]   FLIGHT END after 0.07s real, distance=829 units, end-timer=3 -> Explosion
+[01:50:41] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3792,6491,-8341)
+[01:50:41] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:50:41] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.458 timer=17 pos=(-4850,6160,-10461)
+[01:50:41]   LAUNCH: vel=(-19.41,-8.65,-89.73) |v|=92.21 fill=2.458 marioDist=13073
+[01:50:41]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=19 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=20 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     >>> left Fly -> Explosion at t=20
+[01:50:41] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.443 timer=23 pos=(-4986,6099,-11089)
+[01:50:41]   FLIGHT END after 0.06s real, distance=646 units, end-timer=17 -> Explosion
+[01:50:41] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.436 timer=26 pos=(-5064,6063,-11448)
+[01:50:41]   LAUNCH: vel=(-19.41,-8.95,-89.73) |v|=92.24 fill=2.436 marioDist=13909
+[01:50:41]     t=26 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=27 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=32 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=33 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:41]     t=34 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=35 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=36 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=37 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=38 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=39 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=40 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=41 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     t=42 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:42]     >>> left Fly -> Explosion at t=42
+[01:50:42] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3853,6460,-8249)
+[01:50:42] popo 0x8164d3d8: nerve Fly -> vt:803b2398  fill=1.942 timer=42 pos=(-5374,5919,-12883)
+[01:50:42]   FLIGHT END after 0.16s real, distance=1476 units, end-timer=26 -> vt:803b2398
+[01:50:42] popo 0x8164d3d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[01:50:42] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3833,6286,-8271)
+[01:50:42] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6606,-8810)
+[01:50:42] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:50:43] popo 0x816560d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4438,6372,-8517)
+[01:50:43] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4121,6261,-8251)
+[01:50:43] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4548,6317,-8584)
+[01:50:43] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:50:43] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4326,6206,-8698)
+[01:50:43] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:50:44] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:50:45] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.059 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.107 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.166 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.226 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.273 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.333 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.380 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.439 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.487 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.534 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.582 timer=0 |v|=40.47
+[01:50:46] popo 0x816560d8: PossessedNozzle fill=1.641 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.688 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.747 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.795 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.854 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.901 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.948 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=1.995 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.054 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.102 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.160 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.208 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.266 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.325 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.372 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.420 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.468 timer=0 |v|=40.47
+[01:50:47] popo 0x816560d8: PossessedNozzle fill=2.500 timer=0 |v|=40.47
+[01:50:49] popo 0x816560d8: nerve PossessedNozzle -> Fly  fill=2.497 timer=1 pos=(-4319,6368,-7855)
+[01:50:49]   LAUNCH: vel=(-16.20,9.99,-101.76) |v|=103.52 fill=2.497 marioDist=10996
+[01:50:49]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     >>> left Fly -> Explosion at t=10
+[01:50:49] popo 0x816560d8: nerve Fly -> Explosion  fill=2.468 timer=13 pos=(-4530,6497,-9178)
+[01:50:49]   FLIGHT END after 0.11s real, distance=1346 units, end-timer=1 -> Explosion
+[01:50:49] popo 0x816560d8: nerve Explosion -> Fly  fill=2.460 timer=16 pos=(-4611,6545,-9687)
+[01:50:49]   LAUNCH: vel=(-16.20,9.54,-101.76) |v|=103.48 fill=2.460 marioDist=12567
+[01:50:49]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=19 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     >>> left Fly -> Explosion at t=19
+[01:50:49] popo 0x816560d8: nerve Fly -> Explosion  fill=2.446 timer=22 pos=(-4724,6611,-10399)
+[01:50:49]   FLIGHT END after 0.06s real, distance=724 units, end-timer=16 -> Explosion
+[01:50:49] popo 0x816560d8: nerve Explosion -> Fly  fill=2.438 timer=25 pos=(-4805,6657,-10908)
+[01:50:49]   LAUNCH: vel=(-16.20,9.09,-101.76) |v|=103.44 fill=2.438 marioDist=13653
+[01:50:49]     t=25 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=26 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=27 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=32 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=33 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=34 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=35 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:50:49]     t=36 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:50:49]     >>> left Fly -> Explosion at t=36
+[01:50:49] popo 0x816560d8: nerve Fly -> Explosion  fill=2.404 timer=39 pos=(-5048,6793,-12434)
+[01:50:49]   FLIGHT END after 0.13s real, distance=1552 units, end-timer=25 -> Explosion
+[01:50:49] popo 0x816560d8: nerve Explosion -> vt:803b2398  fill=1.942 timer=42 pos=(-5113,6828,-12841)
+[01:50:49] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4073,6284,-7888)
+[01:50:50] popo 0x816560d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:50:50] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4098,6302,-8439)
+[01:50:51] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4048,6264,-8409)
+[01:50:51] popo 0x81651a58: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4590,5415,-11117)
+[01:50:51] popo 0x81651a58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:50:52] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3826,6263,-6170)
+[01:50:52] popo 0x81646a18: nerve PossessedNozzle -> vt:803b2398  fill=1.000 timer=0 pos=(-3971,6319,-6255)
+[01:50:53] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:51:58] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11635,2778,-1709)
+[01:51:59] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11727,2811,-1765)
+[01:52:02] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-12121,2794,-1449)
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.048 timer=0 |v|=6.45
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.107 timer=0 |v|=6.36
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.155 timer=0 |v|=6.36
+[01:52:02] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-11583,2625,-1256)
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.202 timer=0 |v|=6.41
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.250 timer=0 |v|=6.52
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.297 timer=0 |v|=6.68
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.345 timer=0 |v|=6.88
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.392 timer=0 |v|=7.14
+[01:52:02] popo 0x81648d58: PossessedNozzle fill=1.451 timer=0 |v|=7.51
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.499 timer=0 |v|=7.84
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.546 timer=0 |v|=8.21
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.593 timer=0 |v|=8.60
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.641 timer=0 |v|=9.02
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.700 timer=0 |v|=9.57
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.747 timer=0 |v|=10.02
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.795 timer=0 |v|=10.49
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.854 timer=0 |v|=11.10
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.901 timer=0 |v|=11.60
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=1.948 timer=0 |v|=12.10
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.007 timer=0 |v|=12.75
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.054 timer=0 |v|=13.27
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.102 timer=0 |v|=13.80
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.160 timer=0 |v|=14.47
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.208 timer=0 |v|=15.01
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.255 timer=0 |v|=15.56
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.314 timer=0 |v|=16.24
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.361 timer=0 |v|=16.80
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.408 timer=0 |v|=17.35
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.468 timer=0 |v|=18.05
+[01:52:03] popo 0x81648d58: PossessedNozzle fill=2.500 timer=0 |v|=18.62
+[01:52:07] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=2.493 timer=3 pos=(-11948,3130,-1472)
+[01:52:07]   LAUNCH: vel=(77.00,47.32,-29.21) |v|=94.98 fill=2.493 marioDist=12439
+[01:52:07]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:07]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:52:08]     >>> left Fly -> Explosion at t=10
+[01:52:08] popo 0x81648d58: Fly fill=2.468 timer=13 |v|=94.90
+[01:52:08] popo 0x81648d58: nerve Fly -> Explosion  fill=1.867 timer=81 pos=(-5967,6810,-3813)
+[01:52:08]   FLIGHT END after 0.67s real, distance=7402 units, end-timer=78 -> Explosion
+[01:52:08] popo 0x81648d58: nerve Explosion -> vt:803b2398  fill=1.867 timer=81 pos=(-5967,6810,-3813)
+[01:52:08] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:52:11] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11333,2707,-1451)
+[01:52:13] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-10667,2648,-984)
+[01:52:13] popo 0x81646a18: nerve Explosion -> Fly  fill=1.000 timer=4 pos=(-10633,2645,-995)
+[01:52:13]   LAUNCH: vel=(6.68,-0.70,-2.18) |v|=7.06 fill=1.000 marioDist=11002
+[01:52:13]     t=4 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=5 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=6 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=7 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=8 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=9 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=10 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=11 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=12 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=13 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=14 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=15 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=16 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=17 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=18 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=19 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=20 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=21 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     t=22 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:52:13]     >>> left Fly -> Explosion at t=22
+[01:52:13] popo 0x81646a18: nerve Fly -> Explosion  fill=1.000 timer=22 pos=(-10513,2632,-1034)
+[01:52:13]   FLIGHT END after 0.19s real, distance=127 units, end-timer=4 -> Explosion
+[01:52:14] popo 0x81646a18: nerve Explosion -> vt:803b2388  fill=1.000 timer=22 pos=(-10413,2604,-1067)
+[01:52:14] popo 0x81646a18: nerve vt:803b2388 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:52:39] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11924,3199,-1944)
+[01:52:39] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-12016,3157,-1864)
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.048 timer=0 |v|=29.10
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.095 timer=0 |v|=29.70
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.143 timer=0 |v|=30.30
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.190 timer=0 |v|=30.90
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.250 timer=0 |v|=31.65
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.297 timer=0 |v|=32.25
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.356 timer=0 |v|=33.00
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.404 timer=0 |v|=33.60
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.463 timer=0 |v|=34.35
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.522 timer=0 |v|=35.10
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.570 timer=0 |v|=35.70
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.617 timer=0 |v|=36.30
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.665 timer=0 |v|=36.90
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.724 timer=0 |v|=37.65
+[01:53:19] popo 0x81646a18: PossessedNozzle fill=1.783 timer=0 |v|=38.40
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=1.830 timer=0 |v|=39.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=1.889 timer=0 |v|=39.75
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=1.936 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=1.984 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.043 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.090 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.149 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.196 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.255 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.302 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.349 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.408 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.456 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: PossessedNozzle fill=2.500 timer=0 |v|=40.00
+[01:53:20] popo 0x81646a18: nerve PossessedNozzle -> Fly  fill=2.490 timer=4 pos=(-10827,2971,-1654)
+[01:53:20]   LAUNCH: vel=(83.90,41.19,5.25) |v|=93.61 fill=2.490 marioDist=11348
+[01:53:20]     t=4 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=5 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=6 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=7 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=8 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=9 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[01:53:20]     t=10 nerve=Explosion +0xF0=000029c0 bit0x80=SET
+[01:53:20]     >>> left Fly -> Explosion at t=10
+[01:53:20] popo 0x81646a18: nerve Fly -> Explosion  fill=2.468 timer=13 pos=(-9988,3382,-1601)
+[01:53:20]   FLIGHT END after 0.09s real, distance=936 units, end-timer=4 -> Explosion
+[01:53:20] popo 0x81646a18: nerve Explosion -> Fly  fill=2.460 timer=16 pos=(-9652,3546,-1580)
+[01:53:20]   LAUNCH: vel=(83.90,40.89,5.25) |v|=93.48 fill=2.460 marioDist=10403
+[01:53:20]     t=16 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=17 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=18 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=19 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=20 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=21 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=22 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=23 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=24 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=25 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=26 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=27 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=28 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=29 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:20]     t=30 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=31 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=32 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=33 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=34 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=35 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=36 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=37 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=38 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=39 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=40 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=41 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=42 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=43 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=44 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=45 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=46 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=47 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=48 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=49 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=50 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=51 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=52 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=53 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=54 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=55 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=56 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=57 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=58 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=59 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=60 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=61 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=62 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=63 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=64 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=65 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=66 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=67 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=68 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=69 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=70 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=71 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=72 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=73 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=74 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=75 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21]     t=76 nerve=Fly +0xF0=000029c4 bit0x80=SET
+[01:53:21] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11589,3068,-1698)
+[01:53:21] popo 0x81646a18: Fly fill=2.308 timer=80 |v|=93.48
+[01:53:24] popo 0x81646a18: nerve Fly -> vt:803b2398  fill=1.691 timer=391 pos=(21727,17612,382)
+[01:53:24]   FLIGHT END after 3.16s real, distance=34444 units, end-timer=390 -> vt:803b2398
+[01:53:24] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-9937,2623,-1239)
+[01:53:24] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[02:05:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:05:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:06:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:06:06] found 10 TPopo instance(s): 0x8163fa88 0x816446e8 0x81646a18 0x81648d58 0x8164b098 0x8164d3d8 0x8164f718 0x81651a58 0x81653d98 0x816560d8
+[02:25:54] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3834,6397,-7949)
+[02:25:54] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3834,6558,-7993)
+[02:25:55] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3772,6371,-7978)
+[02:25:55] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3920,6545,-7971)
+[02:25:55] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3835,6554,-7999)
+[02:25:55] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3663,6507,-7958)
+[02:25:55] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3730,6299,-8368)
+[02:25:55] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3831,6548,-8485)
+[02:25:55] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3749,6528,-8412)
+[02:25:55] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3538,6462,-7959)
+[02:25:56] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4279,6319,-8124)
+[02:25:56] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3885,6253,-7995)
+[02:25:56] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3715,6253,-8383)
+[02:25:56] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3971,6261,-7974)
+[02:25:56] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4134,6249,-8146)
+[02:25:56] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4182,6247,-7964)
+[02:25:56] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3788,6257,-8447)
+[02:25:56] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4300,6258,-8377)
+[02:25:56] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4075,6249,-8251)
+[02:25:56] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.036 timer=0 |v|=26.35
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.083 timer=0 |v|=26.94
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.131 timer=0 |v|=27.52
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.178 timer=0 |v|=28.11
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.238 timer=0 |v|=28.85
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.285 timer=0 |v|=29.44
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.345 timer=0 |v|=30.18
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.404 timer=0 |v|=30.92
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.463 timer=0 |v|=31.66
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.511 timer=0 |v|=32.25
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.570 timer=0 |v|=32.99
+[02:25:57] popo 0x81646a18: PossessedNozzle fill=1.617 timer=0 |v|=33.58
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.676 timer=0 |v|=34.32
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.724 timer=0 |v|=34.91
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.771 timer=0 |v|=35.51
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.830 timer=0 |v|=36.25
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.877 timer=0 |v|=36.84
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.936 timer=0 |v|=37.58
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=1.984 timer=0 |v|=38.18
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.031 timer=0 |v|=38.77
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.090 timer=0 |v|=39.51
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.149 timer=0 |v|=40.26
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.196 timer=0 |v|=40.36
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.243 timer=0 |v|=40.36
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.302 timer=0 |v|=40.36
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.349 timer=0 |v|=40.36
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.396 timer=0 |v|=0.00
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.456 timer=0 |v|=0.75
+[02:25:58] popo 0x81646a18: PossessedNozzle fill=2.500 timer=0 |v|=1.35
+[02:25:59] popo 0x81646a18: nerve PossessedNozzle -> Explosion  fill=2.495 timer=2 pos=(-4601,6311,-8665)
+[02:25:59] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3895,6373,-8276)
+[02:25:59] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3955,6373,-8389)
+[02:26:00] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3889,6379,-8186)
+[02:26:00] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[02:26:00] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:26:00] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6635,-8821)
+[02:26:01] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[02:26:01] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6685,-8849)
+[02:26:01] popo 0x8164d3d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4256,6379,-8525)
+[02:26:01] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6199,-8755)
+[02:26:01] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4412,6253,-8299)
+[02:26:02] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:02] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6184,-8770)
+[02:26:02] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[02:26:02] popo 0x8164d3d8: PossessedNozzle fill=1.071 timer=0 |v|=29.06
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.119 timer=0 |v|=29.65
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.166 timer=0 |v|=30.24
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.226 timer=0 |v|=30.98
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.273 timer=0 |v|=31.58
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.321 timer=0 |v|=32.17
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.380 timer=0 |v|=32.91
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.428 timer=0 |v|=33.51
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.475 timer=0 |v|=34.10
+[02:26:03] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.534 timer=0 |v|=34.85
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.593 timer=0 |v|=35.59
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.641 timer=0 |v|=36.18
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.688 timer=0 |v|=36.78
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.735 timer=0 |v|=37.38
+[02:26:03] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.783 timer=0 |v|=37.97
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.842 timer=0 |v|=38.72
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.889 timer=0 |v|=39.31
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.936 timer=0 |v|=0.30
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=1.995 timer=0 |v|=1.05
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.043 timer=0 |v|=1.65
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.102 timer=0 |v|=2.40
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.137 timer=0 |v|=2.85
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.196 timer=0 |v|=3.60
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.255 timer=0 |v|=4.35
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.302 timer=0 |v|=4.95
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.361 timer=0 |v|=5.70
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.408 timer=0 |v|=6.30
+[02:26:03] popo 0x8164d3d8: PossessedNozzle fill=2.456 timer=0 |v|=6.90
+[02:26:04] popo 0x8164d3d8: PossessedNozzle fill=2.500 timer=0 |v|=7.65
+[02:26:04] popo 0x8164d3d8: nerve PossessedNozzle -> Fly  fill=2.497 timer=1 pos=(-4561,6308,-8751)
+[02:26:04]   LAUNCH: vel=(-24.25,-16.28,-105.84) |v|=109.80 fill=2.497 marioDist=11712
+[02:26:04]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:04]     >>> left Fly -> Explosion at t=9
+[02:26:04] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3862,6441,-8606)
+[02:26:04] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3843,6431,-8547)
+[02:26:04] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.470 timer=12 pos=(-4852,6112,-10021)
+[02:26:04]   FLIGHT END after 0.11s real, distance=1318 units, end-timer=1 -> Explosion
+[02:26:05] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.463 timer=15 pos=(-4973,6029,-10551)
+[02:26:05]   LAUNCH: vel=(-24.25,-16.73,-105.84) |v|=109.87 fill=2.463 marioDist=13130
+[02:26:05]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     >>> left Fly -> Explosion at t=18
+[02:26:05] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.448 timer=21 pos=(-5143,5911,-11292)
+[02:26:05]   FLIGHT END after 0.06s real, distance=769 units, end-timer=15 -> Explosion
+[02:26:05] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4476,6373,-8091)
+[02:26:05] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.438 timer=25 pos=(-5264,5826,-11821)
+[02:26:05]   LAUNCH: vel=(-24.25,-17.03,-105.84) |v|=109.91 fill=2.438 marioDist=14191
+[02:26:05]     t=25 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=26 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=27 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:05]     t=32 nerve=Fly +0xF0=00002900 bit0x80=clr
+[02:26:05]     >>> left Fly -> Explosion at t=32
+[02:26:05] popo 0x8164d3d8: nerve Fly -> vt:803b2388  fill=1.961 timer=32 pos=(-5434,5737,-12562)
+[02:26:05]   FLIGHT END after 0.11s real, distance=765 units, end-timer=25 -> vt:803b2388
+[02:26:05] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6500,-8778)
+[02:26:05] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[02:26:05] popo 0x8164d3d8: nerve vt:803b2388 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[02:26:05] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[02:26:06] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[02:26:06] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6469,-8770)
+[02:26:06] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6666,-8836)
+[02:26:07] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4211,6297,-8407)
+[02:26:07] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3876,6385,-8644)
+[02:26:07] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4654,6152,-8749)
+[02:26:07] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4162,6257,-8001)
+[02:26:07] popo 0x81653d98: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:07] popo 0x81646a18: nerve Explosion -> Fly  fill=2.493 timer=3 pos=(-4659,6271,-8930)
+[02:26:07]   LAUNCH: vel=(-19.29,-13.44,-88.50) |v|=91.57 fill=2.493 marioDist=11865
+[02:26:07]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     >>> left Fly -> Explosion at t=9
+[02:26:07] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6182,-8763)
+[02:26:07] popo 0x8164f718: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4644,6282,-8731)
+[02:26:07] popo 0x81653d98: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:26:07] popo 0x81646a18: nerve Fly -> Explosion  fill=2.470 timer=12 pos=(-4852,6136,-9815)
+[02:26:07]   FLIGHT END after 0.09s real, distance=916 units, end-timer=3 -> Explosion
+[02:26:07] popo 0x81646a18: nerve Explosion -> Fly  fill=2.463 timer=15 pos=(-4949,6067,-10258)
+[02:26:07]   LAUNCH: vel=(-19.29,-13.89,-88.50) |v|=91.64 fill=2.463 marioDist=12904
+[02:26:07]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:07]     >>> left Fly -> Explosion at t=18
+[02:26:07] popo 0x81646a18: nerve Fly -> Explosion  fill=1.946 timer=40 pos=(-5450,5732,-12559)
+[02:26:07]   FLIGHT END after 0.25s real, distance=2379 units, end-timer=38 -> Explosion
+[02:26:07] popo 0x81646a18: nerve Explosion -> vt:803b2398  fill=1.946 timer=40 pos=(-5450,5732,-12559)
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.059 timer=0 |v|=19.72
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.119 timer=0 |v|=20.44
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.166 timer=0 |v|=21.01
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.214 timer=0 |v|=21.59
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.261 timer=0 |v|=22.17
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.321 timer=0 |v|=22.89
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.368 timer=0 |v|=23.47
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.428 timer=0 |v|=24.20
+[02:26:08] popo 0x8164d3d8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.475 timer=0 |v|=24.78
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.534 timer=0 |v|=25.51
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.582 timer=0 |v|=26.09
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.641 timer=0 |v|=26.82
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.688 timer=0 |v|=27.41
+[02:26:08] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.747 timer=0 |v|=28.14
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.795 timer=0 |v|=28.73
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.842 timer=0 |v|=29.31
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.901 timer=0 |v|=30.05
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.948 timer=0 |v|=30.64
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=1.995 timer=0 |v|=31.23
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.054 timer=0 |v|=31.96
+[02:26:08] popo 0x8164d3d8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.102 timer=0 |v|=32.55
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.160 timer=0 |v|=33.29
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.208 timer=0 |v|=33.88
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.255 timer=0 |v|=34.47
+[02:26:08] popo 0x8163fa88: PossessedNozzle fill=2.302 timer=0 |v|=35.06
+[02:26:09] popo 0x8163fa88: PossessedNozzle fill=2.361 timer=0 |v|=35.80
+[02:26:09] popo 0x8163fa88: PossessedNozzle fill=2.408 timer=0 |v|=36.39
+[02:26:09] popo 0x8163fa88: PossessedNozzle fill=2.456 timer=0 |v|=36.98
+[02:26:09] popo 0x8163fa88: PossessedNozzle fill=2.500 timer=0 |v|=37.58
+[02:26:09] popo 0x8163fa88: nerve PossessedNozzle -> Explosion  fill=2.248 timer=1 pos=(-4280,6316,-8607)
+[02:26:09] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[02:26:09] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4009,6422,-8000)
+[02:26:09] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6563,-8813)
+[02:26:10] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3850,6405,-8609)
+[02:26:10] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6699,-8885)
+[02:26:10] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6663,-8956)
+[02:26:10] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[02:26:10] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3958,6249,-8457)
+[02:26:10] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4160,6377,-8438)
+[02:26:10] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4164,6249,-8321)
+[02:26:11] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3868,6261,-8546)
+[02:26:11] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4075,6253,-8668)
+[02:26:11] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[02:26:11] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6103,-8843)
+[02:26:12] popo 0x8164d3d8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:12] popo 0x8164d3d8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:26:12] popo 0x816446e8: PossessedNozzle fill=1.036 timer=0 |v|=38.38
+[02:26:12] popo 0x816446e8: PossessedNozzle fill=1.083 timer=0 |v|=38.97
+[02:26:12] popo 0x816446e8: PossessedNozzle fill=1.131 timer=0 |v|=39.56
+[02:26:12] popo 0x816446e8: PossessedNozzle fill=1.190 timer=0 |v|=40.30
+[02:26:12] popo 0x816446e8: PossessedNozzle fill=1.238 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.297 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.345 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.392 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.451 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.499 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.546 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.593 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.653 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.712 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.759 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.806 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.865 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.913 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=1.972 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.019 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.066 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.125 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.184 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.231 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.290 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.337 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.384 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.444 timer=0 |v|=40.55
+[02:26:13] popo 0x816446e8: PossessedNozzle fill=2.492 timer=0 |v|=40.55
+[02:26:16] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=2.497 timer=1 pos=(-4442,6348,-8638)
+[02:26:16]   LAUNCH: vel=(-26.43,1.56,-88.64) |v|=92.51 fill=2.497 marioDist=11603
+[02:26:16]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:16]     >>> left Fly -> Explosion at t=8
+[02:26:16] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3965,6283,-8117)
+[02:26:16] popo 0x816446e8: nerve Fly -> Explosion  fill=2.473 timer=11 pos=(-4733,6364,-9613)
+[02:26:16]   FLIGHT END after 0.09s real, distance=1018 units, end-timer=1 -> Explosion
+[02:26:17] popo 0x816446e8: nerve Explosion -> Fly  fill=2.465 timer=14 pos=(-4865,6370,-10056)
+[02:26:17]   LAUNCH: vel=(-26.43,1.11,-88.64) |v|=92.50 fill=2.465 marioDist=12860
+[02:26:17]     t=14 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=17 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[02:26:17]     >>> left Fly -> Explosion at t=17
+[02:26:17] popo 0x816446e8: nerve Fly -> Explosion  fill=2.450 timer=20 pos=(-5050,6378,-10677)
+[02:26:17]   FLIGHT END after 0.06s real, distance=648 units, end-timer=14 -> Explosion
+[02:26:17] popo 0x816446e8: nerve Explosion -> Fly  fill=2.433 timer=27 pos=(-5288,6384,-11474)
+[02:26:17]   LAUNCH: vel=(-26.43,0.66,-88.64) |v|=92.50 fill=2.433 marioDist=14156
+[02:26:17]     t=27 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=32 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=33 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=34 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=35 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=36 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=37 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:17]     t=38 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[02:26:17]     >>> left Fly -> Explosion at t=38
+[02:26:17] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3835,6249,-8310)
+[02:26:17] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3710,6442,-8617)
+[02:26:17] popo 0x816446e8: nerve Fly -> Explosion  fill=2.160 timer=41 pos=(-5684,6393,-12804)
+[02:26:17]   FLIGHT END after 0.14s real, distance=1387 units, end-timer=27 -> Explosion
+[02:26:17] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3921,6273,-8408)
+[02:26:17] popo 0x816446e8: nerve Explosion -> vt:803b2398  fill=1.944 timer=41 pos=(-5684,6393,-12804)
+[02:26:17] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3739,6514,-8655)
+[02:26:17] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3707,6345,-8543)
+[02:26:17] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[02:26:17] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3772,6426,-8695)
+[02:26:17] popo 0x8164b098: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4404,6373,-8500)
+[02:26:17] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6365,-8750)
+[02:26:17] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3692,6253,-8580)
+[02:26:18] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3713,6390,-8623)
+[02:26:18] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3795,6231,-8727)
+[02:26:18] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4449,6253,-8381)
+[02:26:18] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3742,6379,-8657)
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.024 timer=0 |v|=14.97
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.071 timer=0 |v|=15.47
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.131 timer=0 |v|=16.09
+[02:26:18] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3734,6249,-8499)
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.190 timer=0 |v|=16.73
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.238 timer=0 |v|=17.25
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.297 timer=0 |v|=17.90
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.345 timer=0 |v|=18.42
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.404 timer=0 |v|=19.09
+[02:26:18] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4698,6257,-8080)
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.451 timer=0 |v|=19.63
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.511 timer=0 |v|=20.30
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.558 timer=0 |v|=20.84
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.593 timer=0 |v|=21.25
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.653 timer=0 |v|=21.94
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.700 timer=0 |v|=22.49
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.759 timer=0 |v|=23.19
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.818 timer=0 |v|=23.88
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.865 timer=0 |v|=24.44
+[02:26:18] popo 0x8164b098: PossessedNozzle fill=1.913 timer=0 |v|=25.01
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=1.972 timer=0 |v|=25.71
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.019 timer=0 |v|=26.28
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.066 timer=0 |v|=26.84
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.113 timer=0 |v|=27.41
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.172 timer=0 |v|=28.12
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.231 timer=0 |v|=28.84
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.278 timer=0 |v|=29.41
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.325 timer=0 |v|=29.98
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.384 timer=0 |v|=30.70
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.444 timer=0 |v|=31.42
+[02:26:19] popo 0x8164b098: PossessedNozzle fill=2.492 timer=0 |v|=32.00
+[02:26:20] popo 0x8164b098: nerve PossessedNozzle -> Fly  fill=2.493 timer=3 pos=(-4530,6271,-8843)
+[02:26:20]   LAUNCH: vel=(-35.05,-16.97,-95.25) |v|=102.91 fill=2.493 marioDist=11750
+[02:26:20]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:20]     t=11 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[02:26:20]     >>> left Fly -> Explosion at t=11
+[02:26:20] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3807,6544,-8502)
+[02:26:20] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6633,-8821)
+[02:26:20] popo 0x8164b098: Fly fill=2.465 timer=14 |v|=102.96
+[02:26:21] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6379,-8396)
+[02:26:21] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4540,6419,-8065)
+[02:26:21] popo 0x8164b098: nerve Fly -> Explosion  fill=2.407 timer=38 pos=(-5932,5575,-12653)
+[02:26:21]   FLIGHT END after 0.37s real, distance=4119 units, end-timer=37 -> Explosion
+[02:26:21] popo 0x8164b098: nerve Explosion -> Fly  fill=2.404 timer=39 pos=(-6124,5484,-13125)
+[02:26:21]   LAUNCH: vel=(-35.05,-18.32,-95.25) |v|=103.14 fill=2.404 marioDist=15487
+[02:26:21]     t=39 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:21]     t=40 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:21]     t=41 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:21]     t=42 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:21]     >>> left Fly -> Explosion at t=42
+[02:26:21] popo 0x8164b098: nerve Fly -> vt:803b2398  fill=1.942 timer=42 pos=(-6229,5429,-13410)
+[02:26:21]   FLIGHT END after 0.06s real, distance=309 units, end-timer=39 -> vt:803b2398
+[02:26:21] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4639,6376,-8086)
+[02:26:21] popo 0x8164b098: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:26:21] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3478,6085,-8889)
+[02:26:21] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[02:26:22] popo 0x8164d3d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4591,6392,-8530)
+[02:26:22] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4577,6257,-8077)
+[02:26:22] popo 0x8164d3d8: PossessedNozzle fill=1.036 timer=0 |v|=12.37
+[02:26:22] popo 0x8164d3d8: PossessedNozzle fill=1.083 timer=0 |v|=12.85
+[02:26:22] popo 0x8164d3d8: PossessedNozzle fill=1.131 timer=0 |v|=13.33
+[02:26:22] popo 0x8164d3d8: PossessedNozzle fill=1.190 timer=0 |v|=13.95
+[02:26:22] popo 0x8164d3d8: PossessedNozzle fill=1.238 timer=0 |v|=14.45
+[02:26:23] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4801,6261,-8363)
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.297 timer=0 |v|=15.09
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.345 timer=0 |v|=15.61
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.392 timer=0 |v|=16.13
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.439 timer=0 |v|=16.66
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.499 timer=0 |v|=17.33
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.546 timer=0 |v|=17.87
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.593 timer=0 |v|=18.41
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.653 timer=0 |v|=19.09
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.700 timer=0 |v|=19.64
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.759 timer=0 |v|=20.33
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.806 timer=0 |v|=20.89
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.865 timer=0 |v|=21.59
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.913 timer=0 |v|=22.15
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=1.972 timer=0 |v|=22.85
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.019 timer=0 |v|=23.42
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.078 timer=0 |v|=24.13
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.125 timer=0 |v|=24.70
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.184 timer=0 |v|=25.41
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.231 timer=0 |v|=25.98
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.278 timer=0 |v|=26.55
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.325 timer=0 |v|=27.13
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.396 timer=0 |v|=27.99
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.444 timer=0 |v|=28.57
+[02:26:23] popo 0x8164d3d8: PossessedNozzle fill=2.492 timer=0 |v|=29.15
+[02:26:27] popo 0x8164d3d8: nerve PossessedNozzle -> Fly  fill=2.495 timer=2 pos=(-4515,6347,-8835)
+[02:26:27]   LAUNCH: vel=(-28.16,0.91,-94.44) |v|=98.55 fill=2.495 marioDist=11778
+[02:26:27]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     >>> left Fly -> Explosion at t=9
+[02:26:27] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.470 timer=12 pos=(-4825,6356,-9874)
+[02:26:27]   FLIGHT END after 0.09s real, distance=1084 units, end-timer=2 -> Explosion
+[02:26:27] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4572,6522,-8256)
+[02:26:27] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.463 timer=15 pos=(-4965,6359,-10346)
+[02:26:27]   LAUNCH: vel=(-28.16,0.46,-94.44) |v|=98.55 fill=2.463 marioDist=13120
+[02:26:27]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     >>> left Fly -> Explosion at t=18
+[02:26:27] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.448 timer=21 pos=(-5162,6362,-11007)
+[02:26:27]   FLIGHT END after 0.06s real, distance=690 units, end-timer=15 -> Explosion
+[02:26:27] popo 0x8164d3d8: nerve Explosion -> Fly  fill=2.433 timer=27 pos=(-5388,6362,-11763)
+[02:26:27]   LAUNCH: vel=(-28.16,0.01,-94.44) |v|=98.55 fill=2.433 marioDist=14418
+[02:26:27]     t=28 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=29 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=30 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=31 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=32 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=33 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=34 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=35 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=36 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=37 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=38 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     t=39 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:27]     >>> left Fly -> Explosion at t=39
+[02:26:27] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3742,6511,-8663)
+[02:26:27] popo 0x8164d3d8: nerve Fly -> Explosion  fill=2.397 timer=42 pos=(-5838,6362,-13274)
+[02:26:27]   FLIGHT END after 0.13s real, distance=1577 units, end-timer=27 -> Explosion
+[02:26:27] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[02:26:27] popo 0x8164d3d8: nerve Explosion -> vt:803b2398  fill=1.942 timer=42 pos=(-5838,6361,-13274)
+[02:26:27] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4269,6491,-8011)
+[02:26:27] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3777,6414,-8702)
+[02:26:27] popo 0x8164d3d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[02:26:27] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6702,-8924)
+[02:26:27] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6384,-8755)
+[02:26:28] popo 0x81651a58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4130,6369,-8121)
+[02:26:28] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3747,6249,-8697)
+[02:26:28] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4296,6326,-8617)
+[02:26:28] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4005,6261,-8414)
+[02:26:29] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6132,-8819)
+[02:26:29] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4321,6257,-8142)
+[02:26:29] popo 0x81653d98: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[02:26:29] popo 0x81653d98: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.059 timer=0 |v|=37.88
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.119 timer=0 |v|=38.63
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.166 timer=0 |v|=39.22
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.214 timer=0 |v|=39.82
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.261 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.321 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.368 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.416 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.463 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.522 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.582 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.629 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.688 timer=0 |v|=40.36
+[02:26:30] popo 0x81651a58: PossessedNozzle fill=1.735 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=1.795 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=1.842 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=1.889 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=1.948 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=1.995 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.054 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.090 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.149 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.208 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.266 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.314 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.361 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.408 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.456 timer=0 |v|=40.36
+[02:26:31] popo 0x81651a58: PossessedNozzle fill=2.500 timer=0 |v|=40.36
+[02:26:33] popo 0x81651a58: nerve PossessedNozzle -> Fly  fill=2.495 timer=2 pos=(-4442,6342,-8621)
+[02:26:33]   LAUNCH: vel=(-21.52,-0.83,-87.66) |v|=90.27 fill=2.495 marioDist=11588
+[02:26:33]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     >>> left Fly -> Explosion at t=9
+[02:26:33] popo 0x81651a58: nerve Fly -> Explosion  fill=2.470 timer=12 pos=(-4679,6332,-9585)
+[02:26:33]   FLIGHT END after 0.09s real, distance=993 units, end-timer=2 -> Explosion
+[02:26:33] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3752,6490,-8439)
+[02:26:33] popo 0x81651a58: nerve Explosion -> Fly  fill=2.463 timer=15 pos=(-4787,6326,-10024)
+[02:26:33]   LAUNCH: vel=(-21.52,-1.28,-87.66) |v|=90.27 fill=2.463 marioDist=12783
+[02:26:33]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:33]     >>> left Fly -> Explosion at t=18
+[02:26:33] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3738,6529,-8647)
+[02:26:33] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4129,6502,-8405)
+[02:26:33] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3912,6490,-8228)
+[02:26:34] popo 0x81651a58: nerve Fly -> vt:803b2398  fill=1.942 timer=42 pos=(-5454,6274,-12741)
+[02:26:34]   FLIGHT END after 0.29s real, distance=2799 units, end-timer=41 -> vt:803b2398
+[02:26:34] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3763,6486,-8679)
+[02:26:34] popo 0x81651a58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[02:26:34] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3741,6449,-8589)
+[02:26:34] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4095,6493,-7977)
+[02:26:34] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6242,-8726)
+[02:26:34] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4393,6374,-8392)
+[02:26:34] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4295,6295,-8321)
+[02:26:34] popo 0x816446e8: nerve PossessedNozzle -> vt:803b2790  fill=1.000 timer=0 pos=(-4299,6298,-8315)
+[02:26:34] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4265,6257,-8619)
+[02:26:35] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4269,6261,-8294)
+[02:26:35] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4159,6253,-8516)
+[02:26:35] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4450,6253,-8221)
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.036 timer=0 |v|=15.56
+[02:26:35] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4296,6257,-8213)
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.083 timer=0 |v|=16.07
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.143 timer=0 |v|=16.71
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.202 timer=0 |v|=17.36
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.250 timer=0 |v|=17.88
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.309 timer=0 |v|=18.54
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.356 timer=0 |v|=19.08
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.416 timer=0 |v|=19.75
+[02:26:35] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4693,6257,-8261)
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.475 timer=0 |v|=20.43
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.522 timer=0 |v|=20.98
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.570 timer=0 |v|=21.52
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.617 timer=0 |v|=22.08
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.676 timer=0 |v|=22.77
+[02:26:35] popo 0x8163fa88: PossessedNozzle fill=1.735 timer=0 |v|=23.47
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=1.783 timer=0 |v|=24.03
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=1.842 timer=0 |v|=24.73
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=1.901 timer=0 |v|=25.43
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=1.948 timer=0 |v|=26.00
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.007 timer=0 |v|=26.71
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.054 timer=0 |v|=27.28
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.102 timer=0 |v|=27.85
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.160 timer=0 |v|=28.56
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.219 timer=0 |v|=29.28
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.278 timer=0 |v|=30.00
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.325 timer=0 |v|=30.57
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.372 timer=0 |v|=31.15
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.432 timer=0 |v|=31.87
+[02:26:36] popo 0x8163fa88: PossessedNozzle fill=2.492 timer=0 |v|=32.59
+[02:26:44] popo 0x8163fa88: nerve PossessedNozzle -> Fly  fill=2.495 timer=2 pos=(-4460,6538,-8514)
+[02:26:44]   LAUNCH: vel=(-56.70,53.44,-18.65) |v|=80.11 fill=2.495 marioDist=11624
+[02:26:44]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:44]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:44]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:44]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:44]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:44]     >>> left Fly -> Explosion at t=6
+[02:26:44] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3901,6338,-7998)
+[02:26:44] popo 0x8163fa88: nerve Fly -> Explosion  fill=2.485 timer=6 pos=(-4630,6698,-8570)
+[02:26:44]   FLIGHT END after 0.06s real, distance=240 units, end-timer=2 -> Explosion
+[02:26:45] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3821,6341,-8056)
+[02:26:45] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4158,6335,-8127)
+[02:26:45] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3787,6283,-8438)
+[02:26:45] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4035,6494,-8126)
+[02:26:45] popo 0x8163fa88: nerve Explosion -> Fly  fill=2.480 timer=8 pos=(-4800,6858,-8626)
+[02:26:45]   LAUNCH: vel=(-56.70,53.44,-18.65) |v|=80.11 fill=2.480 marioDist=12020
+[02:26:45]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:45]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:45]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:45]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:45]     t=12 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:45]     >>> left Fly -> Explosion at t=12
+[02:26:45] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3943,6512,-7999)
+[02:26:45] popo 0x8163fa88: nerve Fly -> Explosion  fill=2.463 timer=15 pos=(-5254,7285,-8775)
+[02:26:45]   FLIGHT END after 0.06s real, distance=641 units, end-timer=8 -> Explosion
+[02:26:45] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3835,6510,-8189)
+[02:26:45] popo 0x8163fa88: nerve Explosion -> Fly  fill=2.446 timer=22 pos=(-5764,7763,-8943)
+[02:26:45]   LAUNCH: vel=(-56.70,52.99,-18.65) |v|=79.81 fill=2.446 marioDist=13171
+[02:26:45]     t=22 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=23 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=24 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=25 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=26 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=27 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=28 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=29 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=30 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=31 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=32 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=33 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=34 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=35 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=36 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=37 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=38 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=39 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     t=40 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:45]     >>> left Fly -> Explosion at t=40
+[02:26:45] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4026,6513,-7989)
+[02:26:45] popo 0x8163fa88: nerve Fly -> vt:803b2398  fill=1.946 timer=40 pos=(-6728,8663,-9260)
+[02:26:45]   FLIGHT END after 0.20s real, distance=1357 units, end-timer=22 -> vt:803b2398
+[02:26:45] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:26:46] popo 0x8164f718: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[02:26:47] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4417,6384,-7783)
+[02:26:47] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4731,6261,-8050)
+[02:26:47] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4355,6249,-7977)
+[02:26:47] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4644,6261,-8173)
+[02:26:47] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4479,6250,-7808)
+[02:26:47] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4314,6253,-7949)
+[02:26:47] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4585,6253,-7617)
+[02:26:47] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4360,6249,-7741)
+[02:26:53] popo 0x81648d58: PossessedNozzle fill=1.071 timer=0 |v|=40.71
+[02:26:53] popo 0x81648d58: PossessedNozzle fill=1.119 timer=0 |v|=40.71
+[02:26:53] popo 0x81648d58: PossessedNozzle fill=1.166 timer=0 |v|=40.71
+[02:26:53] popo 0x81648d58: PossessedNozzle fill=1.226 timer=0 |v|=40.71
+[02:26:53] popo 0x81648d58: PossessedNozzle fill=1.261 timer=0 |v|=40.71
+[02:26:53] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=1.255 timer=5 pos=(-2980,4873,-2066)
+[02:26:53]   LAUNCH: vel=(9.72,44.38,36.54) |v|=58.30 fill=1.255 marioDist=6074
+[02:26:53]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:53]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:53]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:53]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:53]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:26:53]     >>> left Fly -> Explosion at t=9
+[02:26:53] popo 0x81648d58: nerve Fly -> Explosion  fill=1.246 timer=12 pos=(-2902,5227,-1774)
+[02:26:53]   FLIGHT END after 0.07s real, distance=466 units, end-timer=5 -> Explosion
+[02:26:53] popo 0x81648d58: nerve Explosion -> Fly  fill=1.241 timer=16 pos=(-2854,5448,-1591)
+[02:26:53]   LAUNCH: vel=(9.72,44.08,36.54) |v|=58.07 fill=1.241 marioDist=6352
+[02:26:53]     t=16 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=17 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=18 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=19 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=20 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=21 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=22 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=23 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=24 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=25 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=26 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=27 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=28 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=29 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=30 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=31 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=32 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=33 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=34 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=35 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=36 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=37 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=38 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=39 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=40 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=41 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=42 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=43 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=44 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=45 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=46 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=47 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=48 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=49 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=50 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=51 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=52 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=53 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=54 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=55 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=56 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=57 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=58 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=59 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:53]     t=60 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=61 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=62 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=63 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=64 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=65 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=66 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=67 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=68 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=69 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=70 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=71 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=72 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=73 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=74 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=75 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54]     t=76 nerve=Fly +0xF0=00002984 bit0x80=SET
+[02:26:54] popo 0x81648d58: Fly fill=1.164 timer=80 |v|=58.07
+[02:26:56] popo 0x81648d58: nerve Fly -> vt:803b2398  fill=0.999 timer=383 pos=(703,20257,11781)
+[02:26:56]   FLIGHT END after 3.07s real, distance=20268 units, end-timer=380 -> vt:803b2398
+[02:26:57] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[02:30:45] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12195,3122,-1663)
+[02:30:45] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12202,3117,-1698)
+[02:30:46] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12460,3208,-1681)
+[02:30:46] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12586,3207,-1891)
+[02:30:46] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12397,3523,-1975)
+[02:30:46] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-12072,2891,-1695)
+[02:30:46] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12414,2908,-1681)
+[02:30:46] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12552,2967,-1886)
+[02:30:46] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12135,2828,-1712)
+[02:30:46] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12353,2941,-1974)
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.059 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.107 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.155 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.214 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.273 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.321 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.368 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.428 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.487 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.511 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.558 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.629 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.688 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.747 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.795 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.842 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.877 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.936 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=1.984 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=2.019 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=2.078 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=2.137 timer=0 |v|=40.35
+[02:30:49] popo 0x816446e8: PossessedNozzle fill=2.208 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.266 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.325 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.384 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.432 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.480 timer=0 |v|=40.35
+[02:30:50] popo 0x816446e8: PossessedNozzle fill=2.500 timer=0 |v|=40.35
+[02:30:55] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=2.497 timer=1 pos=(-11820,2846,-672)
+[02:30:55]   LAUNCH: vel=(31.51,33.36,83.15) |v|=94.98 fill=2.497 marioDist=12177
+[02:30:55]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     >>> left Fly -> Explosion at t=8
+[02:30:55] popo 0x816446e8: nerve Fly -> Explosion  fill=2.473 timer=11 pos=(-11474,3213,243)
+[02:30:55]   FLIGHT END after 0.09s real, distance=1045 units, end-timer=1 -> Explosion
+[02:30:55] popo 0x816446e8: nerve Explosion -> Fly  fill=2.458 timer=17 pos=(-11190,3509,991)
+[02:30:55]   LAUNCH: vel=(31.51,32.76,83.15) |v|=94.77 fill=2.458 marioDist=11769
+[02:30:55]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=19 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     t=20 nerve=Fly +0xF0=00002980 bit0x80=SET
+[02:30:55]     >>> left Fly -> Explosion at t=20
+[02:30:55] popo 0x816446e8: nerve Fly -> Explosion  fill=2.443 timer=23 pos=(-10970,3738,1574)
+[02:30:55]   FLIGHT END after 0.06s real, distance=663 units, end-timer=17 -> Explosion
+[02:30:55] popo 0x816446e8: nerve Explosion -> Fly  fill=2.438 timer=25 pos=(-10875,3836,1823)
+[02:30:55]   LAUNCH: vel=(31.51,32.46,83.15) |v|=94.66 fill=2.438 marioDist=11675
+[02:30:55]     t=26 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[02:30:55]     >>> left Fly -> Explosion at t=26
+[02:30:55] popo 0x816446e8: nerve Fly -> Explosion  fill=1.944 timer=41 pos=(-10213,4508,3569)
+[02:30:55]   FLIGHT END after 0.18s real, distance=1985 units, end-timer=38 -> Explosion
+[02:30:55] popo 0x816446e8: nerve Explosion -> vt:803b2398  fill=1.944 timer=41 pos=(-10213,4508,3569)
+[02:30:56] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11944,3040,-1731)
+[02:30:56] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11786,2911,-1836)
+[02:30:56] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-12032,3097,-1798)
+[02:30:56] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-11832,3113,-1823)
+[02:30:56] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[02:30:56] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-11808,2811,-1529)
+[02:30:56] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-11803,2829,-1800)
+[02:30:57] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-11671,2631,-943)
+[02:30:57] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-11350,2609,-1215)
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.059 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.107 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.178 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.226 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.273 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.333 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.380 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.428 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.487 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.534 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.582 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.629 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.688 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.735 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.783 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.830 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.901 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=1.948 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=2.007 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=2.054 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=2.113 timer=0 |v|=40.00
+[02:31:05] popo 0x81648d58: PossessedNozzle fill=2.160 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.219 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.266 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.325 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.372 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.420 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.480 timer=0 |v|=40.00
+[02:31:06] popo 0x81648d58: PossessedNozzle fill=2.500 timer=0 |v|=40.00
+[02:31:10] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=2.493 timer=3 pos=(-10660,2744,2244)
+[02:31:10]   LAUNCH: vel=(21.71,75.70,61.80) |v|=100.11 fill=2.493 marioDist=11234
+[02:31:10]     t=3 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=4 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=5 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=6 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=7 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=8 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=9 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=10 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=11 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=12 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=13 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=14 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=15 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=16 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=17 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=18 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=19 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=20 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=21 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=22 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=23 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=24 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=25 nerve=Fly +0xF0=000029c0 bit0x80=SET
+[02:31:10]     t=26 nerve=Explosion +0xF0=000029c0 bit0x80=SET
+[02:31:10]     >>> left Fly -> Explosion at t=26
+[02:31:10] popo 0x81648d58: Fly fill=2.429 timer=29 |v|=99.88
+[02:31:11] popo 0x81648d58: nerve Fly -> Explosion  fill=1.888 timer=70 pos=(-9162,7948,6509)
+[02:31:11]   FLIGHT END after 0.60s real, distance=6893 units, end-timer=68 -> Explosion
+[02:31:11] popo 0x81648d58: nerve Explosion -> vt:803b2398  fill=1.888 timer=70 pos=(-9162,7948,6509)
+[02:31:11] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[02:32:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:32:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:33:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:34:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:35:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:36:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:37:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:38:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:39:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:40:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:41:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:42:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:43:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:44:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:45:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:46:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:47:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:48:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:49:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:50:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:50:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:50:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:50:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:50:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:51:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:52:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:53:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:54:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:55:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:56:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:57:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:58:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[02:59:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:00:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:01:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:02:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:03:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:04:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:05:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:06:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:07:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:08:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:09:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:10:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:11:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:12:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:13:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:14:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:15:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:16:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:17:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:18:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:19:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:20:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:21:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:22:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:23:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:24:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:25:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:26:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:27:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:28:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:29:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:30:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:31:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:32:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:33:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:34:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:35:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:36:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:37:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:38:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:39:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:39:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:39:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:39:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:39:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:40:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:41:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:42:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:43:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:44:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:45:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:46:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:47:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:48:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:49:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:50:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:51:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:52:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:53:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:54:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:55:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:56:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:57:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:58:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[03:59:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:00:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:01:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:02:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:03:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:04:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:05:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:06:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:07:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:08:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:45] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:09:55] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:05] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:10:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:11:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:46] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:12:56] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:06] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:16] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:26] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:36] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:13:57] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:07] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:17] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:27] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:37] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:47] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:14:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:15:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:16:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:48] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:17:58] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:08] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:18] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:28] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:38] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:18:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:19:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:49] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:20:59] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:21:09] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:21:19] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:21:29] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:21:39] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:21:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:22:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:40] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:23:50] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:00] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:10] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:20] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:30] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:24:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:25:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:26:51] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:01] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:11] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:21] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:31] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:41] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:27:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:28:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:29:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:02] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:12] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:22] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:32] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:42] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:30:52] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:31:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:32:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:23] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:33] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:43] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:33:53] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:03] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:13] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:34:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:14] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:24] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:34] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:44] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:35:54] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:36:04] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:36:15] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:36:25] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle
+[04:36:35] attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle

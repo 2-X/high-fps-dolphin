@@ -19,7 +19,7 @@ Interpretation:
 import os, struct, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gcmem import Dolphin
+from gcmem import Dolphin, find_dolphin_pid
 
 SM_BGM_IN_TRACK = 0x803E9C80   # MSBgm* [3]
 SM_MAIN_VOLUME  = 0x8040C1C0   # f32, 0.75 stock
@@ -65,7 +65,9 @@ def show(s):
 
 
 def main():
-    pid = int(sys.argv[1])
+    pid = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else find_dolphin_pid()
+    if not pid:
+        raise SystemExit("no Dolphin process found")
     d = Dolphin(pid, os.environ["SMS_DOL"])
     print(f"MEM1 host base {d.base:#x}  mainVol={d.f32(SM_MAIN_VOLUME)!r}")
 

@@ -1,0 +1,1135 @@
+[01:09:30] popolog armed - waiting for Dolphin + SMS boot
+[01:09:30] ATTACHED to Dolphin pid 96018, MEM1 @ 0x14b200000 — now enter Bianco 5 and latch a Poink
+[01:09:30] found 10 TPopo instance(s): 0x8163fa88 0x816446e8 0x81646a18 0x81648d58 0x8164b098 0x8164d3d8 0x8164f718 0x81651a58 0x81653d98 0x816560d8
+[01:09:30] params: releaseSpeed=80.0 flyLimit=1000 scaleMax=2.5 pumpRate=0.000080 levelLimit=1.2000000476837158
+[01:10:36] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3806,6413,-7959)
+[01:10:36] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3730,6410,-7994)
+[01:10:36] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3787,6561,-7971)
+[01:10:36] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3807,6249,-8701)
+[01:10:37] popo 0x8164f718: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3959,6362,-8036)
+[01:10:37] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3838,6253,-7974)
+[01:10:37] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3742,6249,-7967)
+[01:10:37] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4001,6261,-8132)
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.059 timer=0 |v|=20.88
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.119 timer=0 |v|=21.62
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.166 timer=0 |v|=22.21
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.214 timer=0 |v|=22.80
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.273 timer=0 |v|=23.54
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.321 timer=0 |v|=24.13
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.368 timer=0 |v|=24.72
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.416 timer=0 |v|=25.31
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.475 timer=0 |v|=26.05
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.522 timer=0 |v|=26.65
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.582 timer=0 |v|=27.39
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.629 timer=0 |v|=27.98
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.688 timer=0 |v|=28.73
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.735 timer=0 |v|=29.32
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.783 timer=0 |v|=29.91
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.830 timer=0 |v|=30.51
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.889 timer=0 |v|=31.25
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.936 timer=0 |v|=31.85
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=1.995 timer=0 |v|=32.59
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=2.043 timer=0 |v|=33.19
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=2.102 timer=0 |v|=33.93
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=2.149 timer=0 |v|=34.53
+[01:10:38] popo 0x8164f718: PossessedNozzle fill=2.196 timer=0 |v|=35.12
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.243 timer=0 |v|=35.72
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.302 timer=0 |v|=36.47
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.349 timer=0 |v|=37.06
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.408 timer=0 |v|=37.81
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.456 timer=0 |v|=38.41
+[01:10:39] popo 0x8164f718: PossessedNozzle fill=2.500 timer=0 |v|=39.00
+[01:10:39] popo 0x8164f718: nerve PossessedNozzle -> Explosion  fill=2.488 timer=5 pos=(-2800,6267,-7290)
+[01:10:39] popo 0x8164f718: nerve Explosion -> vt:803b2398  fill=2.015 timer=5 pos=(-2800,6267,-7290)
+[01:10:39] popo 0x8164f718: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:10:40] popo 0x81646a18: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-1871,5415,-11217)
+[01:10:40] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:10:40] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3700,6400,-7691)
+[01:10:41] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3647,6249,-7724)
+[01:10:52] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3908,6562,-7965)
+[01:10:52] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3765,6525,-7903)
+[01:10:52] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3859,6477,-7936)
+[01:10:53] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3726,6550,-8227)
+[01:10:53] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3746,6549,-8339)
+[01:10:53] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3804,6529,-8304)
+[01:10:53] popo 0x8164b098: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3716,6328,-7915)
+[01:10:53] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3761,6249,-8202)
+[01:10:53] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3832,6253,-8275)
+[01:10:54] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3598,6261,-7766)
+[01:10:54] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3432,6264,-7948)
+[01:10:54] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3782,6257,-8295)
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.071 timer=0 |v|=32.02
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.119 timer=0 |v|=32.62
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.166 timer=0 |v|=33.22
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.226 timer=0 |v|=33.97
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.273 timer=0 |v|=34.57
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.333 timer=0 |v|=35.32
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.380 timer=0 |v|=35.92
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.439 timer=0 |v|=36.67
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.487 timer=0 |v|=37.27
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.546 timer=0 |v|=38.02
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.593 timer=0 |v|=38.62
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.653 timer=0 |v|=39.37
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.700 timer=0 |v|=39.97
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.747 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.806 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.854 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.913 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=1.960 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.019 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.066 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.125 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.172 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.231 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.278 timer=0 |v|=40.00
+[01:10:55] popo 0x8164b098: PossessedNozzle fill=2.337 timer=0 |v|=40.00
+[01:10:56] popo 0x8164b098: PossessedNozzle fill=2.384 timer=0 |v|=40.00
+[01:10:56] popo 0x8164b098: PossessedNozzle fill=2.432 timer=0 |v|=40.00
+[01:10:56] popo 0x8164b098: PossessedNozzle fill=2.492 timer=0 |v|=0.00
+[01:10:58] popo 0x8164b098: nerve PossessedNozzle -> Fly  fill=2.490 timer=4 pos=(-3038,6752,-7052)
+[01:10:58]   LAUNCH: vel=(9.37,74.74,51.80) |v|=91.41 fill=2.490 marioDist=10225
+[01:10:58]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:10:58]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:10:58]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:10:58]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:10:58]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:10:58]     >>> left Fly -> Explosion at t=8
+[01:10:58] popo 0x8164b098: nerve Fly -> vt:803b2398  fill=2.009 timer=8 pos=(-3001,7051,-6845)
+[01:10:58]   FLIGHT END after 0.07s real, distance=365 units, end-timer=4 -> vt:803b2398
+[01:10:58] popo 0x8164b098: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:00] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3452,6428,-7975)
+[01:11:00] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3685,6352,-7942)
+[01:11:01] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3727,6496,-8055)
+[01:11:01] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3792,6484,-8088)
+[01:11:01] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-3218,6362,-7543)
+[01:11:01] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3741,6455,-8097)
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.071 timer=0 |v|=6.02
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.131 timer=0 |v|=6.45
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.178 timer=0 |v|=6.84
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.238 timer=0 |v|=7.36
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.285 timer=0 |v|=7.80
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.333 timer=0 |v|=8.26
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.380 timer=0 |v|=8.74
+[01:11:01] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3625,6249,-7950)
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.439 timer=0 |v|=9.36
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.499 timer=0 |v|=10.00
+[01:11:01] popo 0x816446e8: PossessedNozzle fill=1.546 timer=0 |v|=10.52
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.593 timer=0 |v|=11.05
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.641 timer=0 |v|=11.58
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.700 timer=0 |v|=12.26
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.747 timer=0 |v|=12.81
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.795 timer=0 |v|=13.36
+[01:11:02] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3665,6261,-8051)
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.842 timer=0 |v|=13.92
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.901 timer=0 |v|=14.62
+[01:11:02] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3735,6257,-8078)
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=1.948 timer=0 |v|=15.18
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.007 timer=0 |v|=15.89
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.066 timer=0 |v|=16.60
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.113 timer=0 |v|=17.18
+[01:11:02] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3678,6253,-8086)
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.160 timer=0 |v|=17.75
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.208 timer=0 |v|=18.32
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.266 timer=0 |v|=19.05
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.314 timer=0 |v|=19.63
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.361 timer=0 |v|=20.21
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.420 timer=0 |v|=20.93
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.468 timer=0 |v|=21.51
+[01:11:02] popo 0x816446e8: PossessedNozzle fill=2.500 timer=0 |v|=22.24
+[01:11:02] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=2.490 timer=4 pos=(-3262,6755,-7796)
+[01:11:02]   LAUNCH: vel=(-9.62,76.46,-62.01) |v|=98.91 fill=2.490 marioDist=10819
+[01:11:02]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:02]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=12 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=13 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=14 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=15 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=16 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=17 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=18 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=19 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=20 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=21 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:03]     t=22 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=23 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=24 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=25 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=26 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=27 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=28 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=29 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=30 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=31 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=32 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=33 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=34 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=35 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=36 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=37 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=38 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=39 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=40 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=41 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=42 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=43 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=44 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=45 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=46 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=47 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=48 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=49 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=50 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=51 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=52 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=53 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=54 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=55 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=56 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=57 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=58 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=59 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=60 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=61 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=62 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=63 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03]     t=64 nerve=Fly +0xF0=00002984 bit0x80=SET
+[01:11:03] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3742,6474,-8028)
+[01:11:03] popo 0x816446e8: Fly fill=2.333 timer=69 |v|=98.91
+[01:11:03] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3730,6549,-7956)
+[01:11:03] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3758,6552,-8061)
+[01:11:03] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3732,6431,-8377)
+[01:11:03] popo 0x816446e8: nerve Fly -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:03]   FLIGHT END after 0.94s real, distance=1645 units, end-timer=113 -> vt:803b2790
+[01:11:04] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3724,6277,-8408)
+[01:11:05] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3916,6311,-8015)
+[01:11:05] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3842,6393,-8254)
+[01:11:06] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.024 timer=0 pos=(-3320,6377,-7529)
+[01:11:06] popo 0x81648d58: PossessedNozzle fill=1.071 timer=0 |v|=6.62
+[01:11:06] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3818,6257,-8572)
+[01:11:06] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3792,6249,-8230)
+[01:11:06] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3143,6257,-7403)
+[01:11:06] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3599,6257,-7717)
+[01:11:07] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3300,6264,-7521)
+[01:11:07] popo 0x8164f718: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3684,6249,-7726)
+[01:11:07] popo 0x81648d58: PossessedNozzle fill=1.131 timer=0 |v|=20.21
+[01:11:07] popo 0x81648d58: PossessedNozzle fill=1.178 timer=0 |v|=20.78
+[01:11:07] popo 0x81648d58: PossessedNozzle fill=1.226 timer=0 |v|=21.49
+[01:11:07] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=1.221 timer=4 pos=(-3820,6368,-6931)
+[01:11:07]   LAUNCH: vel=(-42.44,-3.54,34.70) |v|=54.94 fill=1.221 marioDist=10158
+[01:11:07]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:07]     >>> left Fly -> Explosion at t=11
+[01:11:07] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3153,6518,-7458)
+[01:11:07] popo 0x81648d58: nerve Fly -> vt:803b2398  fill=0.982 timer=11 pos=(-4117,6343,-6688)
+[01:11:07]   FLIGHT END after 0.09s real, distance=385 units, end-timer=4 -> vt:803b2398
+[01:11:07] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3557,6515,-7744)
+[01:11:07] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:11:08] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3293,6512,-7568)
+[01:11:08] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3733,6513,-7758)
+[01:11:08] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3859,6564,-8174)
+[01:11:08] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3942,6255,-8367)
+[01:11:08] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3873,6562,-8464)
+[01:11:08] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-2782,6261,-7546)
+[01:11:08] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3800,6556,-8425)
+[01:11:08] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3802,6342,-8695)
+[01:11:09] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6662,-8968)
+[01:11:10] popo 0x8164f718: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4404,6294,-8391)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.048 timer=0 |v|=8.41
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.095 timer=0 |v|=8.51
+[01:11:10] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4327,6261,-8299)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.155 timer=0 |v|=8.70
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.202 timer=0 |v|=8.90
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.261 timer=0 |v|=9.19
+[01:11:10] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3999,6249,-7908)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.321 timer=0 |v|=9.53
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.368 timer=0 |v|=9.84
+[01:11:10] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4458,6304,-8582)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.416 timer=0 |v|=10.17
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.475 timer=0 |v|=10.62
+[01:11:10] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4622,6257,-8446)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.522 timer=0 |v|=11.00
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.582 timer=0 |v|=11.51
+[01:11:10] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4322,6327,-8585)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.629 timer=0 |v|=11.93
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.688 timer=0 |v|=12.48
+[01:11:10] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4530,6249,-8334)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.735 timer=0 |v|=12.93
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.795 timer=0 |v|=13.52
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.842 timer=0 |v|=13.99
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.901 timer=0 |v|=14.60
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=1.960 timer=0 |v|=15.23
+[01:11:10] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4529,6249,-8393)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=2.007 timer=0 |v|=15.73
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=2.054 timer=0 |v|=16.24
+[01:11:10] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3794,6095,-8850)
+[01:11:10] popo 0x8164f718: PossessedNozzle fill=2.113 timer=0 |v|=16.89
+[01:11:11] popo 0x8164f718: PossessedNozzle fill=2.160 timer=0 |v|=17.42
+[01:11:11] popo 0x8164f718: PossessedNozzle fill=2.208 timer=0 |v|=17.95
+[01:11:11] popo 0x8164f718: PossessedNozzle fill=2.266 timer=0 |v|=18.61
+[01:11:11] popo 0x8164f718: nerve PossessedNozzle -> Fly  fill=2.273 timer=2 pos=(-4485,6419,-8727)
+[01:11:11]   LAUNCH: vel=(-6.39,20.92,-88.46) |v|=91.13 fill=2.273 marioDist=11726
+[01:11:11]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:11]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:11]     >>> left Fly -> Explosion at t=3
+[01:11:11] popo 0x8163fa88: nerve vt:803b2790 -> vt:803b2398  fill=1.000 timer=0 pos=(-4447,6533,-8630)
+[01:11:11] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4297,6516,-8251)
+[01:11:11] popo 0x8164f718: nerve Fly -> vt:803b2398  fill=1.840 timer=3 pos=(-4492,6440,-8816)
+[01:11:11]   FLIGHT END after 0.04s real, distance=91 units, end-timer=2 -> vt:803b2398
+[01:11:11] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4047,6512,-7929)
+[01:11:11] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4580,6514,-8412)
+[01:11:11] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4270,6581,-8564)
+[01:11:11] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4480,6512,-8317)
+[01:11:11] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4598,6517,-8311)
+[01:11:11] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3764,6347,-8807)
+[01:11:12] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:11:12] popo 0x8164f718: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:11:12] popo 0x816560d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4467,6395,-8507)
+[01:11:12] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4102,6249,-7954)
+[01:11:12] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4208,6249,-8538)
+[01:11:12] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4422,6249,-8298)
+[01:11:12] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3736,6198,-8764)
+[01:11:12] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4973,6253,-7870)
+[01:11:12] popo 0x8164b098: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4433,6303,-8584)
+[01:11:13] popo 0x816560d8: PossessedNozzle fill=1.071 timer=0 |v|=26.57
+[01:11:13] popo 0x816560d8: nerve PossessedNozzle -> Fly  fill=1.094 timer=1 pos=(-4471,6380,-8523)
+[01:11:13]   LAUNCH: vel=(-2.92,2.60,-40.26) |v|=40.45 fill=1.094 marioDist=11547
+[01:11:13]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:13]     >>> left Fly -> Explosion at t=10
+[01:11:13] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3758,6457,-8717)
+[01:11:13] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4348,6563,-8596)
+[01:11:13] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4915,6519,-7869)
+[01:11:13] popo 0x816560d8: nerve Fly -> vt:803b2398  fill=0.976 timer=10 pos=(-4497,6403,-8885)
+[01:11:13]   FLIGHT END after 0.12s real, distance=364 units, end-timer=1 -> vt:803b2398
+[01:11:13] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6530,-8786)
+[01:11:13] popo 0x8164f718: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:13] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4000,6549,-7961)
+[01:11:14] popo 0x816560d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:14] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4194,6549,-8438)
+[01:11:14] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4357,6549,-8223)
+[01:11:14] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:15] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3135,5415,-10177)
+[01:11:15] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.012 timer=0 pos=(-4469,6371,-8518)
+[01:11:15] popo 0x81646a18: PossessedNozzle fill=1.071 timer=0 |v|=6.63
+[01:11:15] popo 0x81646a18: PossessedNozzle fill=1.119 timer=0 |v|=6.70
+[01:11:15] popo 0x81646a18: PossessedNozzle fill=1.178 timer=0 |v|=6.87
+[01:11:15] popo 0x81646a18: PossessedNozzle fill=1.226 timer=0 |v|=7.06
+[01:11:15] popo 0x8164d3d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4410,6253,-8436)
+[01:11:15] popo 0x81646a18: nerve PossessedNozzle -> Fly  fill=1.222 timer=3 pos=(-4480,6345,-8655)
+[01:11:15]   LAUNCH: vel=(-3.17,-6.75,-43.97) |v|=44.59 fill=1.222 marioDist=11630
+[01:11:15]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:15]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:15]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:15]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:15]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:15]     t=8 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:11:15]     >>> left Fly -> Explosion at t=8
+[01:11:15] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4477,6300,-8455)
+[01:11:15] popo 0x81653d98: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4521,6282,-8367)
+[01:11:15] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4469,6374,-8503)
+[01:11:15] popo 0x81646a18: nerve Fly -> vt:803b2398  fill=0.985 timer=8 pos=(-4496,6311,-8875)
+[01:11:15]   FLIGHT END after 0.08s real, distance=223 units, end-timer=3 -> vt:803b2398
+[01:11:15] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4647,6253,-8202)
+[01:11:15] popo 0x8164f718: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:16] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:16] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.036 timer=0 |v|=14.70
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.083 timer=0 |v|=15.27
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.131 timer=0 |v|=15.85
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.178 timer=0 |v|=16.58
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.236 timer=0 |v|=19.06
+[01:11:16] popo 0x816446e8: PossessedNozzle fill=1.284 timer=0 |v|=19.64
+[01:11:16] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=1.293 timer=2 pos=(-4478,6401,-8628)
+[01:11:16]   LAUNCH: vel=(-4.22,7.28,-58.17) |v|=58.78 fill=1.293 marioDist=11639
+[01:11:16]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:16]     >>> left Fly -> Explosion at t=8
+[01:11:16] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3799,6267,-8717)
+[01:11:16] popo 0x816446e8: nerve Fly -> vt:803b2398  fill=1.041 timer=8 pos=(-4503,6445,-8977)
+[01:11:16]   FLIGHT END after 0.08s real, distance=353 units, end-timer=2 -> vt:803b2398
+[01:11:16] popo 0x816560d8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3327,5415,-9190)
+[01:11:16] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:17] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:11:17] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4263,6566,-8356)
+[01:11:17] popo 0x8164f718: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:11:17] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4510,6505,-8355)
+[01:11:17] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4552,6549,-8196)
+[01:11:17] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:11:18] popo 0x816560d8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:11:18] popo 0x8164d3d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4416,6296,-8384)
+[01:11:18] popo 0x81651a58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4457,6258,-8366)
+[01:11:18] popo 0x81651a58: nerve PossessedNozzle -> vt:803b2790  fill=1.000 timer=0 pos=(-4463,6267,-8382)
+[01:11:18] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4264,6322,-8614)
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.048 timer=0 |v|=6.91
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.095 timer=0 |v|=7.15
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.143 timer=0 |v|=7.43
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.202 timer=0 |v|=7.83
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.250 timer=0 |v|=8.18
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.297 timer=0 |v|=8.57
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.345 timer=0 |v|=8.97
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.404 timer=0 |v|=9.51
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.451 timer=0 |v|=9.96
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.511 timer=0 |v|=10.54
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.570 timer=0 |v|=11.15
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.617 timer=0 |v|=11.64
+[01:11:18] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4357,6326,-8580)
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.676 timer=0 |v|=12.27
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.724 timer=0 |v|=12.79
+[01:11:18] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:18] popo 0x8164d3d8: PossessedNozzle fill=1.771 timer=0 |v|=13.31
+[01:11:18] popo 0x81648d58: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4351,6372,-8577)
+[01:11:18] popo 0x8164d3d8: nerve PossessedNozzle -> Explosion  fill=1.804 timer=1 pos=(-4476,6349,-8605)
+[01:11:18] popo 0x81648d58: nerve Explosion -> vt:803b2398  fill=1.000 timer=0 pos=(-4351,6372,-8577)
+[01:11:18] popo 0x8164d3d8: nerve Explosion -> vt:803b2398  fill=1.462 timer=1 pos=(-4476,6349,-8605)
+[01:11:19] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:19] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4460,6360,-8273)
+[01:11:19] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4217,6589,-8585)
+[01:11:19] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12968,4805,-1975)
+[01:11:19] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:19] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:19] popo 0x81651a58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4475,6375,-8503)
+[01:11:20] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:20] popo 0x8164d3d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:11:20] popo 0x81651a58: PossessedNozzle fill=1.071 timer=0 |v|=6.11
+[01:11:20] popo 0x81651a58: PossessedNozzle fill=1.119 timer=0 |v|=6.57
+[01:11:20] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4161,6253,-8538)
+[01:11:20] popo 0x81651a58: PossessedNozzle fill=1.154 timer=0 |v|=7.05
+[01:11:20] popo 0x81651a58: PossessedNozzle fill=1.188 timer=0 |v|=9.38
+[01:11:20] popo 0x81651a58: PossessedNozzle fill=1.236 timer=0 |v|=9.92
+[01:11:20] popo 0x81651a58: nerve PossessedNozzle -> Fly  fill=1.245 timer=2 pos=(-4474,6386,-8598)
+[01:11:20]   LAUNCH: vel=(-3.32,3.04,-45.87) |v|=46.09 fill=1.245 marioDist=11607
+[01:11:20]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:20]     >>> left Fly -> Explosion at t=9
+[01:11:20] popo 0x81651a58: nerve Fly -> vt:803b2398  fill=1.002 timer=9 pos=(-4498,6407,-8919)
+[01:11:20]   FLIGHT END after 0.09s real, distance=323 units, end-timer=2 -> vt:803b2398
+[01:11:20] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:21] popo 0x81651a58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:21] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4153,6516,-8484)
+[01:11:21] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6672,-8840)
+[01:11:21] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4159,6352,-8530)
+[01:11:21] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:22] popo 0x816560d8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6178,-8767)
+[01:11:22] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.036 timer=0 |v|=8.88
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.095 timer=0 |v|=9.63
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.143 timer=0 |v|=10.23
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.166 timer=0 |v|=10.83
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.188 timer=0 |v|=13.52
+[01:11:22] popo 0x8163fa88: PossessedNozzle fill=1.248 timer=0 |v|=14.27
+[01:11:22] popo 0x8163fa88: nerve PossessedNozzle -> Fly  fill=1.257 timer=2 pos=(-4289,6385,-8351)
+[01:11:22]   LAUNCH: vel=(-39.34,-0.59,24.82) |v|=46.52 fill=1.257 marioDist=11354
+[01:11:22]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:22]     t=9 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:11:22]     >>> left Fly -> Explosion at t=9
+[01:11:22] popo 0x8163fa88: nerve Fly -> vt:803b2398  fill=1.011 timer=9 pos=(-4564,6380,-8178)
+[01:11:22]   FLIGHT END after 0.09s real, distance=326 units, end-timer=2 -> vt:803b2398
+[01:11:22] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:22] popo 0x816560d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3819,6442,-8716)
+[01:11:22] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:11:23] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:11:23] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:11:23] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:24] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6599,-8808)
+[01:11:24] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:24] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:25] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:25] popo 0x816560d8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4362,6284,-8372)
+[01:11:25] popo 0x81651a58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4130,6395,-8621)
+[01:11:25] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:25] popo 0x816560d8: PossessedNozzle fill=1.036 timer=0 |v|=8.41
+[01:11:25] popo 0x816560d8: PossessedNozzle fill=1.095 timer=0 |v|=8.94
+[01:11:26] popo 0x816560d8: PossessedNozzle fill=1.131 timer=0 |v|=9.39
+[01:11:26] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:26] popo 0x816560d8: PossessedNozzle fill=1.153 timer=0 |v|=10.93
+[01:11:26] popo 0x816560d8: PossessedNozzle fill=1.213 timer=0 |v|=11.56
+[01:11:26] popo 0x816560d8: PossessedNozzle fill=1.260 timer=0 |v|=12.08
+[01:11:26] popo 0x816560d8: nerve PossessedNozzle -> Fly  fill=1.256 timer=3 pos=(-4376,6414,-8651)
+[01:11:26]   LAUNCH: vel=(-19.04,8.38,-54.47) |v|=58.31 fill=1.256 marioDist=11624
+[01:11:26]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:26]     t=10 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:11:26]     >>> left Fly -> Explosion at t=10
+[01:11:26] popo 0x816560d8: nerve Fly -> vt:803b2398  fill=1.010 timer=10 pos=(-4510,6472,-9032)
+[01:11:26]   FLIGHT END after 0.09s real, distance=408 units, end-timer=3 -> vt:803b2398
+[01:11:26] popo 0x81651a58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4129,6658,-8568)
+[01:11:26] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:26] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:11:27] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:27] popo 0x816560d8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:11:27] popo 0x81651a58: nerve Attack -> PossessedNozzle  fill=1.036 timer=0 pos=(-4306,6418,-8459)
+[01:11:27] popo 0x81651a58: PossessedNozzle fill=1.083 timer=0 |v|=6.16
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.143 timer=0 |v|=6.19
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.190 timer=0 |v|=6.27
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.238 timer=0 |v|=6.40
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.285 timer=0 |v|=6.59
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.345 timer=0 |v|=6.90
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.392 timer=0 |v|=7.19
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.439 timer=0 |v|=7.51
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.487 timer=0 |v|=7.87
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.534 timer=0 |v|=8.26
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.593 timer=0 |v|=8.78
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.641 timer=0 |v|=9.21
+[01:11:28] popo 0x81651a58: PossessedNozzle fill=1.700 timer=0 |v|=9.78
+[01:11:28] popo 0x81651a58: nerve PossessedNozzle -> Fly  fill=1.722 timer=1 pos=(-4304,6464,-8532)
+[01:11:28]   LAUNCH: vel=(1.12,41.19,-50.97) |v|=65.54 fill=1.722 marioDist=11537
+[01:11:28]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:28]     >>> left Fly -> Explosion at t=10
+[01:11:28] popo 0x81651a58: nerve Fly -> vt:803b2398  fill=1.382 timer=10 pos=(-4294,6835,-8991)
+[01:11:28]   FLIGHT END after 0.11s real, distance=590 units, end-timer=1 -> vt:803b2398
+[01:11:28] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6516,-8788)
+[01:11:29] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:29] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:11:29] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:11:29] popo 0x81651a58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:11:30] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:30] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4364,6374,-8569)
+[01:11:30] popo 0x81646a18: PossessedNozzle fill=1.059 timer=0 |v|=4.70
+[01:11:30] popo 0x81646a18: PossessedNozzle fill=1.107 timer=0 |v|=4.89
+[01:11:30] popo 0x81646a18: PossessedNozzle fill=1.154 timer=0 |v|=5.20
+[01:11:31] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:31] popo 0x81646a18: PossessedNozzle fill=1.200 timer=0 |v|=7.38
+[01:11:31] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:31] popo 0x81646a18: PossessedNozzle fill=1.218 timer=0 |v|=13.64
+[01:11:31] popo 0x81646a18: PossessedNozzle fill=1.278 timer=0 |v|=14.34
+[01:11:31] popo 0x81646a18: PossessedNozzle fill=1.325 timer=0 |v|=14.91
+[01:11:31] popo 0x81646a18: nerve PossessedNozzle -> Fly  fill=1.347 timer=1 pos=(-4347,6393,-8645)
+[01:11:31]   LAUNCH: vel=(12.71,7.16,-60.61) |v|=62.34 fill=1.347 marioDist=11597
+[01:11:31]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:31]     >>> left Fly -> Explosion at t=11
+[01:11:31] popo 0x81646a18: nerve Fly -> vt:803b2398  fill=1.081 timer=11 pos=(-4219,6464,-9251)
+[01:11:31]   FLIGHT END after 0.12s real, distance=623 units, end-timer=1 -> vt:803b2398
+[01:11:32] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:32] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:11:32] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:32] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:11:32] popo 0x816446e8: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-2335,5415,-11459)
+[01:11:33] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:33] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6690,-8852)
+[01:11:33] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:34] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:11:34] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:34] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:11:34] popo 0x8164b098: nerve Attack -> vt:803b2388  fill=1.000 timer=0 pos=(-4388,6245,-8649)
+[01:11:35] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:35] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:11:35] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:36] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:36] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:36] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:37] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:37] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:37] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:37] popo 0x8164b098: nerve vt:803b2388 -> PossessedNozzle  fill=1.012 timer=0 pos=(-4375,6418,-8546)
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.071 timer=0 |v|=4.82
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.119 timer=0 |v|=4.76
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.178 timer=0 |v|=4.78
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.238 timer=0 |v|=4.91
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.285 timer=0 |v|=5.10
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.333 timer=0 |v|=5.34
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.392 timer=0 |v|=5.73
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.439 timer=0 |v|=6.08
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.487 timer=0 |v|=6.47
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.534 timer=0 |v|=6.90
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.593 timer=0 |v|=7.46
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.641 timer=0 |v|=7.93
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.688 timer=0 |v|=8.42
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.747 timer=0 |v|=9.05
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.795 timer=0 |v|=9.56
+[01:11:37] popo 0x8164b098: PossessedNozzle fill=1.842 timer=0 |v|=10.09
+[01:11:38] popo 0x8164b098: PossessedNozzle fill=1.901 timer=0 |v|=10.76
+[01:11:38] popo 0x8164b098: PossessedNozzle fill=1.948 timer=0 |v|=11.30
+[01:11:38] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:38] popo 0x8164b098: PossessedNozzle fill=1.995 timer=0 |v|=11.84
+[01:11:38] popo 0x8164b098: nerve PossessedNozzle -> Fly  fill=1.987 timer=4 pos=(-4425,6631,-8831)
+[01:11:38]   LAUNCH: vel=(-10.94,51.12,-62.12) |v|=81.19 fill=1.987 marioDist=11897
+[01:11:38]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:38]     t=11 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:11:38]     >>> left Fly -> Explosion at t=11
+[01:11:38] popo 0x8164b098: nerve Fly -> vt:803b2398  fill=1.598 timer=11 pos=(-4502,6989,-9266)
+[01:11:38]   FLIGHT END after 0.10s real, distance=568 units, end-timer=4 -> vt:803b2398
+[01:11:38] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:38] popo 0x8164b098: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12968,4805,-1975)
+[01:11:39] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:39] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:39] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:40] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:40] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6690,-8852)
+[01:11:41] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:41] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:41] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:11:41] popo 0x81648d58: nerve Attack -> vt:803b2388  fill=1.000 timer=0 pos=(-4343,6245,-8653)
+[01:11:42] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:42] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:42] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:11:43] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:43] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:43] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:44] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:44] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:44] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:44] popo 0x81648d58: nerve vt:803b2388 -> Attack  fill=1.000 timer=0 pos=(-4318,6258,-8634)
+[01:11:44] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4117,6364,-8529)
+[01:11:45] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:45] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:45] popo 0x81648d58: PossessedNozzle fill=1.059 timer=0 |v|=18.47
+[01:11:45] popo 0x81648d58: PossessedNozzle fill=1.107 timer=0 |v|=19.18
+[01:11:45] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=1.103 timer=4 pos=(-4440,6386,-8423)
+[01:11:45]   LAUNCH: vel=(-32.60,2.06,-35.18) |v|=48.01 fill=1.103 marioDist=11465
+[01:11:45]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:45]     >>> left Fly -> Explosion at t=9
+[01:11:45] popo 0x81648d58: nerve Fly -> vt:803b2398  fill=0.987 timer=9 pos=(-4603,6395,-8599)
+[01:11:45]   FLIGHT END after 0.08s real, distance=240 units, end-timer=4 -> vt:803b2398
+[01:11:46] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:46] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:11:46] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:46] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12968,4805,-1975)
+[01:11:46] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4021,6505,-7492)
+[01:11:48] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:48] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:11:48] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6331,-8740)
+[01:11:48] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6616,-8981)
+[01:11:48] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6756,-8892)
+[01:11:49] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4382,6309,-8614)
+[01:11:49] popo 0x81653d98: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4415,6289,-8462)
+[01:11:49] popo 0x81653d98: nerve PossessedNozzle -> vt:803b2790  fill=1.000 timer=0 pos=(-4416,6284,-8473)
+[01:11:50] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3795,6148,-8793)
+[01:11:50] popo 0x8163fa88: PossessedNozzle fill=1.059 timer=0 |v|=9.52
+[01:11:50] popo 0x8163fa88: PossessedNozzle fill=1.095 timer=0 |v|=10.00
+[01:11:50] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3795,6078,-8863)
+[01:11:50] popo 0x8163fa88: PossessedNozzle fill=1.149 timer=0 |v|=17.48
+[01:11:50] popo 0x8163fa88: PossessedNozzle fill=1.208 timer=0 |v|=18.19
+[01:11:50] popo 0x8163fa88: PossessedNozzle fill=1.256 timer=0 |v|=18.76
+[01:11:50] popo 0x8163fa88: nerve PossessedNozzle -> Fly  fill=1.278 timer=1 pos=(-4376,6385,-8604)
+[01:11:50]   LAUNCH: vel=(45.53,3.73,-24.44) |v|=51.81 fill=1.278 marioDist=11574
+[01:11:50]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:50]     >>> left Fly -> Explosion at t=10
+[01:11:50] popo 0x8163fa88: nerve Fly -> vt:803b2398  fill=1.026 timer=10 pos=(-3967,6419,-8824)
+[01:11:50]   FLIGHT END after 0.11s real, distance=466 units, end-timer=1 -> vt:803b2398
+[01:11:50] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3764,6413,-8750)
+[01:11:51] popo 0x8164d3d8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:11:51] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4356,6543,-8366)
+[01:11:51] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:52] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:11:52] popo 0x81653d98: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4432,6374,-8577)
+[01:11:52] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4536,6171,-8726)
+[01:11:53] popo 0x816446e8: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-4009,5415,-13394)
+[01:11:53] popo 0x8164d3d8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.036 timer=0 |v|=19.82
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.083 timer=0 |v|=20.36
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.119 timer=0 |v|=21.04
+[01:11:53] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:11:53] popo 0x8164d3d8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.172 timer=0 |v|=29.05
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.220 timer=0 |v|=29.63
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.267 timer=0 |v|=30.20
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.327 timer=0 |v|=30.92
+[01:11:53] popo 0x81653d98: PossessedNozzle fill=1.374 timer=0 |v|=31.50
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.422 timer=0 |v|=32.08
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.469 timer=0 |v|=32.65
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.528 timer=0 |v|=33.38
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.576 timer=0 |v|=33.96
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.635 timer=0 |v|=34.68
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.682 timer=0 |v|=35.27
+[01:11:54] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.729 timer=0 |v|=35.85
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.789 timer=0 |v|=36.58
+[01:11:54] popo 0x81653d98: PossessedNozzle fill=1.848 timer=0 |v|=37.31
+[01:11:54] popo 0x81653d98: nerve PossessedNozzle -> Fly  fill=1.842 timer=3 pos=(-4423,6328,-8751)
+[01:11:54]   LAUNCH: vel=(-22.38,-7.80,-71.07) |v|=74.92 fill=1.842 marioDist=11670
+[01:11:54]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:54]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:54]     >>> left Fly -> Explosion at t=4
+[01:11:54] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:11:54] popo 0x81646a18: nerve vt:803b2790 -> vt:803b2398  fill=1.000 timer=0 pos=(-4488,6466,-8634)
+[01:11:54] popo 0x81653d98: nerve Fly -> vt:803b2398  fill=1.490 timer=4 pos=(-4446,6320,-8822)
+[01:11:54]   FLIGHT END after 0.04s real, distance=75 units, end-timer=3 -> vt:803b2398
+[01:11:54] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:11:55] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3750,6510,-8656)
+[01:11:55] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3644,6375,-9180)
+[01:11:55] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6694,-8856)
+[01:11:55] popo 0x81653d98: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:11:56] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:11:56] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6694,-8856)
+[01:11:56] popo 0x8164b098: nerve Attack -> PossessedNozzle  fill=1.036 timer=0 pos=(-4343,6413,-8506)
+[01:11:56] popo 0x8164b098: PossessedNozzle fill=1.083 timer=0 |v|=5.16
+[01:11:56] popo 0x8164b098: PossessedNozzle fill=1.143 timer=0 |v|=5.22
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.190 timer=0 |v|=5.34
+[01:11:57] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-2397,5415,-10658)
+[01:11:57] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4251,6193,-8719)
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.238 timer=0 |v|=5.52
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.297 timer=0 |v|=5.83
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.345 timer=0 |v|=6.13
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.392 timer=0 |v|=6.47
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.439 timer=0 |v|=6.85
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.487 timer=0 |v|=7.26
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.546 timer=0 |v|=7.80
+[01:11:57] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,6168,-8775)
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.593 timer=0 |v|=8.26
+[01:11:57] popo 0x8164b098: PossessedNozzle fill=1.641 timer=0 |v|=8.74
+[01:11:57] popo 0x8164b098: nerve PossessedNozzle -> Fly  fill=1.648 timer=3 pos=(-4358,6520,-8707)
+[01:11:57]   LAUNCH: vel=(-4.28,35.50,-57.66) |v|=67.85 fill=1.648 marioDist=11718
+[01:11:57]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:11:57]     >>> left Fly -> Explosion at t=8
+[01:11:57] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:57] popo 0x8164b098: nerve Fly -> vt:803b2398  fill=1.328 timer=8 pos=(-4380,6697,-8995)
+[01:11:57]   FLIGHT END after 0.08s real, distance=339 units, end-timer=3 -> vt:803b2398
+[01:11:57] popo 0x8164b098: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[01:11:57] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4238,6445,-8667)
+[01:11:58] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3813,6434,-8726)
+[01:11:58] popo 0x81653d98: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:11:58] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3728,6398,-9092)
+[01:11:58] popo 0x81653d98: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:11:59] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:00] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4457,6279,-8104)
+[01:12:01] popo 0x816446e8: PossessedNozzle fill=1.036 timer=0 |v|=13.63
+[01:12:01] popo 0x816446e8: PossessedNozzle fill=1.095 timer=0 |v|=14.29
+[01:12:01] popo 0x816446e8: PossessedNozzle fill=1.143 timer=0 |v|=14.82
+[01:12:01] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=1.152 timer=2 pos=(-4341,6674,-8043)
+[01:12:01]   LAUNCH: vel=(10.87,46.98,22.84) |v|=53.36 fill=1.152 marioDist=11317
+[01:12:01]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:01]     >>> left Fly -> Explosion at t=11
+[01:12:01] popo 0x81653d98: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6700,-8826)
+[01:12:01] popo 0x816446e8: nerve Fly -> vt:803b2398  fill=0.925 timer=11 pos=(-4243,7096,-7838)
+[01:12:01]   FLIGHT END after 0.11s real, distance=480 units, end-timer=2 -> vt:803b2398
+[01:12:01] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6753,-8901)
+[01:12:02] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6681,-8961)
+[01:12:02] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-4116,5415,-9811)
+[01:12:02] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6451,-9017)
+[01:12:02] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:02] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:03] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:04] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:04] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:04] popo 0x81653d98: nerve Attack -> PossessedNozzle  fill=1.012 timer=0 pos=(-4256,6378,-7804)
+[01:12:04] popo 0x81653d98: PossessedNozzle fill=1.071 timer=0 |v|=9.03
+[01:12:04] popo 0x81646a18: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4139,6405,-8618)
+[01:12:04] popo 0x81653d98: PossessedNozzle fill=1.119 timer=0 |v|=9.25
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.178 timer=0 |v|=9.56
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.226 timer=0 |v|=9.85
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.285 timer=0 |v|=10.25
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.333 timer=0 |v|=10.59
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.392 timer=0 |v|=11.06
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.439 timer=0 |v|=11.45
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.499 timer=0 |v|=11.96
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.546 timer=0 |v|=12.39
+[01:12:05] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.605 timer=0 |v|=12.95
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.653 timer=0 |v|=13.40
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.712 timer=0 |v|=13.99
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.759 timer=0 |v|=14.47
+[01:12:05] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4376,6264,-7644)
+[01:12:05] popo 0x81653d98: PossessedNozzle fill=1.806 timer=0 |v|=15.08
+[01:12:05] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:12:05] popo 0x81653d98: nerve PossessedNozzle -> Fly  fill=1.797 timer=5 pos=(-4605,6355,-7489)
+[01:12:05]   LAUNCH: vel=(-18.07,-1.81,63.26) |v|=65.82 fill=1.797 marioDist=10848
+[01:12:05]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     t=11 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:05]     >>> left Fly -> Explosion at t=11
+[01:12:05] popo 0x81653d98: nerve Fly -> vt:803b2398  fill=1.447 timer=11 pos=(-4713,6344,-7110)
+[01:12:05]   FLIGHT END after 0.09s real, distance=395 units, end-timer=5 -> vt:803b2398
+[01:12:06] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3634,6403,-7114)
+[01:12:06] popo 0x81653d98: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:06] popo 0x8163fa88: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-12971,4781,-1975)
+[01:12:06] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4064,6709,-8558)
+[01:12:06] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6699,-8824)
+[01:12:07] popo 0x81648d58: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-3795,6197,-8751)
+[01:12:21] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:23] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6676,-8963)
+[01:12:23] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:23] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:23] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:24] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:24] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4371,6297,-8376)
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.036 timer=0 |v|=9.46
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.083 timer=0 |v|=9.94
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.107 timer=0 |v|=10.43
+[01:12:25] popo 0x816446e8: nerve Attack -> vt:803b2790  fill=1.000 timer=0 pos=(-4123,6133,-8780)
+[01:12:25] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:25] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.172 timer=0 |v|=19.02
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.231 timer=0 |v|=19.73
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.279 timer=0 |v|=20.31
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.326 timer=0 |v|=20.88
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.386 timer=0 |v|=21.60
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.445 timer=0 |v|=22.33
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.492 timer=0 |v|=22.91
+[01:12:25] popo 0x81646a18: PossessedNozzle fill=1.540 timer=0 |v|=23.49
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.587 timer=0 |v|=24.07
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.646 timer=0 |v|=24.80
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.694 timer=0 |v|=25.38
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.741 timer=0 |v|=25.96
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.800 timer=0 |v|=26.70
+[01:12:26] popo 0x81646a18: PossessedNozzle fill=1.847 timer=0 |v|=27.28
+[01:12:26] popo 0x81646a18: nerve PossessedNozzle -> Fly  fill=1.855 timer=2 pos=(-4411,6337,-8688)
+[01:12:26]   LAUNCH: vel=(-14.02,-7.70,-71.08) |v|=72.86 fill=1.855 marioDist=11623
+[01:12:26]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:26]     >>> left Fly -> Explosion at t=9
+[01:12:26] popo 0x81646a18: nerve Fly -> vt:803b2398  fill=1.492 timer=9 pos=(-4509,6283,-9185)
+[01:12:26]   FLIGHT END after 0.09s real, distance=510 units, end-timer=2 -> vt:803b2398
+[01:12:26] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:26] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:12:26] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:12:26] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:26] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-4040,6426,-8721)
+[01:12:27] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:27] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6657,-8832)
+[01:12:28] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4340,6356,-8549)
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.048 timer=0 |v|=7.10
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.107 timer=0 |v|=7.09
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.155 timer=0 |v|=7.13
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.202 timer=0 |v|=7.23
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.250 timer=0 |v|=7.37
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.297 timer=0 |v|=7.56
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.356 timer=0 |v|=7.86
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.416 timer=0 |v|=8.21
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.463 timer=0 |v|=8.53
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.511 timer=0 |v|=8.88
+[01:12:28] popo 0x816446e8: PossessedNozzle fill=1.558 timer=0 |v|=9.35
+[01:12:28] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:28] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=1.552 timer=4 pos=(-4461,6534,-8697)
+[01:12:28]   LAUNCH: vel=(-19.13,30.27,-47.12) |v|=59.18 fill=1.552 marioDist=11757
+[01:12:28]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:28]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:28]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:28]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:28]     t=8 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:12:28]     >>> left Fly -> Explosion at t=8
+[01:12:28] popo 0x816446e8: nerve Fly -> vt:803b2398  fill=1.252 timer=8 pos=(-4538,6654,-8885)
+[01:12:28]   FLIGHT END after 0.07s real, distance=236 units, end-timer=4 -> vt:803b2398
+[01:12:28] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:28] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:29] popo 0x8164b098: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4385,6379,-8500)
+[01:12:29] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:29] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:29] popo 0x8164b098: PossessedNozzle fill=1.036 timer=0 |v|=7.13
+[01:12:29] popo 0x8164b098: PossessedNozzle fill=1.083 timer=0 |v|=7.55
+[01:12:29] popo 0x8164b098: PossessedNozzle fill=1.131 timer=0 |v|=8.11
+[01:12:29] popo 0x8164b098: nerve PossessedNozzle -> Fly  fill=1.126 timer=4 pos=(-4451,6429,-8673)
+[01:12:29]   LAUNCH: vel=(-19.27,10.60,-47.48) |v|=52.33 fill=1.126 marioDist=11677
+[01:12:29]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:29]     t=10 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:12:29]     >>> left Fly -> Explosion at t=10
+[01:12:30] popo 0x8164b098: nerve Fly -> vt:803b2398  fill=0.907 timer=10 pos=(-4567,6492,-8958)
+[01:12:30]   FLIGHT END after 0.08s real, distance=314 units, end-timer=4 -> vt:803b2398
+[01:12:30] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6402,-9026)
+[01:12:30] popo 0x8164b098: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:12:30] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6657,-8832)
+[01:12:31] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:31] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6657,-8832)
+[01:12:32] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-2424,5415,-10112)
+[01:12:32] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:32] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:32] popo 0x81646a18: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4338,6332,-8552)
+[01:12:32] popo 0x81646a18: PossessedNozzle fill=1.048 timer=0 |v|=8.14
+[01:12:32] popo 0x81646a18: PossessedNozzle fill=1.107 timer=0 |v|=8.09
+[01:12:32] popo 0x81646a18: PossessedNozzle fill=1.155 timer=0 |v|=8.11
+[01:12:33] popo 0x81646a18: PossessedNozzle fill=1.214 timer=0 |v|=8.18
+[01:12:33] popo 0x81646a18: PossessedNozzle fill=1.261 timer=0 |v|=8.29
+[01:12:33] popo 0x81646a18: PossessedNozzle fill=1.309 timer=0 |v|=8.44
+[01:12:33] popo 0x81646a18: PossessedNozzle fill=1.368 timer=0 |v|=8.68
+[01:12:33] popo 0x81646a18: PossessedNozzle fill=1.416 timer=0 |v|=8.92
+[01:12:33] popo 0x81646a18: nerve PossessedNozzle -> Fly  fill=1.425 timer=2 pos=(-4396,6489,-8566)
+[01:12:33]   LAUNCH: vel=(-11.23,33.76,-39.04) |v|=52.82 fill=1.425 marioDist=11611
+[01:12:33]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:33]     t=11 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:12:33]     >>> left Fly -> Explosion at t=11
+[01:12:33] popo 0x81646a18: nerve Fly -> vt:803b2398  fill=1.144 timer=11 pos=(-4497,6793,-8918)
+[01:12:33]   FLIGHT END after 0.11s real, distance=475 units, end-timer=2 -> vt:803b2398
+[01:12:33] popo 0x816446e8: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4377,6397,-8502)
+[01:12:33] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:33] popo 0x81646a18: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:33] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:33] popo 0x816446e8: PossessedNozzle fill=1.059 timer=0 |v|=10.49
+[01:12:33] popo 0x816446e8: PossessedNozzle fill=1.107 timer=0 |v|=10.83
+[01:12:34] popo 0x816446e8: nerve PossessedNozzle -> Fly  fill=1.141 timer=1 pos=(-4389,6406,-8542)
+[01:12:34]   LAUNCH: vel=(-14.25,13.27,-49.63) |v|=53.31 fill=1.141 marioDist=11544
+[01:12:34]     t=1 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:34]     >>> left Fly -> Explosion at t=9
+[01:12:34] popo 0x816446e8: nerve Fly -> vt:803b2398  fill=0.917 timer=9 pos=(-4503,6511,-8939)
+[01:12:34]   FLIGHT END after 0.10s real, distance=426 units, end-timer=1 -> vt:803b2398
+[01:12:34] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:34] popo 0x816446e8: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:34] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:35] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:35] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6662,-8834)
+[01:12:36] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:37] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:37] popo 0x8164b098: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:37] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.048 timer=0 pos=(-4370,6422,-8476)
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.095 timer=0 |v|=7.97
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.155 timer=0 |v|=7.99
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.202 timer=0 |v|=8.05
+[01:12:37] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.250 timer=0 |v|=8.16
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.309 timer=0 |v|=8.35
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.368 timer=0 |v|=8.61
+[01:12:37] popo 0x8163fa88: PossessedNozzle fill=1.416 timer=0 |v|=8.85
+[01:12:38] popo 0x8163fa88: PossessedNozzle fill=1.463 timer=0 |v|=9.13
+[01:12:38] popo 0x8163fa88: PossessedNozzle fill=1.511 timer=0 |v|=9.43
+[01:12:38] popo 0x8163fa88: PossessedNozzle fill=1.570 timer=0 |v|=9.86
+[01:12:38] popo 0x8163fa88: PossessedNozzle fill=1.617 timer=0 |v|=10.22
+[01:12:38] popo 0x8163fa88: PossessedNozzle fill=1.664 timer=0 |v|=10.71
+[01:12:38] popo 0x8163fa88: nerve PossessedNozzle -> Fly  fill=1.658 timer=4 pos=(-4432,6588,-8693)
+[01:12:38]   LAUNCH: vel=(-13.77,40.87,-47.86) |v|=64.42 fill=1.658 marioDist=11773
+[01:12:38]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:38]     t=11 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:12:38]     >>> left Fly -> Explosion at t=11
+[01:12:38] popo 0x8163fa88: nerve Fly -> vt:803b2398  fill=1.333 timer=11 pos=(-4529,6873,-9028)
+[01:12:38]   FLIGHT END after 0.09s real, distance=451 units, end-timer=4 -> vt:803b2398
+[01:12:38] popo 0x81648d58: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:38] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:38] popo 0x81646a18: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-2725,5415,-12267)
+[01:12:38] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:38] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:12:39] popo 0x8164b098: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:39] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:39] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:39] popo 0x8164b098: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:12:40] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:40] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:41] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:41] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:41] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:12:42] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:43] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:43] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:43] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:44] popo 0x81648d58: nerve vt:803b2790 -> Explosion  fill=1.000 timer=0 pos=(-2539,5415,-12109)
+[01:12:44] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:44] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:44] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5919,-9094)
+[01:12:44] popo 0x81648d58: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4793,-1975)
+[01:12:45] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:45] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:45] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:46] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:46] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:46] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:47] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:47] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:47] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:48] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:48] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:49] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6583,-8990)
+[01:12:49] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:49] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:49] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:50] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6409,-9025)
+[01:12:51] popo 0x8163fa88: nerve Attack -> PossessedNozzle  fill=1.012 timer=0 pos=(-4405,6320,-8457)
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.059 timer=0 |v|=7.50
+[01:12:51] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.119 timer=0 |v|=7.47
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.166 timer=0 |v|=7.50
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.214 timer=0 |v|=7.57
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.273 timer=0 |v|=7.73
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.333 timer=0 |v|=7.96
+[01:12:51] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:51] popo 0x8163fa88: PossessedNozzle fill=1.380 timer=0 |v|=8.18
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.439 timer=0 |v|=8.52
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.487 timer=0 |v|=8.82
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.534 timer=0 |v|=9.16
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.593 timer=0 |v|=9.61
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.641 timer=0 |v|=10.00
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.700 timer=0 |v|=10.51
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.747 timer=0 |v|=10.94
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.795 timer=0 |v|=11.39
+[01:12:52] popo 0x8163fa88: PossessedNozzle fill=1.842 timer=0 |v|=11.85
+[01:12:52] popo 0x8163fa88: nerve PossessedNozzle -> Fly  fill=1.862 timer=2 pos=(-4513,6401,-8752)
+[01:12:52]   LAUNCH: vel=(-24.06,12.35,-65.65) |v|=71.00 fill=1.862 marioDist=11745
+[01:12:52]     t=2 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=3 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:52]     t=8 nerve=Explosion +0xF0=00002980 bit0x80=SET
+[01:12:52]     >>> left Fly -> Explosion at t=8
+[01:12:52] popo 0x8163fa88: nerve Fly -> vt:803b2398  fill=1.499 timer=8 pos=(-4658,6475,-9146)
+[01:12:52]   FLIGHT END after 0.09s real, distance=426 units, end-timer=2 -> vt:803b2398
+[01:12:52] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:52] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:52] popo 0x8163fa88: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:53] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-12969,4799,-1975)
+[01:12:53] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:54] popo 0x81648d58: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6626,-8818)
+[01:12:54] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:54] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:54] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)
+[01:12:55] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:55] popo 0x81646a18: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6413,-9024)
+[01:12:55] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5907,-9096)
+[01:12:56] popo 0x81648d58: nerve Attack -> PossessedNozzle  fill=1.000 timer=0 pos=(-4422,6249,-8645)
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.059 timer=0 |v|=4.74
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.107 timer=0 |v|=4.64
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.166 timer=0 |v|=4.62
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.214 timer=0 |v|=4.69
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.261 timer=0 |v|=4.83
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.309 timer=0 |v|=5.04
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.368 timer=0 |v|=5.39
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.416 timer=0 |v|=5.73
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.463 timer=0 |v|=6.10
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.522 timer=0 |v|=6.62
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.570 timer=0 |v|=7.06
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.629 timer=0 |v|=7.65
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.676 timer=0 |v|=8.13
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.735 timer=0 |v|=8.76
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.783 timer=0 |v|=9.28
+[01:12:56] popo 0x81648d58: PossessedNozzle fill=1.818 timer=0 |v|=9.80
+[01:12:56] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:56] popo 0x81648d58: nerve PossessedNozzle -> Fly  fill=1.811 timer=4 pos=(-4484,6375,-8928)
+[01:12:56]   LAUNCH: vel=(-6.32,3.29,-76.37) |v|=76.70 fill=1.811 marioDist=11851
+[01:12:56]     t=4 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=5 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=6 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=7 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=8 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=9 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     t=10 nerve=Fly +0xF0=00002980 bit0x80=SET
+[01:12:56]     >>> left Fly -> Explosion at t=10
+[01:12:56] popo 0x8163fa88: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6432,-9020)
+[01:12:56] popo 0x81648d58: nerve Fly -> vt:803b2398  fill=1.458 timer=10 pos=(-4522,6394,-9386)
+[01:12:56]   FLIGHT END after 0.08s real, distance=460 units, end-timer=4 -> vt:803b2398
+[01:12:56] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:57] popo 0x81648d58: nerve vt:803b2398 -> vt:803b2790  fill=1.000 timer=0 pos=(-12970,4787,-1975)
+[01:12:57] popo 0x816446e8: nerve vt:803b2790 -> Attack  fill=1.000 timer=0 pos=(-3796,6405,-9026)
+[01:12:57] popo 0x81646a18: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:58] popo 0x81646a18: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5924,-9094)
+[01:12:58] popo 0x8163fa88: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:12:59] popo 0x8163fa88: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5913,-9095)
+[01:12:59] popo 0x816446e8: nerve Attack -> Explosion  fill=1.000 timer=0 pos=(-3801,5415,-8910)
+[01:13:00] popo 0x816446e8: nerve Explosion -> vt:803b2790  fill=1.000 timer=0 pos=(-3796,5901,-9097)

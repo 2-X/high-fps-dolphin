@@ -118,6 +118,221 @@ tex 729KB ≈ 1.2MB, ~1MB slack under the 7MB heap.** This is the ISO's current 
 Per-portal: 384×144 = 9× stock pixels. If even more is ever wanted: shrink ring via
 lower JPEG quality before touching the heap constant again.
 
+## ✅ ROOT CAUSE = DOUBLE JPEG ENCODE; FIX = single-encode from fresh ESRGAN (2026-08-06)
+
+The bad flashing was the **extra JPEG generation**, confirmed in-game: a plain passthrough
+(decode known-good THP → re-encode, no filter) flashed just as badly as the denoise/dither
+builds. Every Mac-side rebuild decoded the already-JPEG'd movie and re-encoded = DOUBLE
+encode. The known-good movie flashes only "a few" times because it was encoded ONCE from
+the Real-ESRGAN PNGs. Density/dither was a red herring (falsified — see below).
+
+**The fix (no PC needed — the 4090 was overkill for 300 tiny frames):** regenerate pristine
+frames locally and encode ONCE.
+- Real-ESRGAN runs on the M2 Max via Metal/Vulkan. Got the official macOS ncnn build:
+  `sunshine/research/tools/resrgan/realesrgan-ncnn-vulkan` (chmod +x, xattr -d quarantine).
+  Needs a user-added Bash allow rule `Bash(<abspath>/realesrgan-ncnn-vulkan:*)` in
+  `.claude/settings.local.json` — INVOKE BY ABSOLUTE PATH as the first token or the rule
+  won't match (no `time`/relative-path/`cd &&` prefix).
+- Pipeline: stock THP → `thp_to_frames.py` → 300×128×144 PNGs →
+  `realesrgan-ncnn-vulkan -n realesrgan-x4plus -s 4 -f png` (folder mode) → 512×576 pristine
+  → Lanczos downscale to 384×432 → gentle spatial denoise `hqdn3d=3:2:0:0` (top-band grain)
+  → `thp_from_frames.py ... 384 432 85` (the SINGLE encode).
+- Density PROOF this reproduces known-good: fresh single-encode no-denoise = min7620/mean37808
+  /stdev4846 ≈ known-good min7668/mean37778/stdev4845. With gentle denoise = min8792/maxbuf
+  46400 (SAFER than known-good: higher min, under 47296 ceiling).
+- SHIPPED to live ISO `thp-assets/EX128x144_final.thp` (11047952B), patched from clean
+  pre-denoise backup, byte-verified. **Fresh boot.** Backup `...pre-denoise.iso` = grainy.
+- **USER-CONFIRMED IN-GAME (2026-08-06): "much better", only "a bit of flickering still".**
+  So double-encode WAS the bad flash; single-encode is the fix. Residual flicker = the
+  inherent few-frame transition flashes + x4plus temporal shimmer (only recapture kills
+  those). (Also: user booted the wrong ISO once — Fable's `CANDIDATE-passthru.iso`, since
+  deleted; keep the folder to ONE testable ISO to avoid confusion.)
+## ⚠️ "flickering" = WHOLE-FRAME BROWN FLASH (decode failure), NOT shimmer (2026-08-06)
+
+User clarified the residual "flickering" is the whole frame going solid BROWN intermittently
+— i.e. the original tan/nude DECODE flash, not x4plus temporal crawl. The entire de-flicker
+/shimmer investigation below was aimed at the WRONG problem (shimmer work reverted).
+Single-encode reduced the brown flashes ("much better") but didn't kill them.
+LEADING HYPOTHESIS: at 120fps (2x sim) the game can't decode the 384×432 (9x stock pixels)
+THP frame in time → shows an unfilled/garbage buffer = brown. The **2× (256×288) version was
+the one the user originally validated as "amazing"** — brown appeared after moving to 3×.
+ACTION: shipped a fresh single-encode **2× (256×288)** build from pristine ESRGAN frames
+(`preview-work/esr256` → q90 → `thp-assets/EX128x144_final.thp`, 7297328B, ring 282KB+tex
+324KB ≈ 606KB, ~44% of the 3× decode load). Awaiting in-game check.
+2× result (user): brown flashes got SMALLER but MORE FREQUENT on all portals → decode time
+is a lever. Halving header fps 29.97→14.985 (header offset 16, BE f32, no re-encode) helped
+Bianco ("looks the best", browns ONCE) but Ricco/Gelato still flickered a lot; user disliked
+the slowdown.
+
+## Fable takeover: per-band cut/blank correlation (2026-08-06)
+
+KEY EVIDENCE: all three portals sample ONE shared THP (per the RE above), yet flicker rates
+differ per portal → the trigger is per-band CONTENT, and it correlates exactly:
+Bianco 2 hard cuts (browns once — deterministically at the global f139/140 cut),
+Ricco 42 cut-frames (worst flicker), Gelato 10 cuts + 3 blank placeholder bands (bad).
+Deterministic once-per-loop browning ≠ random race. Read: race losses are only VISIBLE when
+a frame differs sharply from its neighbor (cut) or is a flat placeholder (blank).
+FIX SHIPPED: `preview-work/fix_cuts.py` on pristine esr256 — per band: rebuild blank frames
+by interpolating non-blank neighbors; crossfade isolated cut spikes (6-frame fades,
+wrap-aware → also softens the windmill loop snap from diff 45→14); sustained motion runs
+left alone. Result: 0 blanks, 0 isolated spikes, tightest density ever (min 19232, stdev
+2259 — no outlier frames at all). Single-encode 256×288 q90 @ 29.97fps (full speed
+restored). Live as `EX128x144_final.thp` (7312560B). Awaiting boot.
+**DEFINITIVE test RESULT (user, 2026-08-06): STOCK at 120fps does NOT flicker.** So the
+flash is NOT hack-inherent — it's tied to our upscaled movies, with decode load (pixel
+count) the dominant suspect: 2×=4× and 3×=9× stock pixels; even the cut/blank-smoothed 2×
+still flickered. User leaned "keep it stock."
+FINAL LADDER STEP SHIPPED: **1× ESRGAN-clean** — the smoothed pristine frames downscaled to
+STOCK 128×144 (identical pixel-decode load; q75 → maxframe 5728 vs stock 3360, ring 55KB).
+Visibly cleaner/sharper than stock at same res; keeps blank-rebuilds + softened loop.
+Round-trip verified (300/300 clean). Live as `thp-assets/EX128x144_1x_clean.thp` (1480912B).
+If THIS still flickers → the PIL/Annex-K encode itself is the trigger; restore true stock
+(`preview-work/stock/EX128x144_stock.thp`) and stop — only a game-side THPPlayer patch
+could go further. HD builds preserved: `EX128x144_sharp.thp` (3×), `EX128x144_final.thp`
+(2× smoothed) for any future revisit (e.g. if a game-side decode-pacing patch ever lands).
+
+## De-flicker pass (2026-08-06 — MISDIRECTED, was chasing shimmer not the brown flash)
+
+User: "get rid of ALL flickering." The residual flicker = x4plus **temporal shimmer**
+(hallucinated high-freq micro-texture crawling frame-to-frame). Findings:
+- Temporal denoisers (atadenoise, hqdn3d-temporal) DON'T help — the video is in constant
+  motion (pan + cuts), so there are no static regions to stabilize; motion-adaptive temporal
+  filters correctly leave moving pixels alone → shimmer untouched (measured: M2 shimmer
+  metric ~flat). Dead end.
+- `realesr-animevideov3` (the temporally-stable model) **SEGFAULTS** on this M2 Max/MoltenVK
+  (exit 139, any tile size). Unavailable.
+- WHAT WORKS: the shimmer IS high-freq texture, so strong EDGE-PRESERVING SPATIAL smoothing
+  removes the crawling texture while keeping edges. Shimmer metric M2 (temporal Δ of
+  Laplacian): x4plus=18.7 → nlmeans s=8 =12.3 → **nlmeans s=20+hqdn3d (chosen)=5.7** →
+  Lanczos-only floor=3.4. It's a genuine sharpness↔flicker tradeoff (they're the same
+  high-freq content). Chose nlmeans++ (~70% shimmer cut, keeps AI edges); Lanczos-only is
+  the softer zero-flicker fallback if user still sees crawl.
+- Recipe: `nlmeans=s=20:r=9:p=5,hqdn3d=3:2:3:3` on the pristine esr384 x4plus frames, then
+  `thp_from_frames ... 384 432 88` (q88 to hold min imgsz 7840 > known-good 7668 despite the
+  smoothing). maxbuf 31744 (ring 310KB, lots of heap slack). SINGLE-encode.
+- SHIPPED live as `thp-assets/EX128x144_final.thp`. Sharper prior build preserved as
+  `thp-assets/EX128x144_sharp.thp` (x4plus+gentle-dn, min 8792) for A/B revert.
+  Metric to reproduce shimmer measurement: temporal Δ of per-frame Laplacian over the 300.
+
+- Windmill loop: user chose to LEAVE AS-IS (stock loop, windmill snaps back) — this build is
+  FINAL as of 2026-08-06. Loop options offered (seam dissolve / windmill-lock stabilize /
+  as-is); if ever revisited, do it on the pristine `preview-work/esr384*` frames BEFORE the
+  single encode. The full pipeline to reproduce/extend is `preview-work/` (stock_frames →
+  esr_out → esr384 → esr384_dn) + `tools/resrgan/`.
+
+## ⚠️ DENSITY THEORY FALSIFIED IN-GAME (2026-08-06)
+
+The "sparse frames → decode race → tan flash; denser = safer" theory below is **WRONG**.
+The integrated 3-fix build (min imgsz 9788, DENSER than known-good, 0 frames under floor)
+flashed **WAY MORE** in-game, not less. Adding checkerboard-Nyquist dither made it worse —
+so the flash is almost certainly about specific JPEG *content* the game decoder mishandles
+(the high-freq dither likely creates more of it), NOT frame byte-size/timing. Whatever the
+real cause: (a) our re-encode itself may be the trigger — the ONLY confirmed-good movie is
+the ORIGINAL grainy `EX128x144_ai3x.thp` that was never round-tripped through our
+decode→reencode; every rebuild flashes to some degree; (b) suspect the standard Annex-K
+Huffman tables (416B) vs stock THPConv-optimized (281B), or PIL's DQT/quantization, or a
+marker-layout detail the game's fixed decoder is picky about. NEXT INVESTIGATOR: do a true
+A/B — re-encode the grainy frames with NO other change and test in-game; if THAT flashes,
+the re-encode/encoder is the culprit (pursue matching stock's exact JPEG tables), not
+denoise or density. The loop fix (C) also "skips" per the user — the letterbox-phase loop
+point reads as a skip, not satisfying. Live ISO REVERTED to known-good grainy.
+User idea for the loop: AI-regenerate the windmill in the correct position per frame
+(e.g. mark desired position in red as a guide) rather than re-timing. Handed off to Fable.
+
+## Denoise is NOT viable via re-encode (2026-08-06, CONCLUSIVE — SUPERSEDED, see above)
+
+**Do not try to denoise this movie by decode→filter→re-encode. It flashes a garbage
+("nude"/tan) buffer in-game and MORE denoise = WORSE.** Two builds shipped and both
+regressed; reverted the live ISO to the known-good grainy ai3x
+(`Super Mario Sunshine (USA) [HD portals].iso`, movie sha 5fbde4c0…, 11341296 bytes;
+backup `...pre-denoise.iso`).
+
+Root cause (proven by extracting the STOCK THP from `Super Mario Sunshine (USA).rvz` with
+the project's `dolphin/build/Binaries/dolphin-tool extract -s data/EX128x144_q0.thp`):
+- The flash is **frame-density dependent, not temporal** (my first temporal-blend guess was
+  wrong — a pure spatial denoise flashed *worse*). Per-frame JPEG image-size distribution:
+  grainy-that-WORKS = min 7668 / stdev 4845; spatial-denoise-that-FLASHES = min 4600 /
+  stdev 10739. Denoising creates near-empty flat frames.
+- The game's fixed-function THP/GX JPEG decoder + the 120fps sim-hack decode timing races
+  on fast-decoding sparse frames and shows an unfilled Y/U/V buffer (tan). Dense frames
+  decode slowly enough to stay ahead; grain is effectively load-bearing pacing.
+- Encoder path is NOT the culprit: the known-good grainy movie was built by the same
+  `thp_from_frames.py` (PIL standard Annex-K Huffman, 416B DHT vs stock's 281B optimized) —
+  only the pixel content differs. So it's the flatness, not the tables/normalize.
+- No denoise setting escapes it: higher JPEG quality can't add data back to flat regions,
+  it only inflates detailed frames → stdev gets *worse* (q92→14663, q97→21001) and maxbuf
+  balloons (q97→83744, eating heap slack). Grain and "dense frames" are the same thing here.
+
+New decoder tool added: `scripts/thp/thp_to_frames.py`.
+
+**KEY GOTCHA — re-encode loses a JPEG generation:** decoding the shipped THP and
+re-encoding the SAME frames at q85 drops min imgsz 7668→3292 and puts 33/300 frames under
+the 7668 flash floor. So ANY rebuild (even a no-op) needs a density-restore pass or it
+flashes. Fix = checkerboard-Nyquist dither into flat 8×8 blocks (std<1.5) of only the
+sparse frames, escalating amplitude until imgsz clears ~9000 — imperceptible (±2–3 levels
+on flat gray placeholder bands only). See `preview-work/B_flash/boost.py`.
+
+## Three-fix integrated build (2026-08-06, SHIPPED to live ISO)
+
+Fanned out 3 subagents over `preview-work/` (stable decoded frames + stock ref):
+- **A windmill noise:** spatial-only `hqdn3d=4:3:0:0` on the TOP (Bianco) band only
+  (144/432 rows → tiny density impact). Removes stone/grass grain, no ghosting.
+- **B flash fix:** the density-restore dither above (mandatory, see gotcha).
+- **C perfect loop:** Bianco pan is monotonic-left (0→−248px), so ping-pong rejected
+  (would reverse camera). Found natural loop src292→src59 (seam MAD 45.5→7.02), resampled
+  src range [59,292] into 300 top-band strips anchored to exact endpoints. ONLY the top
+  band is re-timed; Ricco/Gelato bands stay on their original 0..299 timeline (bands are
+  independent). Tradeoff: clean loop point sits in the letterboxed pan phase, so the
+  windmill pans to gray at the seam (continuous, not a jump) — subjective; ping-pong is
+  the alternative if user dislikes the gray.
+Integration order per frame: C top band → A denoise → composite over untouched mid/bottom
+→ B boost. Script: `preview-work/INTEGRATED/integrate.py`. Synergy: C's loop replaced blank
+letterbox top-bands with detail, so only 9/300 frames still needed B's boost.
+Result `thp-assets/EX128x144_final.thp`: min imgsz 9788 (>known-good 7668), 0 frames under
+floor, maxbuf 46336 (<47296, smaller footprint than the known-good movie). Patched live via
+isopatch from the clean pre-denoise backup, byte-verified inside the ISO. **Fresh boot.**
+Backup `...pre-denoise.iso` = original grainy. Awaiting user in-game confirm.
+
+**The ultimate quality ceiling is still the Free Look RECAPTURE below** (real detail =
+naturally dense frames, no grain AND no flat-frame race, and a chance at a windmill-visible
+loop).
+
+## Denoise pass (2026-08-06, SUPERSEDED — see conclusion above)
+
+User flagged the shipped AI 3× previews as grainy. No original source frames or
+Real-ESRGAN present on the Mac, so reprocessed the shipped movie in place:
+`thp-assets/EX128x144_ai3x.thp` → decode → ffmpeg denoise → re-encode.
+
+- New tool `scripts/thp/thp_to_frames.py` — inverse of `thp_from_frames.py`; decodes a
+  video-only THP to `frame_%05d.png` (reuses the `thp2jpg` de-stuff from `thp_upscale.py`).
+- Pipeline (needs the repo venv `research/.venv-thp` for Pillow; ffmpeg 7.1 at /usr/local):
+  `thp_to_frames.py ai3x.thp orig/` → `ffmpeg -vf "hqdn3d=4:3:6:4.5,unsharp=3:3:0.3:3:3:0"`
+  → `thp_from_frames.py ai3x.thp clean/ ai3x_dn.thp 384 432 85`.
+- **DO NOT use hqdn3d's temporal term on this movie.** First attempt used
+  `hqdn3d=4:3:6:4.5` (luma_tmp=6). In-game that flashed a "nude"/tan color between frames.
+  Diagnosis: the movie is high-motion throughout (a frame-diff cut scan flags ~160/300
+  frames), so temporal averaging blends constantly-moving frames into ghost/transition
+  frames; the game's fixed-function THP/GX JPEG decoder renders those worse than PIL does
+  (PIL decode of our THP showed NO tan frames — structure was byte-identical to the
+  known-good shipped movie, so it's the game decoder reacting to the transitional pixels).
+- **Fix = SPATIAL-ONLY denoise:** `hqdn3d=5:4:0:0,unsharp=3:3:0.35:3:3:0` (temporal terms
+  `:0:0` = no cross-frame blending at all). Each frame processed independently → cannot
+  produce a between-frame artifact. Still removes the grain (the actual complaint). The
+  x4plus temporal shimmer remains (pre-existing) — only recapture removes that.
+  A heavier `nlmeans` spatial variant went waxy (same failure mode as animevideov3) —
+  rejected. Balanced spatial hqdn3d is the keeper.
+- Result `thp-assets/EX128x144_ai3x_dn.thp`: maxframe 46080 → ring 450KB + tex 729KB,
+  i.e. slightly *smaller* runtime footprint than the shipped 47296/461KB, so it fits the
+  7MB heap with ~1MB slack (no heap change needed). File 7.9MB vs 11.3MB.
+- **SHIPPED into the live ISO (2026-08-06):** patched `data/EX128x144_q0.thp` in
+  `/Applications/gamecube/Super Mario Sunshine (USA) [HD portals].iso` via `isopatch.py`
+  (spatial-only rebuild, 11341296→7878320 bytes at 0x57B30000; superseded the earlier
+  temporal-denoise build that flashed), byte-verified from inside the ISO, then swapped
+  over the original filename so Dolphin's library entry is unchanged. Rollback copy kept:
+  `...[HD portals].pre-denoise.iso` (the old AI-3x-grainy movie). **Fresh boot required** —
+  savestates keep reading the old movie. Runtime footprint is smaller than the known-good
+  shipped movie, so plaza load is safe (no re-test of the JKRHeap ceiling needed).
+
 ## Recapture plan (user's idea, agreed as the quality ceiling)
 
 Original movie shot structure (frame-diff analysis): **Bianco = 1 continuous pan;

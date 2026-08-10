@@ -14,7 +14,7 @@ import os, sys, time, struct, math
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.environ.setdefault("SMS_DOL", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "main.dol"))
-from gcmem import Dolphin
+from gcmem import Dolphin, find_dolphin_pid
 
 VT_POPO = 0x803BA558
 NERVES = {
@@ -28,14 +28,6 @@ NERVES = {
 MARIO_POS = 0x8040E10C  # gpMarioPos vec
 
 LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "popolog.txt")
-
-def find_dolphin_pid():
-    import subprocess
-    out = subprocess.check_output(
-        ["powershell", "-NoProfile", "-Command",
-         "Get-Process Dolphin -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id"],
-        text=True).strip()
-    return int(out.splitlines()[0]) if out else None
 
 def log(msg):
     line = f"[{time.strftime('%H:%M:%S')}] {msg}"
@@ -95,23 +87,29 @@ def main():
     prev = {}
     launch = {}
     printed_params = False
+    beats = 0
     while True:
         if d is None:
             p = pid or find_dolphin_pid()
             if not p:
-                time.sleep(2); continue
+                if beats % 5 == 0: log("no Dolphin process found yet — boot the game, then wait…")
+                beats += 1; time.sleep(2); continue
             try:
                 d = Dolphin(p, os.environ["SMS_DOL"])
-                log(f"attached to Dolphin pid {p}, MEM1 @ {d.base:#x}")
-            except SystemExit:
-                d = None; time.sleep(2); continue
+                log(f"ATTACHED to Dolphin pid {p}, MEM1 @ {d.base:#x} — now enter Bianco 5 and latch a Poink")
+                beats = 0
+            except SystemExit as e:
+                # surface the real reason instead of looping in silence
+                log(f"attach failed (pid {p}): {e} — retrying in 3s")
+                d = None; beats += 1; time.sleep(3); continue
         try:
             if not popos:
                 popos = scan_popos(d)
                 if popos:
                     log(f"found {len(popos)} TPopo instance(s): " + " ".join(f"{p:#x}" for p in popos))
                 else:
-                    time.sleep(2); continue
+                    if beats % 5 == 0: log("attached, no Poinks in memory yet — be in Bianco ep5 with a Poink on the nozzle")
+                    beats += 1; time.sleep(2); continue
             mario = vec(d, MARIO_POS)
             for p in popos:
                 if d.u32(p) != VT_POPO:      # scene unloaded / freed
@@ -131,6 +129,26 @@ def main():
                             spd = math.sqrt(sum(v*v for v in s["vel"]))
                             launch[p] = (time.time(), s["pos"], s["timer"])
                             log(f"  LAUNCH: vel=({s['vel'][0]:.2f},{s['vel'][1]:.2f},{s['vel'][2]:.2f}) |v|={spd:.2f} fill={s['fill']:.3f} marioDist={dist(s['pos'], mario):.0f}" if mario else f"  LAUNCH |v|={spd:.2f}")
+                            # BURST: flight is ~0.07s (9 ticks) — 30Hz misses it. Sample this
+                            # popo as fast as possible, logging each new flyTimer with the
+                            # +0xF0 collision latch. Shows when bit0x80 clears AND whether a
+                            # fix re-heals it (clr->SET) vs stays clr (fix not running).
+                            bt0 = time.time(); seen_t = set()
+                            while time.time() - bt0 < 0.5:
+                                sp2 = d.u32(p + 0x8C); nvt2 = None
+                                if sp2:
+                                    cur2 = d.u32(sp2 + 0x14) or d.u32(sp2 + 0x1C)
+                                    nvt2 = d.u32(cur2) if cur2 else None
+                                nerve2 = NERVES.get(nvt2, f"vt:{nvt2:08x}" if nvt2 else "?")
+                                tmr = d.u32(p + 0x19C); flg = d.u32(p + 0xF0)
+                                if tmr is None or flg is None: break
+                                if tmr not in seen_t:
+                                    seen_t.add(tmr)
+                                    b80 = "SET" if flg & 0x80 else "clr"
+                                    log(f"    t={tmr} nerve={nerve2} +0xF0={flg:08x} bit0x80={b80}")
+                                if nerve2 != "Fly":
+                                    log(f"    >>> left Fly -> {nerve2} at t={tmr}")
+                                    break
                         if pv["nerve"] == "Fly":
                             t0, p0, _ = launch.get(p, (None, None, None))
                             if p0:

@@ -1,0 +1,36 @@
+=== bgmlog2 waiting for game 00:09:40 ===
+=== game up pid=43571 00:13:04 ===
+t=    0.0 slot0 handle=None snd=None id=00000000
+t=    0.0 slot1 handle=None snd=None id=00000000
+t=    0.0 slot2 handle=None snd=None id=00000000
+t=    4.1 slot0 handle=0x80727ad8 snd=0x806acc6c id=80010010
+t=    4.3 slot0 rate: 0.23978644609451294 -> 0.59946608543396 (cur=806f7960)
+t=    4.3 slot0 timebase: 48 -> 120 (cur=806f7960)
+t=    5.1 slot0 beat trk=8062d9e8 idx=1 cur=806f7960 wait=2041 rate=0.5995 tempo=120 act=1
+t=    5.6 slot0 handle=0x80727aa8 snd=0x806acc6c id=8001000e
+t=    7.6 slot0 handle=None snd=None id=00000000
+t=    9.9 slot0 handle=0x80727b80 snd=0x806acc6c id=80010017
+t=   10.1 slot0 beat trk=8063ab98 idx=1 cur=8070bf69 wait=1456 rate=0.5995 tempo=120 act=1
+t=   12.7 slot0 handle=0x80727970 snd=0x806acc6c id=80010001
+t=   15.2 slot0 beat trk=806471d8 idx=1 cur=806f796a wait=155 rate=0.6994 tempo=140 act=1
+t=   20.3 slot0 beat trk=806471d8 idx=1 cur=806f796d wait=680 rate=0.6994 tempo=140 act=1
+t=   20.5 slot0 handle=0x80727cb8 snd=0x806acc6c id=80010024
+t=   23.3 slot0 handle=0x80727cb8 snd=None id=00000000
+t=   24.3 slot0 handle=0x80727b80 snd=0x806acc6c id=80010017
+t=   25.3 slot0 beat trk=8063f038 idx=1 cur=8070bf69 wait=1217 rate=0.5995 tempo=120 act=1
+t=   27.4 slot0 handle=0x80727988 snd=0x806acc6c id=80010002
+t=   30.4 slot0 beat trk=80645728 idx=1 cur=806f7989 wait=7523 rate=0.7793 tempo=156 act=1
+t=   35.5 slot0 beat trk=80645728 idx=1 cur=806f7989 wait=5936 rate=0.7793 tempo=156 act=1
+t=   36.2 slot0 handle=None snd=None id=00000000
+t=   38.5 slot0 handle=0x80727b80 snd=0x806acc6c id=80010017
+t=   40.6 slot0 beat trk=8062ecf8 idx=1 cur=8070bf69 wait=953 rate=0.5995 tempo=120 act=1
+t=   41.3 slot0 handle=0x80727970 snd=0x806acc6c id=80010001
+t=   45.6 slot0 beat trk=80633198 idx=1 cur=80701c6d wait=1634 rate=0.6994 tempo=140 act=1
+t=   50.7 slot0 handle=0x80727cb8 snd=0x806acc6c id=80010024
+t=   51.9 slot0 handle=0x80727cb8 snd=None id=00000000
+t=   52.7 slot0 handle=0x80727b80 snd=0x806acc6c id=80010017
+t=   55.8 slot0 handle=0x80727988 snd=0x806acc6c id=80010002
+t=   55.8 slot0 beat trk=8063b708 idx=1 cur=80701c86 wait=825 rate=0.7793 tempo=156 act=1
+t=   60.8 slot0 beat trk=8063b708 idx=1 cur=80701c89 wait=6923 rate=0.7793 tempo=156 act=1
+t=   62.3 slot0 ** CURSOR FROZEN ** cur=80701c89 wait=6552 acc=0.527 rate=0.7793 tempo=156 tb=120 3bc=3 3bd=0 act=1
+t=   63.6 slot0 handle=None snd=None id=00000000

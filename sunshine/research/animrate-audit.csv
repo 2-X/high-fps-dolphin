@@ -1,0 +1,213 @@
+class,kind,call,file,line,enclosing,jp_sym,jp_addr,jp_size,reason,code
+SUSPECT,setter,setFrameRate,Enemy/bossManta.cpp,368,TBossManta::startWalkAnim,,,,raw/computed rate (),getMActor()->setFrameRate(
+SUSPECT,setter,setFrameRate,Enemy/bossManta.cpp,375,TBossManta::startDamageAnim,,,,raw/computed rate (),getMActor()->setFrameRate(
+SUSPECT,setter,setFrameRate,Enemy/bosseel.cpp,902,TBossEelTooth::perform,perform__13TBossEelToothFUlPQ26JDrama9TGraphics,0x802e8b84,0x610,raw/computed rate (),mSharedParts->getMActor()->setFrameRate(
+SUSPECT,setter,setRate,Enemy/bossgesso.cpp,1597,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,raw literal rate 1.0f (4x fast at 120fps),ctrl4->setRate(1.0f);
+SUSPECT,setter,setRate,Enemy/hinokuri2.cpp,748,THinokuri2::changeBck,changeBck__10THinokuri2Fi,0x8026fc2c,0x21c,raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get()),pJVar7->setRate(getSaveParam()->mSLWalkSpeedRateLv0.get());
+SUSPECT,setter,setRate,Enemy/hinokuri2.cpp,750,THinokuri2::changeBck,changeBck__10THinokuri2Fi,0x8026fc2c,0x21c,raw literal rate 1.0f (4x fast at 120fps),pJVar7->setRate(1.0f);
+SUSPECT,setter,setRate,GC2D/Option.cpp,176,TBalloonControl::setupAnm,setupAnm__18TPatternAnmControlFv,0x80247440,0x12c,raw literal rate 1.0f (4x fast at 120fps),mFrameCtrl.setRate(1.0f);
+SUSPECT,setter,setRate,GC2D/Option.cpp,179,TBalloonControl::setupAnm,setupAnm__18TPatternAnmControlFv,0x80247440,0x12c,raw literal rate 1.0f (4x fast at 120fps),void TBalloonControl::startAnm() { mFrameCtrl.setRate(1.0f); }
+SUSPECT,setter,setRate,GC2D/Option.cpp,202,TPaneScalingControl::setupAnm,setupAnm__18TPatternAnmControlFv,0x80247440,0x12c,raw/computed rate (speed),mFrameCtrl.setRate(speed);
+SUSPECT,setter,setRate,GC2D/Option.cpp,205,TPaneScalingControl::setupAnm,setupAnm__18TPatternAnmControlFv,0x80247440,0x12c,raw literal rate 1.0f (4x fast at 120fps),void TPaneScalingControl::startAnm() { mFrameCtrl.setRate(1.0f); }
+SUSPECT,setter,setRate,GC2D/Option.cpp,261,TPatternAnmControl::setupAnm,setupAnm__18TPatternAnmControlFv,0x80247440,0x12c,raw literal rate 1.0f (4x fast at 120fps),mFrameCtrl.setRate(1.0f);
+SUSPECT,setter,setRate,GC2D/Option.cpp,531,TOptionSoundUnit,,,,raw literal rate 1.0f (4x fast at 120fps),mMusicFrameCtrl.setRate(1.0f);
+SUSPECT,setter,setRate,MoveBG/MapObjBase.cpp,341,TMapObjBase::makeObjAppeared,makeObjAppeared__11TMapObjBaseFv,0x8018880c,0x308,raw literal rate 1.0f (4x fast at 120fps),ctrl->setRate(1.0f);
+SUSPECT,setter,setRate,MoveBG/MapObjSirena.cpp,886,TDonchou::calcRootMatrix,calcRootMatrix__8TDonchouFv,0x801a154c,0x204,raw/computed rate (0.5f * fc->getRate()),fc->setRate(0.5f * fc->getRate());
+SUSPECT,setter,setFrameRate,NPC/NpcAnm.cpp,289,TBaseNPC::walkAnmRateChange_,walkAnmRateChange___8TBaseNPCFv,0x80169a78,0x42c,raw/computed rate (unk1D0),"mMActor->setFrameRate(unk1D0, 0);"
+SUSPECT,setter,setFrameRate,NPC/NpcAnm.cpp,291,TBaseNPC::walkAnmRateChange_,walkAnmRateChange___8TBaseNPCFv,0x80169a78,0x42c,raw/computed rate (unk1D0),"mMActor->setFrameRate(unk1D0, 0);"
+SUSPECT,setter,setFrameRate,NPC/NpcAnm.cpp,339,TBaseNPC::walkAnmRateChange_,walkAnmRateChange___8TBaseNPCFv,0x80169a78,0x42c,raw/computed rate (unk1D0),"mMActor->setFrameRate(unk1D0, 0);"
+SUSPECT,setter,setFrameRate,NPC/NpcBase.cpp,693,TBaseNPC::perform,perform__8TBaseNPCFUlPQ26JDrama9TGraphics,0x8016ad74,0x7e8,raw/computed rate (),mMActor->setFrameRate(
+SUSPECT,setter,setRate,Player/MarioAutodemo.cpp,354,TMario::toroccoStart,toroccoStart__6TMarioFv,0x8011f738,0xc4,raw literal rate 0.5f (4x fast at 120fps),mPinaRail->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioAutodemo.cpp,360,TMario::toroccoStart,toroccoStart__6TMarioFv,0x8011f738,0xc4,raw literal rate 0.5f (4x fast at 120fps),mKoopaRail->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1065,TMario::setAnimation,setAnimation__6TMarioFif,0x80126948,0x39c,raw/computed rate (rate * 0.5f),getMotionFrameCtrl().setRate(rate * 0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1066,TMario::setAnimation,setAnimation__6TMarioFif,0x80126948,0x39c,raw/computed rate (rate * 0.5f),mModel->getFrameCtrl(2).setRate(rate * 0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1080,TMario::setReverseAnimation,setReverseAnimation__6TMarioFif,0x8012688c,0xbc,raw/computed rate (rate * -0.5f),motionFrameCtrl.setRate(rate * -0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1084,TMario::setReverseAnimation,setReverseAnimation__6TMarioFif,0x8012688c,0xbc,raw/computed rate (rate * -0.5f),otherFrameCtrl.setRate(rate * -0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1348,TMario::initModel,initModel__6TMarioFv,0x8012582c,0xf90,raw literal rate 0.5f (4x fast at 120fps),mPinaRail->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1373,TMario::initModel,initModel__6TMarioFv,0x8012582c,0xf90,raw literal rate 0.5f (4x fast at 120fps),mKoopaRail->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1851,TMario::setUpperDamageRun,setUpperDamageRun__6TMarioFv,0x80124238,0x98,raw literal rate 1.0f (4x fast at 120fps),frameCtrl.setRate(1.0f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1852,TMario::setUpperDamageRun,setUpperDamageRun__6TMarioFv,0x80124238,0x98,raw literal rate 0.5f (4x fast at 120fps),frameCtrl.setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1889,TMario::addUpper,addUpper__6TMarioFv,0x80124084,0x1b4,raw/computed rate (mPumpAnmRate),frameCtrl.setRate(mPumpAnmRate);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1894,TMario::addUpper,addUpper__6TMarioFv,0x80124084,0x1b4,raw/computed rate (-mPumpAnmRate),frameCtrl.setRate(-mPumpAnmRate);
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1964,TMario::calcAnim,calcAnim__6TMarioFUlPQ26JDrama9TGraphics,0x80123a10,0x674,raw/computed rate (),yoshiActor->getFrameCtrl(0)->setRate(
+SUSPECT,setter,setRate,Player/MarioDraw.cpp,1974,TMario::calcAnim,calcAnim__6TMarioFUlPQ26JDrama9TGraphics,0x80123a10,0x674,raw literal rate 0.5f (4x fast at 120fps),yoshiActor->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/MarioReceiveMsg.cpp,62,TMario::getGesso,getGesso__6TMarioFP9THitActor,0x80164248,0x124,raw literal rate 0.5f (4x fast at 120fps),mSurfGesso->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,145,TYoshi::init,init__12TYoshiTongueFP6TYoshi,0x80147f4c,0x1f4,raw literal rate 1.0f (4x fast at 120fps),unk5C.setRate(1.0f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,147,TYoshi::init,init__12TYoshiTongueFP6TYoshi,0x80147f4c,0x1f4,raw literal rate 0.5f (4x fast at 120fps),unk5C.setRate(0.5f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,192,TYoshi::init,init__12TYoshiTongueFP6TYoshi,0x80147f4c,0x1f4,raw literal rate 0.5f (4x fast at 120fps),mActor->getFrameCtrl(0)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,193,TYoshi::init,init__12TYoshiTongueFP6TYoshi,0x80147f4c,0x1f4,raw literal rate 0.5f (4x fast at 120fps),mActor->getFrameCtrl(3)->setRate(0.5f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,286,TYoshi::thinkBtp,thinkBtp__6TYoshiFi,0x8014fcd8,0xb0,raw literal rate 0.5f (4x fast at 120fps),frameCtrl->setRate(0.5f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,611,TYoshi::thinkAnimation,thinkAnimation__6TYoshiFv,0x8014f1a0,0x3f4,raw/computed rate (nextFrame),mActor->getFrameCtrl(0)->setRate(nextFrame);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,646,TYoshi::thinkUpper,thinkUpper__6TYoshiFv,0x8014ef78,0x228,raw literal rate 1.0f (4x fast at 120fps),unk5C.setRate(1.0f);
+SUSPECT,setter,setRate,Player/Yoshi.cpp,657,TYoshi::thinkUpper,thinkUpper__6TYoshiFv,0x8014ef78,0x228,raw literal rate 1.0f (4x fast at 120fps),unk5C.setRate(1.0f);
+SUSPECT,setter,setFrameRate,Strategic/liveinterp.cpp,432,linSetAnmRate,linSetAnmRate__FP29TSpcTypedInterp<10TLiveActor>Ul,0x80113938,0x274,raw/computed rate (arg1.getDataFloat()),"owner->getMActor()->setFrameRate(arg1.getDataFloat(), 0);"
+SUSPECT,setter,setFrameRate,Strategic/liveinterp.cpp,435,linSetAnmRate,linSetAnmRate__FP29TSpcTypedInterp<10TLiveActor>Ul,0x80113938,0x274,raw/computed rate (arg1.getDataFloat()),"owner->getMActor()->setFrameRate(arg1.getDataFloat(), 3);"
+SUSPECT,setter,->mRate=,System/MarDirectorSetup2.cpp,68,TMarDirector::setup2,setup2__12TMarDirectorFv,0x800efc08,0x5bc,raw literal rate 120.0f (4x fast at 120fps),unkDC->mRate = 120.0f;
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,75,TAnimalBase::init,init__11TAnimalBaseFP12TLiveManager,0x80366ba0,0x290,arithmetic on rate: ...TurnSpeed = turnSpeed * <<>>SMSGetAnmFrameRate();...,mTurnSpeed = turnSpeed * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,271,TAnimalBase::execWalk,execWalk__11TAnimalBaseFb,0x80365c6c,0x3fc,arithmetic on rate: ...SLMaxMarchSpeed.get() * <<>>SMSGetAnmFrameRate();...,f32 speed = save->mSLMaxMarchSpeed.get() * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,272,TAnimalBase::execWalk,execWalk__11TAnimalBaseFb,0x80365c6c,0x3fc,arithmetic on rate: ...->mSLMarchAccel.get() * <<>>SMSGetAnmFrameRate()...,f32 accel = save->mSLMarchAccel.get() * SMSGetAnmFrameRate()
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,276,TAnimalBase::execWalk,execWalk__11TAnimalBaseFb,0x80365c6c,0x3fc,arithmetic on rate: ...SLMarchDecrease.get() * <<>>SMSGetAnmFrameRate()...,f32 decel = save->mSLMarchDecrease.get() * SMSGetAnmFrameRate()
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,283,TAnimalBase::execWalk,execWalk__11TAnimalBaseFb,0x80365c6c,0x3fc,arithmetic on rate: ...nSpeed    = waitSpeed * <<>>SMSGetAnmFrameRate();...,mTurnSpeed    = waitSpeed * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Animal/AnimalBase.cpp,286,TAnimalBase::execWalk,execWalk__11TAnimalBaseFb,0x80365c6c,0x3fc,arithmetic on rate: ...nSpeed    = walkSpeed * <<>>SMSGetAnmFrameRate();...,mTurnSpeed    = walkSpeed * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bgtentacle.cpp,755,TBGTentacle::setAttackTarget,setAttackTarget__11TBGTentacleFv,0x80313eac,0x46c,arithmetic on rate: ...ner->getAttackSpeed() * <<>>SMSGetAnmFrameRate());...,ctrl->setRate(mOwner->getAttackSpeed() * SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bossManta.cpp,369,TBossManta::startWalkAnim,,,,"arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...","TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);"
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bossManta.cpp,376,TBossManta::startDamageAnim,,,,"arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...","TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);"
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,545,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,"arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);...","actor->setFrameRate(-frameRate * SMSGetAnmFrameRate(), 0);"
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,550,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,"arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...","actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);"
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,602,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,"arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...","actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);"
+MISUSE,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,1923,TBossEel::setBckAnm,setBckAnm__13TFireHamuKuriFi,0x80261928,0x20,arithmetic on rate: ...trl(0)->setRate(0.25f * <<>>SMSGetAnmFrameRate());...,getMActor()->getFrameCtrl(0)->setRate(0.25f * SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,MarioUtil/ModelUtil.cpp,38,TMultiBtk::setNthData,setNthData__9TMultiBtkFiP19J3DAnmTextureSRTKey,0x800cf318,0xfc,arithmetic on rate: ...unk0c[n].setRate(0.5f * <<>>SMSGetAnmFrameRate());...,unk0c[n].setRate(0.5f * SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTown.cpp,86,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...,getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTown.cpp,98,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...,getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTrap.cpp,169,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,arithmetic on rate: ...ctrl->setRate(-<<>>SMSGetAnmFrameRate());...,ctrl->setRate(-SMSGetAnmFrameRate());
+MISUSE,anm-use,SMSGetAnmFrameRate,NPC/NpcBase.cpp,692,TBaseNPC::perform,perform__8TBaseNPCFUlPQ26JDrama9TGraphics,0x8016ad74,0x7e8,compared as timing: ...f32 rate = <<>>SMSGetAnmFrameRate();...,f32 rate = SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Player/SplashManager.cpp,24,TSplashManager::load,load__14TSplashManagerFR20JSUMemoryInputStream,0x801466f4,0x198,arithmetic on rate: ...unk638 = (<<>>SMSGetAnmFrameRate() * -0.5f) *...,unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,Player/SplashManager.cpp,24,TSplashManager::load,load__14TSplashManagerFR20JSUMemoryInputStream,0x801466f4,0x198,arithmetic on rate: ...mFrameRate() * -0.5f) * <<>>SMSGetAnmFrameRate();...,unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();
+MISUSE,anm-use,SMSGetAnmFrameRate,System/EmitterViewObj.cpp,29,TEmitterViewObj::perform,perform__15TEmitterViewObjFUlPQ26JDrama9TGraphics,0x800dc368,0xa4,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...,for (int i = SMSGetAnmFrameRate(); i > 0; --i)
+MISUSE,anm-use,SMSGetAnmFrameRate,System/EmitterViewObj.cpp,42,TEmitterIndirectViewObj::perform,perform__23TEmitterIndirectViewObjFUlPQ26JDrama9TGraphics,0x800dc2ac,0xbc,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...,for (int i = SMSGetAnmFrameRate(); i > 0; --i)
+MISUSE,anm-use,SMSGetAnmFrameRate,System/EmitterViewObj.cpp,110,TMarioParticleManager::perform,perform__21TMarioParticleManagerFUlPQ26JDrama9TGraphics,0x800dbd30,0x3a8,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...,for (int i = SMSGetAnmFrameRate(); i > 0; --i)
+MISUSE,anm-use,SMSGetAnmFrameRate,System/MarioGamePad.cpp,8,TMarioGamePad::reset,reset__13TMarioGamePadFv,0x800fc380,0x78,"arithmetic on rate: ...peat(0xf00000f, 20.0f / <<>>SMSGetAnmFrameRate(),...","setButtonRepeat(0xf00000f, 20.0f / SMSGetAnmFrameRate(),"
+MISUSE,anm-use,SMSGetAnmFrameRate,System/MarioGamePad.cpp,9,TMarioGamePad::reset,reset__13TMarioGamePadFv,0x800fc380,0x78,arithmetic on rate: ...6.0f / <<>>SMSGetAnmFrameRate());...,6.0f / SMSGetAnmFrameRate());
+REVIEW,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,903,TBossEelTooth::perform,perform__13TBossEelToothFUlPQ26JDrama9TGraphics,0x802e8b84,0x610,"...<<>>SMSGetAnmFrameRate(), 0);...","SMSGetAnmFrameRate(), 0);"
+REVIEW,anm-use,SMSGetAnmFrameRate,System/Application.cpp,92,SMSGetVSyncTimesPerSec,SMSGetVSyncTimesPerSec__Fv,0x800fb64c,0x68,...f32 <<>>SMSGetAnmFrameRate() { return 60...,f32 SMSGetAnmFrameRate() { return 60.0f / SMSGetVSyncTimesPerSec(); }
+CLEAN,setter,setRate,Camera/lensglow.cpp,82,TLensGlow,,,,flows through SMSGetAnmFrameRate,unk1C.setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Camera/lensglow.cpp,82,TLensGlow,,,,feeds rate setter (playback),unk1C.setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Camera/lensglow.cpp,86,TLensGlow,,,,flows through SMSGetAnmFrameRate,unk34.setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Camera/lensglow.cpp,86,TLensGlow,,,,feeds rate setter (playback),unk34.setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Camera/sunmodel.cpp,108,TSunModel::load,load__9TSunModelFR20JSUMemoryInputStream,0x8035eca0,0x350,flows through SMSGetAnmFrameRate,unk50.setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Camera/sunmodel.cpp,108,TSunModel::load,load__9TSunModelFR20JSUMemoryInputStream,0x8035eca0,0x350,feeds rate setter (playback),unk50.setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Enemy/Amenbo.cpp,289,TAmenbo::changeBck,changeBck__10THinokuri2Fi,0x8026fc2c,0x21c,flows through SMSGetAnmFrameRate,mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * param_2);
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/Amenbo.cpp,289,TAmenbo::changeBck,changeBck__10THinokuri2Fi,0x8026fc2c,0x21c,feeds rate setter (playback),mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * param_2);
+CLEAN,setter,setRate,Enemy/Kumokun.cpp,626,TKumokun::changeBck,changeBck__8TKumokunFPCc,0x803312b4,0x108,flows through SMSGetAnmFrameRate,mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.5f * fVar1);
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/Kumokun.cpp,626,TKumokun::changeBck,changeBck__8TKumokunFPCc,0x803312b4,0x108,feeds rate setter (playback),mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.5f * fVar1);
+CLEAN,setter,setRate,Enemy/bgtentacle.cpp,755,TBGTentacle::setAttackTarget,setAttackTarget__11TBGTentacleFv,0x80313eac,0x46c,flows through SMSGetAnmFrameRate,ctrl->setRate(mOwner->getAttackSpeed() * SMSGetAnmFrameRate());
+CLEAN,setter,setFrameRate,Enemy/bossManta.cpp,279,lerp_hack,,,,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/bossManta.cpp,279,lerp_hack,,,,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,440,TBEelTears::receiveMessage,receiveMessage__10TBEelTearsFP9THitActorUl,0x802eb3bc,0x1fc,flows through SMSGetAnmFrameRate,"actor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,440,TBEelTears::receiveMessage,receiveMessage__10TBEelTearsFP9THitActorUl,0x802eb3bc,0x1fc,feeds rate setter (playback),"actor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,545,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,flows through SMSGetAnmFrameRate,"actor->setFrameRate(-frameRate * SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,550,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,flows through SMSGetAnmFrameRate,"actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,602,TBEelTears::getBasNameTable,getBasNameTable__10TBEelTearsCFv,0x802eb298,0xc,flows through SMSGetAnmFrameRate,"actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,777,TBossEelTooth,,,,pause (0),"mSharedParts->getMActor()->setFrameRate(0.0f, 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,808,TBossEelTooth::receiveMessage,receiveMessage__13TBossEelToothFP9THitActorUl,0x802e9194,0x354,flows through SMSGetAnmFrameRate,"actor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/bosseel.cpp,808,TBossEelTooth::receiveMessage,receiveMessage__13TBossEelToothFP9THitActorUl,0x802e9194,0x354,feeds rate setter (playback),"actor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/bosseel.cpp,892,TBossEelTooth::perform,perform__13TBossEelToothFUlPQ26JDrama9TGraphics,0x802e8b84,0x610,pause (0),"mSharedParts->getMActor()->setFrameRate(0.0f, 0);"
+CLEAN,setter,setRate,Enemy/bosseel.cpp,1923,TBossEel::setBckAnm,setBckAnm__13TFireHamuKuriFi,0x80261928,0x20,flows through SMSGetAnmFrameRate,getMActor()->getFrameCtrl(0)->setRate(0.25f * SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Enemy/bossgesso.cpp,1556,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/bossgesso.cpp,1604,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,pause (0),ctrl3->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/bossgesso.cpp,1663,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,pause (0),ctrl4->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/bossgesso.cpp,1740,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,pause (0),ctrl3->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/bossgesso.cpp,1770,TBossGessoManager::load,load__17TBossGessoManagerFR20JSUMemoryInputStream,0x802884c0,0x74,pause (0),ctrl3->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/enemyMario.cpp,204,TEnemyMario::initModel,initModel__11TEnemyMarioFv,0x80257c98,0x618,flows through SMSGetAnmFrameRate,frameCtrl[2].setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/enemyMario.cpp,204,TEnemyMario::initModel,initModel__11TEnemyMarioFv,0x80257c98,0x618,feeds rate setter (playback),frameCtrl[2].setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Enemy/enemyMario.cpp,217,TEnemyMario::initModel,initModel__11TEnemyMarioFv,0x80257c98,0x618,pause (0),modelMario->unkC[1].setRate(0.0f);
+CLEAN,setter,setFrameRate,Enemy/enemyMario.cpp,885,TEnemyMario::emReplay,emReplay__11TEnemyMarioFv,0x80256068,0x234,flows through SMSGetAnmFrameRate,"stampActor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/enemyMario.cpp,885,TEnemyMario::emReplay,emReplay__11TEnemyMarioFv,0x80256068,0x234,feeds rate setter (playback),"stampActor->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setRate,Enemy/fireWanwan.cpp,63,TLerpControl::init,init__10JUTGamePadFv,0x80011ba0,0x38,flows through SMSGetAnmFrameRate,unk18.setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/fireWanwan.cpp,63,TLerpControl::init,init__10JUTGamePadFv,0x80011ba0,0x38,feeds rate setter (playback),unk18.setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setFrameRate,Enemy/fireWanwan.cpp,1952,TFireWanwan::getBasNameTable,getBasNameTable__11TFireWanwanCFv,0x8029b024,0xc,pause (0),"self->getMActor()->setFrameRate(0.0f, 4);"
+CLEAN,setter,setFrameRate,Enemy/fireWanwan.cpp,2025,TFireWanwan::getBasNameTable,getBasNameTable__11TFireWanwanCFv,0x8029b024,0xc,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/fireWanwan.cpp,2025,TFireWanwan::getBasNameTable,getBasNameTable__11TFireWanwanCFv,0x8029b024,0xc,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,setter,setFrameRate,Enemy/fireWanwan.cpp,2055,fromPolar,,,,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/fireWanwan.cpp,2055,fromPolar,,,,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,setter,setFrameRate,Enemy/fireWanwan.cpp,2091,fromPolar,,,,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/fireWanwan.cpp,2091,fromPolar,,,,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,setter,setFrameRate,Enemy/fireWanwan.cpp,2115,fromPolar,,,,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/fireWanwan.cpp,2115,fromPolar,,,,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 4);"
+CLEAN,setter,setRate,Enemy/gatekeeper.cpp,791,TBiancoGateKeeper::perform,perform__17TBiancoGateKeeperFUlPQ26JDrama9TGraphics,0x8030c5a4,0x354,pause (0),fc->setRate(0.0f);
+CLEAN,setter,setRate,Enemy/gatekeeper.cpp,1029,TBiancoGateKeeper::perform,perform__17TBiancoGateKeeperFUlPQ26JDrama9TGraphics,0x8030c5a4,0x354,flows through SMSGetAnmFrameRate,fc->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/gatekeeper.cpp,1029,TBiancoGateKeeper::perform,perform__17TBiancoGateKeeperFUlPQ26JDrama9TGraphics,0x8030c5a4,0x354,feeds rate setter (playback),fc->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setFrameRate,Enemy/hamukuri.cpp,2634,TDoroHamuKuri::isCollidMove,isCollidMove__13TDoroHamuKuriFP9THitActor,0x80262d10,0x3bc,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate() * 1.5f, 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/hamukuri.cpp,2634,TDoroHamuKuri::isCollidMove,isCollidMove__13TDoroHamuKuriFP9THitActor,0x80262d10,0x3bc,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate() * 1.5f, 0);"
+CLEAN,setter,setFrameRate,Enemy/hamukuri.cpp,2645,TDoroHamuKuri::isCollidMove,isCollidMove__13TDoroHamuKuriFP9THitActor,0x80262d10,0x3bc,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/hamukuri.cpp,2645,TDoroHamuKuri::isCollidMove,isCollidMove__13TDoroHamuKuriFP9THitActor,0x80262d10,0x3bc,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setRate,Enemy/hinokuri2.cpp,319,THino2Mask::perform,perform__10THino2MaskFUlPQ26JDrama9TGraphics,0x80270c20,0x2e8,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setFrameRate,Enemy/poihana.cpp,656,TSleepPoiHana::load,load__13TSleepPoiHanaFR20JSUMemoryInputStream,0x802c98c4,0x48,pause (0),"self->getMActor()->setFrameRate(0.0f, 0);"
+CLEAN,setter,setFrameRate,Enemy/poihana.cpp,670,TSleepPoiHana::load,load__13TSleepPoiHanaFR20JSUMemoryInputStream,0x802c98c4,0x48,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/poihana.cpp,670,TSleepPoiHana::load,load__13TSleepPoiHanaFR20JSUMemoryInputStream,0x802c98c4,0x48,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/smallEnemy.cpp,751,TSmallEnemy::changeOut,changeOut__11TSmallEnemyFv,0x8027e9fc,0xdc,flows through SMSGetAnmFrameRate,"getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/smallEnemy.cpp,751,TSmallEnemy::changeOut,changeOut__11TSmallEnemyFv,0x8027e9fc,0xdc,feeds rate setter (playback),"getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/smallEnemy.cpp,1117,TSmallEnemy::perform,perform__11TSmallEnemyFUlPQ26JDrama9TGraphics,0x8027df50,0x7c,pause (0),"self->getMActor()->setFrameRate(0.0f, 0);"
+CLEAN,setter,setFrameRate,Enemy/tamaNoko.cpp,662,TTamaNoko::isCollidMove,isCollidMove__9TTamaNokoFP9THitActor,0x802cd4ec,0xcc,pause (0),"self->getMActor()->setFrameRate(0, 0.0f);"
+CLEAN,setter,setFrameRate,Enemy/tamaNoko.cpp,925,TTamaNoko::isCollidMove,isCollidMove__9TTamaNokoFP9THitActor,0x802cd4ec,0xcc,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/tamaNoko.cpp,925,TTamaNoko::isCollidMove,isCollidMove__9TTamaNokoFP9THitActor,0x802cd4ec,0xcc,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/tamaNoko.cpp,961,TTamaNoko::isCollidMove,isCollidMove__9TTamaNokoFP9THitActor,0x802cd4ec,0xcc,flows through SMSGetAnmFrameRate,"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/tamaNoko.cpp,961,TTamaNoko::isCollidMove,isCollidMove__9TTamaNokoFP9THitActor,0x802cd4ec,0xcc,feeds rate setter (playback),"self->getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setFrameRate,Enemy/telesa.cpp,584,TTelesa::changeOut,changeOut__7TTelesaFv,0x80295dd8,0xdc,flows through SMSGetAnmFrameRate,"getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,anm-use,SMSGetAnmFrameRate,Enemy/telesa.cpp,584,TTelesa::changeOut,changeOut__7TTelesaFv,0x80295dd8,0xdc,feeds rate setter (playback),"getMActor()->setFrameRate(SMSGetAnmFrameRate(), 0);"
+CLEAN,setter,setRate,GC2D/Option.cpp,183,TBalloonControl::stopAnm,,,,pause (0),mFrameCtrl.setRate(0.0f);
+CLEAN,setter,setRate,GC2D/Option.cpp,209,TPaneScalingControl::stopAnm,,,,pause (0),mFrameCtrl.setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/Item.cpp,1091,TEggYoshi::load,load__9TEggYoshiFR20JSUMemoryInputStream,0x80193ed8,0x23c,pause (0),unk148->getFrameCtrl(3)->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjBase.cpp,197,TMapObjBase::startControlAnim,startControlAnim__11TMapObjBaseFUs,0x80189010,0x7c,pause (0),->setRate(0);
+CLEAN,setter,setRate,MoveBG/MapObjBase.cpp,230,TMapObjBase::startAnim,startAnim__11TMapObjBaseFUs,0x80188dec,0x1f4,pause (0),mMActor->getFrameCtrl(idx)->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjBase.cpp,283,TMapObjBase::makeObjDead,makeObjDead__11TMapObjBaseFv,0x80188b40,0x1bc,pause (0),mMActor->getFrameCtrl(uVar6)->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjBase.cpp,343,TMapObjBase::makeObjAppeared,makeObjAppeared__11TMapObjBaseFv,0x8018880c,0x308,flows through SMSGetAnmFrameRate,mMapObjData->mMove->unk8->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjBase.cpp,343,TMapObjBase::makeObjAppeared,makeObjAppeared__11TMapObjBaseFv,0x8018880c,0x308,feeds rate setter (playback),mMapObjData->mMove->unk8->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjEx.cpp,131,TJointCoin::loadAfter,loadAfter__10TJointCoinFv,0x801cf114,0xe0,flows through SMSGetAnmFrameRate,mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.25f);
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjEx.cpp,131,TJointCoin::loadAfter,loadAfter__10TJointCoinFv,0x801cf114,0xe0,feeds rate setter (playback),mMActor->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.25f);
+CLEAN,setter,setRate,MoveBG/MapObjEx.cpp,132,TJointCoin::loadAfter,loadAfter__10TJointCoinFv,0x801cf114,0xe0,flows through SMSGetAnmFrameRate,unk138->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.25f);
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjEx.cpp,132,TJointCoin::loadAfter,loadAfter__10TJointCoinFv,0x801cf114,0xe0,feeds rate setter (playback),unk138->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate() * 0.25f);
+CLEAN,setter,setRate,MoveBG/MapObjInit.cpp,11045,TMapObjBase::initBckMoveData,initBckMoveData__11TMapObjBaseFv,0x8018a534,0xe8,flows through SMSGetAnmFrameRate,move->unk8->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjInit.cpp,11045,TMapObjBase::initBckMoveData,initBckMoveData__11TMapObjBaseFv,0x8018a534,0xe8,feeds rate setter (playback),move->unk8->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjItem2.cpp,256,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjItem2.cpp,272,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjItem2.cpp,283,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjItem2.cpp,283,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjItem2.cpp,303,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjItem2.cpp,303,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjItem2.cpp,318,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjItem2.cpp,318,TJumpBase::control,control__9TJumpBaseFv,0x801d4e6c,0x504,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjTown.cpp,84,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,flows through SMSGetAnmFrameRate,getMActor()->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTown.cpp,84,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,feeds rate setter (playback),getMActor()->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjTown.cpp,96,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,flows through SMSGetAnmFrameRate,getMActor()->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTown.cpp,96,TManhole::touchPlayer,touchPlayer__8TManholeFP9THitActor,0x80199fe0,0x314,feeds rate setter (playback),getMActor()->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjTown.cpp,145,TManhole::animationFinished,animationFinished__8TManholeFv,0x80199e5c,0x184,pause (0),frameCtrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTown.cpp,154,TManhole::animationFinished,animationFinished__8TManholeFv,0x80199e5c,0x184,pause (0),frameCtrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTown.cpp,242,TManhole::loadAfter,loadAfter__8TManholeFv,0x80199a34,0x40,pause (0),getMActor()->getFrameCtrl(0)->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,89,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTrap.cpp,89,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,105,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate() * 0.8f);
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTrap.cpp,105,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate() * 0.8f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,120,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,136,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,152,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,flows through SMSGetAnmFrameRate,ctrl->setRate(SMSGetAnmFrameRate() * 0.1f);
+CLEAN,anm-use,SMSGetAnmFrameRate,MoveBG/MapObjTrap.cpp,152,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,feeds rate setter (playback),ctrl->setRate(SMSGetAnmFrameRate() * 0.1f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,155,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,MoveBG/MapObjTrap.cpp,169,TLampTrapSpike::control,control__14TLampTrapSpikeFv,0x801d9230,0x44c,flows through SMSGetAnmFrameRate,ctrl->setRate(-SMSGetAnmFrameRate());
+CLEAN,setter,setRate,NPC/NpcAnm.cpp,70,TBaseNPC::setNpcAnm_,setNpcAnm___8TBaseNPCF14EnumNpcAnmKind27EnumNpcStopMotionBlendOnOff,0x8016a1c0,0x474,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/MarioAutodemo.cpp,197,TMario::warpIn,warpIn__6TMarioFv,0x8011fd5c,0x4cc,pause (0),frameCtrl.setRate(0.0f);
+CLEAN,setter,setRate,Player/MarioDraw.cpp,1261,TMario::initModel,initModel__6TMarioFv,0x8012582c,0xf90,flows through SMSGetAnmFrameRate,frameCtrl[2].setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioDraw.cpp,1261,TMario::initModel,initModel__6TMarioFv,0x8012582c,0xf90,feeds rate setter (playback),frameCtrl[2].setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioDraw.cpp,1276,TMario::initModel,initModel__6TMarioFv,0x8012582c,0xf90,pause (0),modelMario->unkC[1].setRate(0.0f);
+CLEAN,setter,setRate,Player/MarioEffect.cpp,60,TMarioEffect::init,init__12TMarioEffectFP6TMario,0x80151408,0x210,flows through SMSGetAnmFrameRate,unk80->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,60,TMarioEffect::init,init__12TMarioEffectFP6TMario,0x80151408,0x210,feeds rate setter (playback),unk80->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,61,TMarioEffect::init,init__12TMarioEffectFP6TMario,0x80151408,0x210,flows through SMSGetAnmFrameRate,unk80->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,61,TMarioEffect::init,init__12TMarioEffectFP6TMario,0x80151408,0x210,feeds rate setter (playback),unk80->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,107,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,107,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,feeds rate setter (playback),unk74[idx]->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,108,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(2)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,108,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,feeds rate setter (playback),unk74[idx]->getFrameCtrl(2)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,109,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,109,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,feeds rate setter (playback),unk74[idx]->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,110,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(5)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,110,TMarioEffect::setJumpIntoWaterEffect,setJumpIntoWaterEffect__12TMarioEffectFv,0x801511d0,0x238,feeds rate setter (playback),unk74[idx]->getFrameCtrl(5)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,140,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,140,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,feeds rate setter (playback),unk74[idx]->getFrameCtrl(0)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,141,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(2)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,141,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,feeds rate setter (playback),unk74[idx]->getFrameCtrl(2)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,142,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,142,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,feeds rate setter (playback),unk74[idx]->getFrameCtrl(4)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/MarioEffect.cpp,143,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,flows through SMSGetAnmFrameRate,unk74[idx]->getFrameCtrl(5)->setRate(SMSGetAnmFrameRate());
+CLEAN,anm-use,SMSGetAnmFrameRate,Player/MarioEffect.cpp,143,TMarioEffect::setJumpIntoWaterEffectSmall,setJumpIntoWaterEffectSmall__12TMarioEffectFv,0x80151034,0x19c,feeds rate setter (playback),unk74[idx]->getFrameCtrl(5)->setRate(SMSGetAnmFrameRate());
+CLEAN,setter,setRate,Player/WaterGun.cpp,477,TNozzleBase::animation,animation__11TNozzleBaseFi,0x8014bb5c,0x438,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,489,TNozzleBase::animation,animation__11TNozzleBaseFi,0x8014bb5c,0x438,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,832,TNozzleTrigger::animation,animation__14TNozzleTriggerFi,0x8014af4c,0x4f4,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,844,TNozzleTrigger::animation,animation__14TNozzleTriggerFi,0x8014af4c,0x4f4,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1142,TNozzleDeform::animation,animation__13TNozzleDeformFi,0x8014a370,0x70c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1152,TNozzleDeform::animation,animation__13TNozzleDeformFi,0x8014a370,0x70c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1166,TNozzleDeform::animation,animation__13TNozzleDeformFi,0x8014a370,0x70c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1176,TNozzleDeform::animation,animation__13TNozzleDeformFi,0x8014a370,0x70c,pause (0),ctrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1595,TWaterGun::calcAnimation,calcAnimation__9TWaterGunFPQ26JDrama9TGraphics,0x80148e2c,0x28c,pause (0),frameCtrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1605,TWaterGun::calcAnimation,calcAnimation__9TWaterGunFPQ26JDrama9TGraphics,0x80148e2c,0x28c,pause (0),frameCtrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1616,TWaterGun::calcAnimation,calcAnimation__9TWaterGunFPQ26JDrama9TGraphics,0x80148e2c,0x28c,pause (0),frameCtrl->setRate(0.0f);
+CLEAN,setter,setRate,Player/WaterGun.cpp,1621,TWaterGun::calcAnimation,calcAnimation__9TWaterGunFPQ26JDrama9TGraphics,0x80148e2c,0x28c,pause (0),frameCtrl->setRate(0.0f);

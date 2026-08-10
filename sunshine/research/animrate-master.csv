@@ -1,0 +1,291 @@
+severity,provenance,func_addr,space,func_name,site_addr_or_loc,detail
+PARAM,BINARY,0x8013c30c,USA,0x8013c30c,0x8013c3ac,raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8013c30c,USA,0x8013c30c,0x8013c408,raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8013c30c,USA,0x8013c30c,0x8013c46c,raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+PARAM,BINARY,0x80205354,USA,0x80205354,0x802054d8,raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+PARAM,BINARY,0x80205354,USA,0x80205354,0x802054ec,raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+PARAM,BINARY,0x80205354,USA,0x80205354,0x80205624,raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+PARAM,BINARY,0x80244800,USA,0x80244800,0x80244b88,raw rate <- lfs +0xc(r5) (4x fast at 120fps)
+CONSTANT,BINARY,0x80244800,USA,0x80244800,0x80244bc8,raw rate <- constant nan (4x fast at 120fps)  [r2-0x110c=0x80415a74]
+PARAM,BINARY,0x8009548c,USA,0x8009548c,0x800955cc,raw rate <- lfs +0x16c(r3) (4x fast at 120fps)
+PARAM,BINARY,0x801175fc,USA,0x801175fc,0x8011763c,raw rate <- lfs +0x188(r31) (4x fast at 120fps)
+PARAM,BINARY,0x801176bc,USA,0x801176bc,0x801176ec,raw rate <- lfs +0x188(r31) (4x fast at 120fps)
+PARAM,BINARY,0x8013b668,USA,0x8013b668,0x8013b6c4,raw rate <- lfs +0x1bc(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8013c1cc,USA,0x8013c1cc,0x8013c24c,raw rate <- lfs +0x194(r3) (4x fast at 120fps)
+PARAM,BINARY,0x8013c490,USA,0x8013c490,0x8013c4e8,raw rate <- lfs +0x298(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8013c52c,USA,0x8013c52c,0x8013c584,raw rate <- lfs +0x1d0(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8013c5c8,USA,0x8013c5c8,0x8013c620,raw rate <- lfs +0x1a8(r5) (4x fast at 120fps)
+PARAM,BINARY,0x8026fe38,USA,0x8026fe38,0x80270204,raw rate <- lfs +0x120(r1) (4x fast at 120fps)
+PARAM,SOURCE,0x8026fc2c,JP,THinokuri2::changeBck,Enemy/hinokuri2.cpp:748,raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get())
+CONSTANT,SOURCE,0x8026fc2c,JP,THinokuri2::changeBck,Enemy/hinokuri2.cpp:750,raw literal rate 1.0f (4x fast at 120fps)
+MISUSE,SOURCE,0x80365c6c,JP,TAnimalBase::execWalk,Animal/AnimalBase.cpp:271,arithmetic on rate: ...SLMaxMarchSpeed.get() * <<>>SMSGetAnmFrameRate();...
+MISUSE,SOURCE,0x80365c6c,JP,TAnimalBase::execWalk,Animal/AnimalBase.cpp:272,arithmetic on rate: ...->mSLMarchAccel.get() * <<>>SMSGetAnmFrameRate()...
+MISUSE,SOURCE,0x80365c6c,JP,TAnimalBase::execWalk,Animal/AnimalBase.cpp:276,arithmetic on rate: ...SLMarchDecrease.get() * <<>>SMSGetAnmFrameRate()...
+MISUSE,SOURCE,0x80365c6c,JP,TAnimalBase::execWalk,Animal/AnimalBase.cpp:283,arithmetic on rate: ...nSpeed    = waitSpeed * <<>>SMSGetAnmFrameRate();...
+MISUSE,SOURCE,0x80365c6c,JP,TAnimalBase::execWalk,Animal/AnimalBase.cpp:286,arithmetic on rate: ...nSpeed    = walkSpeed * <<>>SMSGetAnmFrameRate();...
+MISUSE,SOURCE,0x802eb298,JP,TBEelTears::getBasNameTable,Enemy/bosseel.cpp:545,"arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);..."
+MISUSE,SOURCE,0x802eb298,JP,TBEelTears::getBasNameTable,Enemy/bosseel.cpp:550,"arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);..."
+MISUSE,SOURCE,0x802eb298,JP,TBEelTears::getBasNameTable,Enemy/bosseel.cpp:602,"arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);..."
+MISUSE,SOURCE,,JP,TBossManta::startWalkAnim,Enemy/bossManta.cpp:369,"arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);..."
+COMPUTED,SOURCE,,JP,TBossManta::startWalkAnim,Enemy/bossManta.cpp:368,raw/computed rate ()
+MISUSE,SOURCE,,JP,TBossManta::startDamageAnim,Enemy/bossManta.cpp:376,"arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);..."
+COMPUTED,SOURCE,,JP,TBossManta::startDamageAnim,Enemy/bossManta.cpp:375,raw/computed rate ()
+MISUSE,SOURCE,0x8016ad74,JP,TBaseNPC::perform,NPC/NpcBase.cpp:692,compared as timing: ...f32 rate = <<>>SMSGetAnmFrameRate();...
+COMPUTED,SOURCE,0x8016ad74,JP,TBaseNPC::perform,NPC/NpcBase.cpp:693,raw/computed rate ()
+MISUSE,SOURCE,0x80199fe0,JP,TManhole::touchPlayer,MoveBG/MapObjTown.cpp:86,arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x80199fe0,JP,TManhole::touchPlayer,MoveBG/MapObjTown.cpp:98,arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x801466f4,JP,TSplashManager::load,Player/SplashManager.cpp:24,arithmetic on rate: ...unk638 = (<<>>SMSGetAnmFrameRate() * -0.5f) *...
+MISUSE,SOURCE,0x801466f4,JP,TSplashManager::load,Player/SplashManager.cpp:24,arithmetic on rate: ...mFrameRate() * -0.5f) * <<>>SMSGetAnmFrameRate();...
+MISUSE,SOURCE,0x800fc380,JP,TMarioGamePad::reset,System/MarioGamePad.cpp:8,"arithmetic on rate: ...peat(0xf00000f, 20.0f / <<>>SMSGetAnmFrameRate(),..."
+MISUSE,SOURCE,0x800fc380,JP,TMarioGamePad::reset,System/MarioGamePad.cpp:9,arithmetic on rate: ...6.0f / <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x80366ba0,JP,TAnimalBase::init,Animal/AnimalBase.cpp:75,arithmetic on rate: ...TurnSpeed = turnSpeed * <<>>SMSGetAnmFrameRate();...
+MISUSE,SOURCE,0x80313eac,JP,TBGTentacle::setAttackTarget,Enemy/bgtentacle.cpp:755,arithmetic on rate: ...ner->getAttackSpeed() * <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x80261928,JP,TBossEel::setBckAnm,Enemy/bosseel.cpp:1923,arithmetic on rate: ...trl(0)->setRate(0.25f * <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x800cf318,JP,TMultiBtk::setNthData,MarioUtil/ModelUtil.cpp:38,arithmetic on rate: ...unk0c[n].setRate(0.5f * <<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x801d9230,JP,TLampTrapSpike::control,MoveBG/MapObjTrap.cpp:169,arithmetic on rate: ...ctrl->setRate(-<<>>SMSGetAnmFrameRate());...
+MISUSE,SOURCE,0x800dc368,JP,TEmitterViewObj::perform,System/EmitterViewObj.cpp:29,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...
+MISUSE,SOURCE,0x800dc2ac,JP,TEmitterIndirectViewObj::perform,System/EmitterViewObj.cpp:42,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...
+MISUSE,SOURCE,0x800dbd30,JP,TMarioParticleManager::perform,System/EmitterViewObj.cpp:110,compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...
+COMPUTED,BINARY,0x801d2880,USA,0x801d2880,0x801d2950,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2880,USA,0x801d2880,0x801d2980,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2880,USA,0x801d2880,0x801d29ac,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+REVIEW,BINARY,0x801d2880,USA,0x801d2880,0x801d2908,"computed rate (fsubs f2,f1); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x801d2880,USA,0x801d2880,0x801d291c,"computed rate (fsubs f2,f1); AnmFrameRate in block — verify scaling/rate²"
+COMPUTED,BINARY,0x800d1fb8,USA,0x800d1fb8,0x800d2094,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1fb8,USA,0x800d1fb8,0x800d237c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1fb8,USA,0x800d1fb8,0x800d2450,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1fb8,USA,0x800d1fb8,0x800d2510,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012b928,USA,0x8012b928,0x8012b9bc,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012b928,USA,0x8012b928,0x8012ba08,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012b928,USA,0x8012b928,0x8012ba8c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012b928,USA,0x8012b928,0x8012bafc,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d06ec,USA,0x800d06ec,0x800d07b8,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d06ec,USA,0x800d06ec,0x800d08b0,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d06ec,USA,0x800d06ec,0x800d0b78,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1250,USA,0x800d1250,0x800d1308,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1250,USA,0x800d1250,0x800d1494,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1250,USA,0x800d1250,0x800d15d8,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011f798,USA,0x8011f798,0x8011f8b0,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011f798,USA,0x8011f798,0x8011f98c,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+CONSTANT,BINARY,0x8011f798,USA,0x8011f798,0x8011f9b8,raw rate <- constant 0.0942478 (4x fast at 120fps)  [r2-0x521c=0x80411964]
+COMPUTED,BINARY,0x8012bc1c,USA,0x8012bc1c,0x8012bec8,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012bc1c,USA,0x8012bc1c,0x8012bf14,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012bc1c,USA,0x8012bc1c,0x8012bf48,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012bfd0,USA,0x8012bfd0,0x8012c02c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012bfd0,USA,0x8012bfd0,0x8012c098,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+CONSTANT,BINARY,0x8012bfd0,USA,0x8012bfd0,0x8012c0ac,raw rate <- constant 0.05 (4x fast at 120fps)  [r2-0x5010=0x80411b70]
+COMPUTED,BINARY,0x800d0d10,USA,0x800d0d10,0x800d0e24,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d0d10,USA,0x800d0d10,0x800d1140,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1bb4,USA,0x800d1bb4,0x800d1cb0,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d1bb4,USA,0x800d1bb4,0x800d1d80,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d8ba4,USA,0x800d8ba4,0x800d8c5c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d8ba4,USA,0x800d8ba4,0x800d8c94,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800e8898,USA,0x800e8898,0x800e8a2c,"computed raw rate (fdivs f0,f2); no AnmFrameRate feed"
+CONSTANT,BINARY,0x800e8898,USA,0x800e8898,0x800e8b7c,raw rate <- constant 20 (4x fast at 120fps)  [r2-0x5b2c=0x80411054]
+COMPUTED,BINARY,0x801d24f0,USA,0x801d24f0,0x801d2538,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d24f0,USA,0x801d24f0,0x801d2564,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2c78,USA,0x801d2c78,0x801d2cc4,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2c78,USA,0x801d2c78,0x801d2cf0,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2f18,USA,0x801d2f18,0x801d2f60,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2f18,USA,0x801d2f18,0x801d2f8c,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d9734,USA,0x801d9734,0x801d9880,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+CONSTANT,BINARY,0x801d9734,USA,0x801d9734,0x801d97b4,raw rate <- constant -180 (4x fast at 120fps)  [r2-0x267c=0x80414504]
+COMPUTED,BINARY,0x801f761c,USA,0x801f761c,0x801f76c0,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801f761c,USA,0x801f761c,0x801f76dc,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8004e328,USA,0x8004e328,0x8004e3d4,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800abee4,USA,0x800abee4,0x800abf4c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800ae188,USA,0x800ae188,0x800ae20c,"computed raw rate (fmuls f2,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d04f4,USA,0x800d04f4,0x800d05b4,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d262c,USA,0x800d262c,0x800d2728,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d2a38,USA,0x800d2a38,0x800d2af0,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d2eac,USA,0x800d2eac,0x800d2fa4,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d32b4,USA,0x800d32b4,0x800d3368,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x800d872c,USA,0x800d872c,0x800d87c8,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x80113548,USA,0x80113548,0x8011365c,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011397c,USA,0x8011397c,0x801139d4,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x80113b6c,USA,0x80113b6c,0x80113c44,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011579c,USA,0x8011579c,0x801157f8,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011c57c,USA,0x8011c57c,0x8011c680,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011c9c0,USA,0x8011c9c0,0x8011cac4,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011cc38,USA,0x8011cc38,0x8011cd78,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011cf04,USA,0x8011cf04,0x8011d028,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011d4b8,USA,0x8011d4b8,0x8011d9dc,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011db64,USA,0x8011db64,0x8011dc68,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011e044,USA,0x8011e044,0x8011e148,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8011f9d8,USA,0x8011f9d8,0x8011fac0,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x8012c1ac,USA,0x8012c1ac,0x8012c21c,"computed raw rate (fmuls f31,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x80136a04,USA,0x80136a04,0x80136a68,"computed raw rate (fmuls f0,f0); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d23fc,USA,0x801d23fc,0x801d2450,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d2dfc,USA,0x801d2dfc,0x801d2e4c,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d32fc,USA,0x801d32fc,0x801d341c,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d6938,USA,0x801d6938,0x801d6a44,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801d9460,USA,0x801d9460,0x801d953c,"computed raw rate (fadds f31,f30); no AnmFrameRate feed"
+COMPUTED,BINARY,0x801eb014,USA,0x801eb014,0x801eba7c,"computed raw rate (fmuls f2,f0); no AnmFrameRate feed"
+COMPUTED,SOURCE,0x80169a78,JP,TBaseNPC::walkAnmRateChange_,NPC/NpcAnm.cpp:289,raw/computed rate (unk1D0)
+COMPUTED,SOURCE,0x80169a78,JP,TBaseNPC::walkAnmRateChange_,NPC/NpcAnm.cpp:291,raw/computed rate (unk1D0)
+COMPUTED,SOURCE,0x80169a78,JP,TBaseNPC::walkAnmRateChange_,NPC/NpcAnm.cpp:339,raw/computed rate (unk1D0)
+COMPUTED,SOURCE,0x802e8b84,JP,TBossEelTooth::perform,Enemy/bosseel.cpp:902,raw/computed rate ()
+REVIEW,SOURCE,0x802e8b84,JP,TBossEelTooth::perform,Enemy/bosseel.cpp:903,"...<<>>SMSGetAnmFrameRate(), 0);..."
+COMPUTED,SOURCE,0x80247440,JP,TPaneScalingControl::setupAnm,GC2D/Option.cpp:202,raw/computed rate (speed)
+CONSTANT,SOURCE,0x80247440,JP,TPaneScalingControl::setupAnm,GC2D/Option.cpp:205,raw literal rate 1.0f (4x fast at 120fps)
+COMPUTED,SOURCE,0x80126948,JP,TMario::setAnimation,Player/MarioDraw.cpp:1065,raw/computed rate (rate * 0.5f)
+COMPUTED,SOURCE,0x80126948,JP,TMario::setAnimation,Player/MarioDraw.cpp:1066,raw/computed rate (rate * 0.5f)
+COMPUTED,SOURCE,0x8012688c,JP,TMario::setReverseAnimation,Player/MarioDraw.cpp:1080,raw/computed rate (rate * -0.5f)
+COMPUTED,SOURCE,0x8012688c,JP,TMario::setReverseAnimation,Player/MarioDraw.cpp:1084,raw/computed rate (rate * -0.5f)
+COMPUTED,SOURCE,0x80124084,JP,TMario::addUpper,Player/MarioDraw.cpp:1889,raw/computed rate (mPumpAnmRate)
+COMPUTED,SOURCE,0x80124084,JP,TMario::addUpper,Player/MarioDraw.cpp:1894,raw/computed rate (-mPumpAnmRate)
+COMPUTED,SOURCE,0x80123a10,JP,TMario::calcAnim,Player/MarioDraw.cpp:1964,raw/computed rate ()
+CONSTANT,SOURCE,0x80123a10,JP,TMario::calcAnim,Player/MarioDraw.cpp:1974,raw literal rate 0.5f (4x fast at 120fps)
+COMPUTED,SOURCE,0x80113938,JP,linSetAnmRate,Strategic/liveinterp.cpp:432,raw/computed rate (arg1.getDataFloat())
+COMPUTED,SOURCE,0x80113938,JP,linSetAnmRate,Strategic/liveinterp.cpp:435,raw/computed rate (arg1.getDataFloat())
+COMPUTED,SOURCE,0x801a154c,JP,TDonchou::calcRootMatrix,MoveBG/MapObjSirena.cpp:886,raw/computed rate (0.5f * fc->getRate())
+COMPUTED,SOURCE,0x8014f1a0,JP,TYoshi::thinkAnimation,Player/Yoshi.cpp:611,raw/computed rate (nextFrame)
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc234,raw rate <- constant 0.06 (4x fast at 120fps)  [r2-0x2bd0=0x80413fb0]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc264,raw rate <- constant 1.14303e+33 (4x fast at 120fps)  [r2-0x2bc0=0x80413fc0]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc27c,raw rate <- constant 9.44473e+21 (4x fast at 120fps)  [r2-0x2bbc=0x80413fc4]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc294,raw rate <- constant 0.02 (4x fast at 120fps)  [r2-0x2bb8=0x80413fc8]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc31c,raw rate <- constant 0.06 (4x fast at 120fps)  [r2-0x2bd0=0x80413fb0]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc34c,raw rate <- constant 1.14303e+33 (4x fast at 120fps)  [r2-0x2bc0=0x80413fc0]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc364,raw rate <- constant 9.44473e+21 (4x fast at 120fps)  [r2-0x2bbc=0x80413fc4]
+CONSTANT,BINARY,0x801bc12c,USA,0x801bc12c,0x801bc37c,raw rate <- constant 0.02 (4x fast at 120fps)  [r2-0x2bb8=0x80413fc8]
+CONSTANT,BINARY,0x80036f84,USA,0x80036f84,0x80037080,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036f84,USA,0x80036f84,0x80037094,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036f84,USA,0x80036f84,0x800370a8,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036f84,USA,0x80036f84,0x800370b8,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80037500,USA,0x80037500,0x800375fc,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80037500,USA,0x80037500,0x80037610,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80037500,USA,0x80037500,0x80037624,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80037500,USA,0x80037500,0x80037634,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x801bbef0,USA,0x801bbef0,0x801bc0b0,raw rate <- constant 0.06 (4x fast at 120fps)  [r2-0x2bd0=0x80413fb0]
+CONSTANT,BINARY,0x801bbef0,USA,0x801bbef0,0x801bc0e0,raw rate <- constant 1.14303e+33 (4x fast at 120fps)  [r2-0x2bc0=0x80413fc0]
+CONSTANT,BINARY,0x801bbef0,USA,0x801bbef0,0x801bc0f8,raw rate <- constant 9.44473e+21 (4x fast at 120fps)  [r2-0x2bbc=0x80413fc4]
+CONSTANT,BINARY,0x801bbef0,USA,0x801bbef0,0x801bc110,raw rate <- constant 0.02 (4x fast at 120fps)  [r2-0x2bb8=0x80413fc8]
+CONSTANT,BINARY,0x801bc5a8,USA,0x801bc5a8,0x801bc654,raw rate <- constant 0.06 (4x fast at 120fps)  [r2-0x2bd0=0x80413fb0]
+CONSTANT,BINARY,0x801bc5a8,USA,0x801bc5a8,0x801bc684,raw rate <- constant 1.14303e+33 (4x fast at 120fps)  [r2-0x2bc0=0x80413fc0]
+CONSTANT,BINARY,0x801bc5a8,USA,0x801bc5a8,0x801bc69c,raw rate <- constant 9.44473e+21 (4x fast at 120fps)  [r2-0x2bbc=0x80413fc4]
+CONSTANT,BINARY,0x801bc5a8,USA,0x801bc5a8,0x801bc6b4,raw rate <- constant 0.02 (4x fast at 120fps)  [r2-0x2bb8=0x80413fc8]
+CONSTANT,BINARY,0x801edd00,USA,0x801edd00,0x801edd68,raw rate <- constant 0.1 (4x fast at 120fps)  [r2-0x2220=0x80414960]
+CONSTANT,BINARY,0x801edd00,USA,0x801edd00,0x801edd7c,raw rate <- constant 0.1 (4x fast at 120fps)  [r2-0x2220=0x80414960]
+CONSTANT,BINARY,0x801edd00,USA,0x801edd00,0x801eddc4,raw rate <- constant 0.1 (4x fast at 120fps)  [r2-0x2220=0x80414960]
+CONSTANT,BINARY,0x801edd00,USA,0x801edd00,0x801eddd8,raw rate <- constant 0.1 (4x fast at 120fps)  [r2-0x2220=0x80414960]
+CONSTANT,BINARY,0x80201840,USA,0x80201840,0x802018d4,raw rate <- constant 45 (4x fast at 120fps)  [r2-0x1dc0=0x80414dc0]
+CONSTANT,BINARY,0x80201840,USA,0x80201840,0x80201980,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x1dd0=0x80414db0]
+CONSTANT,BINARY,0x80201840,USA,0x80201840,0x80201b54,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x1dd0=0x80414db0]
+CONSTANT,BINARY,0x80201840,USA,0x80201840,0x80201bdc,raw rate <- constant 45 (4x fast at 120fps)  [r2-0x1dc0=0x80414dc0]
+CONSTANT,BINARY,0x802405f8,USA,0x802405f8,0x80240654,raw rate <- constant 0.99 (4x fast at 120fps)  [r2-0x1468=0x80415718]
+CONSTANT,BINARY,0x802405f8,USA,0x802405f8,0x80240664,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x1498=0x804156e8]
+CONSTANT,BINARY,0x802405f8,USA,0x802405f8,0x80240690,raw rate <- constant 0.99 (4x fast at 120fps)  [r2-0x1468=0x80415718]
+CONSTANT,BINARY,0x802405f8,USA,0x802405f8,0x802406a0,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x1498=0x804156e8]
+CONSTANT,BINARY,0x80240a58,USA,0x80240a58,0x80240adc,raw rate <- constant 0.99 (4x fast at 120fps)  [r2-0x1468=0x80415718]
+CONSTANT,BINARY,0x80240a58,USA,0x80240a58,0x80240aec,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x1498=0x804156e8]
+CONSTANT,BINARY,0x80240a58,USA,0x80240a58,0x80240b18,raw rate <- constant 0.99 (4x fast at 120fps)  [r2-0x1468=0x80415718]
+CONSTANT,BINARY,0x80240a58,USA,0x80240a58,0x80240b28,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x1498=0x804156e8]
+CONSTANT,BINARY,0x800364f4,USA,0x800364f4,0x800365d8,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x800364f4,USA,0x800364f4,0x800365ec,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x800364f4,USA,0x800364f4,0x800365fc,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036a74,USA,0x80036a74,0x80036b64,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036a74,USA,0x80036a74,0x80036b78,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x80036a74,USA,0x80036a74,0x80036b88,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x74e0=0x8040f6a0]
+CONSTANT,BINARY,0x800a5fc8,USA,0x800a5fc8,0x800a616c,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800a5fc8,USA,0x800a5fc8,0x800a6194,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800a5fc8,USA,0x800a5fc8,0x800a6274,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800c8f7c,USA,0x800c8f7c,0x800c8fe8,raw rate <- constant 900 (4x fast at 120fps)  [r2-0x5ff0=0x80410b90]
+CONSTANT,BINARY,0x800c8f7c,USA,0x800c8f7c,0x800c9004,raw rate <- constant 900 (4x fast at 120fps)  [r2-0x5ff0=0x80410b90]
+CONSTANT,BINARY,0x800c8f7c,USA,0x800c8f7c,0x800c9190,raw rate <- constant 900 (4x fast at 120fps)  [r2-0x5ff0=0x80410b90]
+CONSTANT,BINARY,0x800e6870,USA,0x800e6870,0x800e68c8,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x800e6870,USA,0x800e6870,0x800e6904,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x800e6870,USA,0x800e6870,0x800e6914,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x80271a10,USA,0x80271a10,0x80271ab4,raw rate <- constant 20 (4x fast at 120fps)  [r2-0xaf0=0x80416090]
+CONSTANT,BINARY,0x80271a10,USA,0x80271a10,0x80271ac8,raw rate <- constant 20 (4x fast at 120fps)  [r2-0xaf0=0x80416090]
+CONSTANT,BINARY,0x80271a10,USA,0x80271a10,0x80271b84,raw rate <- constant 20 (4x fast at 120fps)  [r2-0xaf0=0x80416090]
+CONSTANT,BINARY,0x8006a3a0,USA,0x8006a3a0,0x8006a3f0,raw rate <- constant 200 (4x fast at 120fps)  [r2-0x6c08=0x8040ff78]
+CONSTANT,BINARY,0x8006a3a0,USA,0x8006a3a0,0x8006a418,raw rate <- constant 200 (4x fast at 120fps)  [r2-0x6c08=0x8040ff78]
+CONSTANT,BINARY,0x800a4900,USA,0x800a4900,0x800a49d0,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800a4900,USA,0x800a4900,0x800a4d18,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800c255c,USA,0x800c255c,0x800c27fc,raw rate <- constant 50 (4x fast at 120fps)  [r2-0x6130=0x80410a50]
+CONSTANT,BINARY,0x800c255c,USA,0x800c255c,0x800c2810,raw rate <- constant 50 (4x fast at 120fps)  [r2-0x6130=0x80410a50]
+CONSTANT,BINARY,0x800c8958,USA,0x800c8958,0x800c89d8,raw rate <- constant 900 (4x fast at 120fps)  [r2-0x5ff0=0x80410b90]
+CONSTANT,BINARY,0x800c8958,USA,0x800c8958,0x800c8a34,raw rate <- constant 900 (4x fast at 120fps)  [r2-0x5ff0=0x80410b90]
+CONSTANT,BINARY,0x800d4b64,USA,0x800d4b64,0x800d50c8,raw rate <- constant 10000 (4x fast at 120fps)  [r2-0x5dd4=0x80410dac]
+CONSTANT,BINARY,0x800d4b64,USA,0x800d4b64,0x800d50dc,raw rate <- constant 10000 (4x fast at 120fps)  [r2-0x5dd4=0x80410dac]
+CONSTANT,BINARY,0x800e65ac,USA,0x800e65ac,0x800e66c0,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x800e65ac,USA,0x800e65ac,0x800e66c8,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x800f319c,USA,0x800f319c,0x800f32c8,raw rate <- constant 2.39882e+11 (4x fast at 120fps)  [r2-0x5900=0x80411280]
+CONSTANT,BINARY,0x800f319c,USA,0x800f319c,0x800f3380,raw rate <- constant 2.39882e+11 (4x fast at 120fps)  [r2-0x5900=0x80411280]
+CONSTANT,BINARY,0x801b0738,USA,0x801b0738,0x801b07c4,raw rate <- constant 7.00716e+22 (4x fast at 120fps)  [r2-0x3e28=0x80412d58]
+CONSTANT,BINARY,0x801b0738,USA,0x801b0738,0x801b07dc,raw rate <- constant 7.00716e+22 (4x fast at 120fps)  [r2-0x3e28=0x80412d58]
+CONSTANT,BINARY,0x801b09d4,USA,0x801b09d4,0x801b0ac8,raw rate <- constant 7.00716e+22 (4x fast at 120fps)  [r2-0x3e28=0x80412d58]
+CONSTANT,BINARY,0x801b09d4,USA,0x801b09d4,0x801b0ae0,raw rate <- constant 7.00716e+22 (4x fast at 120fps)  [r2-0x3e28=0x80412d58]
+CONSTANT,BINARY,0x801bc898,USA,0x801bc898,0x801bc920,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x2bb0=0x80413fd0]
+CONSTANT,BINARY,0x801bc898,USA,0x801bc898,0x801bc9d4,raw rate <- constant 30 (4x fast at 120fps)  [r2-0x2ba8=0x80413fd8]
+CONSTANT,BINARY,0x8021a118,USA,0x8021a118,0x8021a2bc,raw rate <- constant 1.81792e+31 (4x fast at 120fps)  [r2-0x18e8=0x80415298]
+CONSTANT,BINARY,0x8021a118,USA,0x8021a118,0x8021a314,raw rate <- constant 1.81792e+31 (4x fast at 120fps)  [r2-0x18e8=0x80415298]
+CONSTANT,BINARY,0x80246578,USA,0x80246578,0x802472a8,raw rate <- constant nan (4x fast at 120fps)  [r2-0x110c=0x80415a74]
+CONSTANT,BINARY,0x80246578,USA,0x80246578,0x802473a8,raw rate <- constant nan (4x fast at 120fps)  [r2-0x110c=0x80415a74]
+CONSTANT,BINARY,0x80270b00,USA,0x80270b00,0x802710fc,raw rate <- constant 0.00549316 (4x fast at 120fps)  [r2-0xb30=0x80416050]
+CONSTANT,BINARY,0x80270b00,USA,0x80270b00,0x8027110c,raw rate <- constant 0.00549316 (4x fast at 120fps)  [r2-0xb30=0x80416050]
+CONSTANT,BINARY,0x80047104,USA,0x80047104,0x80047430,raw rate <- constant -90 (4x fast at 120fps)  [r2-0x6fd0=0x8040fbb0]
+CONSTANT,BINARY,0x8004a494,USA,0x8004a494,0x8004a4cc,raw rate <- constant -90 (4x fast at 120fps)  [r2-0x6fd0=0x8040fbb0]
+CONSTANT,BINARY,0x8007d518,USA,0x8007d518,0x8007d690,raw rate <- constant 1900 (4x fast at 120fps)  [r2-0x699c=0x804101e4]
+CONSTANT,BINARY,0x800826d8,USA,0x800826d8,0x800828ec,raw rate <- constant 720 (4x fast at 120fps)  [r2-0x68e8=0x80410298]
+CONSTANT,BINARY,0x80082944,USA,0x80082944,0x80082bcc,raw rate <- constant 720 (4x fast at 120fps)  [r2-0x68e8=0x80410298]
+CONSTANT,BINARY,0x800a5db8,USA,0x800a5db8,0x800a5df4,raw rate <- constant 3.05176e-05 (4x fast at 120fps)  [r2-0x64d0=0x804106b0]
+CONSTANT,BINARY,0x800b3410,USA,0x800b3410,0x800b3448,raw rate <- constant 2000 (4x fast at 120fps)  [r2-0x62b0=0x804108d0]
+CONSTANT,BINARY,0x800b5174,USA,0x800b5174,0x800b51ac,raw rate <- constant 2000 (4x fast at 120fps)  [r2-0x62b0=0x804108d0]
+CONSTANT,BINARY,0x800b69d4,USA,0x800b69d4,0x800b6a54,raw rate <- constant 0.7 (4x fast at 120fps)  [r2-0x61ec=0x80410994]
+CONSTANT,BINARY,0x800b6dfc,USA,0x800b6dfc,0x800b6f88,raw rate <- constant 50 (4x fast at 120fps)  [r2-0x61e8=0x80410998]
+CONSTANT,BINARY,0x800badb4,USA,0x800badb4,0x800bae24,raw rate <- constant -2 (4x fast at 120fps)  [r2-0x61b8=0x804109c8]
+CONSTANT,BINARY,0x800bd8f8,USA,0x800bd8f8,0x800bd954,raw rate <- constant 50 (4x fast at 120fps)  [r2-0x6130=0x80410a50]
+CONSTANT,BINARY,0x800cdb70,USA,0x800cdb70,0x800cdd1c,raw rate <- constant 1.89887e+28 (4x fast at 120fps)  [r2-0x5f80=0x80410c00]
+CONSTANT,BINARY,0x800d6a70,USA,0x800d6a70,0x800d6c30,raw rate <- constant 4.25404e+24 (4x fast at 120fps)  [r2-0x5e40=0x80410d40]
+CONSTANT,BINARY,0x800d73b4,USA,0x800d73b4,0x800d74bc,raw rate <- constant 4.25404e+24 (4x fast at 120fps)  [r2-0x5e40=0x80410d40]
+CONSTANT,BINARY,0x800e05cc,USA,0x800e05cc,0x800e0870,raw rate <- constant 360 (4x fast at 120fps)  [r2-0x5c40=0x80410f40]
+CONSTANT,BINARY,0x800e2438,USA,0x800e2438,0x800e2600,raw rate <- constant 360 (4x fast at 120fps)  [r2-0x5c40=0x80410f40]
+CONSTANT,BINARY,0x800e5e18,USA,0x800e5e18,0x800e5e74,raw rate <- constant 1.2 (4x fast at 120fps)  [r2-0x5ba0=0x80410fe0]
+CONSTANT,BINARY,0x800f3004,USA,0x800f3004,0x800f3130,raw rate <- constant 2.39882e+11 (4x fast at 120fps)  [r2-0x5900=0x80411280]
+CONSTANT,BINARY,0x8010e5f4,USA,0x8010e5f4,0x8010e62c,raw rate <- constant 2 (4x fast at 120fps)  [r2-0x54b0=0x804116d0]
+CONSTANT,BINARY,0x80117780,USA,0x80117780,0x801177ec,raw rate <- constant 97.5 (4x fast at 120fps)  [r2-0x52c0=0x804118c0]
+CONSTANT,BINARY,0x8012cffc,USA,0x8012cffc,0x8012d034,raw rate <- constant 4.23226e+21 (4x fast at 120fps)  [r2-0x501c=0x80411b64]
+CONSTANT,BINARY,0x8013c664,USA,0x8013c664,0x8013c6cc,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x4d90=0x80411df0]
+CONSTANT,BINARY,0x8013c91c,USA,0x8013c91c,0x8013c980,raw rate <- constant 176 (4x fast at 120fps)  [r2-0x4d90=0x80411df0]
+CONSTANT,BINARY,0x801b0bf8,USA,0x801b0bf8,0x801b0c58,raw rate <- constant 7.00716e+22 (4x fast at 120fps)  [r2-0x3e28=0x80412d58]
+CONSTANT,BINARY,0x801c1bc0,USA,0x801c1bc0,0x801c1be8,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x2b20=0x80414060]
+CONSTANT,BINARY,0x801cd40c,USA,0x801cd40c,0x801cd4e8,raw rate <- constant 400 (4x fast at 120fps)  [r2-0x28d0=0x804142b0]
+CONSTANT,BINARY,0x801ec048,USA,0x801ec048,0x801ec224,raw rate <- constant 1 (4x fast at 120fps)  [r2-0x2294=0x804148ec]
+CONSTANT,BINARY,0x801fb988,USA,0x801fb988,0x801fbc5c,raw rate <- constant 200 (4x fast at 120fps)  [r2-0x1fb8=0x80414bc8]
+CONSTANT,BINARY,0x8027097c,USA,0x8027097c,0x80270a0c,raw rate <- constant 0.00549316 (4x fast at 120fps)  [r2-0xb30=0x80416050]
+CONSTANT,BINARY,0x80284db8,USA,0x80284db8,0x80284ec0,raw rate <- constant 30 (4x fast at 120fps)  [r2-0x6c0=0x804164c0]
+CONSTANT,SOURCE,0x80147f4c,JP,TYoshi::init,Player/Yoshi.cpp:145,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80147f4c,JP,TYoshi::init,Player/Yoshi.cpp:147,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80147f4c,JP,TYoshi::init,Player/Yoshi.cpp:192,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80147f4c,JP,TYoshi::init,Player/Yoshi.cpp:193,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80247440,JP,TBalloonControl::setupAnm,GC2D/Option.cpp:176,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80247440,JP,TBalloonControl::setupAnm,GC2D/Option.cpp:179,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8011f738,JP,TMario::toroccoStart,Player/MarioAutodemo.cpp:354,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8011f738,JP,TMario::toroccoStart,Player/MarioAutodemo.cpp:360,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8012582c,JP,TMario::initModel,Player/MarioDraw.cpp:1348,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8012582c,JP,TMario::initModel,Player/MarioDraw.cpp:1373,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80124238,JP,TMario::setUpperDamageRun,Player/MarioDraw.cpp:1851,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80124238,JP,TMario::setUpperDamageRun,Player/MarioDraw.cpp:1852,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8014ef78,JP,TYoshi::thinkUpper,Player/Yoshi.cpp:646,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8014ef78,JP,TYoshi::thinkUpper,Player/Yoshi.cpp:657,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x802884c0,JP,TBossGessoManager::load,Enemy/bossgesso.cpp:1597,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80247440,JP,TPatternAnmControl::setupAnm,GC2D/Option.cpp:261,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,,JP,TOptionSoundUnit,GC2D/Option.cpp:531,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8018880c,JP,TMapObjBase::makeObjAppeared,MoveBG/MapObjBase.cpp:341,raw literal rate 1.0f (4x fast at 120fps)
+CONSTANT,SOURCE,0x80164248,JP,TMario::getGesso,Player/MarioReceiveMsg.cpp:62,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x8014fcd8,JP,TYoshi::thinkBtp,Player/Yoshi.cpp:286,raw literal rate 0.5f (4x fast at 120fps)
+CONSTANT,SOURCE,0x800efc08,JP,TMarDirector::setup2,System/MarDirectorSetup2.cpp:68,raw literal rate 120.0f (4x fast at 120fps)
+REVIEW,BINARY,0x801c216c,USA,0x801c216c,0x801c2204,"computed rate (fadds f31,f1); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x801c216c,USA,0x801c216c,0x801c22b8,"computed rate (fadds f31,f1); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x802123e0,USA,0x802123e0,0x80212520,rate f31 source not resolved in block
+REVIEW,BINARY,0x802123e0,USA,0x802123e0,0x80212530,rate f31 source not resolved in block
+REVIEW,BINARY,0x8000af8c,USA,0x8000af8c,0x8000aff0,"computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x8000bb7c,USA,0x8000bb7c,0x8000bbf0,"computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x8004ef94,USA,0x8004ef94,0x8004f028,"computed rate (fadds f1,f0); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x80097ba8,USA,0x80097ba8,0x80098050,rate f31 source not resolved in block
+REVIEW,BINARY,0x800f2144,USA,0x800f2144,0x800f2768,rate f31 source not resolved in block
+REVIEW,BINARY,0x801c9734,USA,0x801c9734,0x801c9940,"computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x801d4068,USA,0x801d4068,0x801d412c,"computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate²"
+REVIEW,BINARY,0x802064b0,USA,0x802064b0,0x80206830,rate f1 source not resolved in block
+REVIEW,SOURCE,0x800fb64c,JP,SMSGetVSyncTimesPerSec,System/Application.cpp:92,...f32 <<>>SMSGetAnmFrameRate() { return 60...

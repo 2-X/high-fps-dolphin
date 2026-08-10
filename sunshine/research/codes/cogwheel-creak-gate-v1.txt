@@ -1,0 +1,26 @@
+$Cogwheel rope-creak SE cadence gate v1 [kris]
+* Noki Bay urn-pulley lifts: the rope-pull creak (MSD_SE_OBJ_MR_TSUBO_PULL
+* 0x3060) and the pot-drain pour (MSD_SE_OBJ_MR_TSUBO_WATER 0x3061) are
+* requested every control() substep; JAudio retriggers once per rendered
+* frame, so the creak fires at FPS/30 x the designed rate at high fps.
+* Gate both call sites to 1 substep in 4 on gpMarDirector->unk5C: substeps
+* are pinned at 120 Hz at every G, so 1-in-4 = the native 30/sec everywhere.
+* Gated ticks jump to the game's own SE-skip branch targets. Clobbers only
+* r12/ctr/cr0 (dead at both hooks). Emitted by fpspatch.py (cogwheel_se_gate);
+* this file is the standalone reference copy.
+* TCogwheel::control USA 0x801da084, hook 0x801da1e8, skip 0x801da22c
+* TCogwheelScale::control USA 0x801da818, hook 0x801da860, skip 0x801da89c
+C21DA1E8 00000006
+818D9FB8 280C0000
+41820020 818C005C
+718C0003 41820014
+3D80801D 618CA22C
+7D8903A6 4E800420
+C002DA10 00000000
+C21DA860 00000006
+818D9FB8 280C0000
+41820020 818C005C
+718C0003 41820014
+3D80801D 618CA89C
+7D8903A6 4E800420
+806D9FBC 00000000

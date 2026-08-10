@@ -86,6 +86,19 @@ at a time — they all write `0x804167B8` and will fight otherwise.
   Always pad so the final word is `00000000` (add a `60000000 00000000` line if
   needed to make the instruction count land right). This single mistake silently
   breaks every multi-instruction C2 — verify the last word is `00000000`.
+- **CRITICAL GOTCHA #2 — only the LAST `00000000` is the branch-back; every other
+  `00000000` in the block is a LIVE cave word.** If any path *falls into* or
+  *branches to* an interior `00000000`, the CPU executes it as an instruction →
+  `IntCPU: Unknown instruction 00000000 at PC = 800026xx` (PC inside the handler
+  cave). RULE: **every code path must converge on the LAST word** — either by
+  fall-through or by a branch that targets *exactly* that final word. There must
+  be only ONE `00000000` in the whole block. For an even word count, pad the
+  interior with **`60000000` (nop)**, never a second `00000000`. Common trap: a
+  multi-path block where each branch jumps to a shared "end" label that you placed
+  one word before the real branch-back — that "end" is a dead zero and crashes.
+  (This burned 4 rebuilds of the blue-coin timer; `coinhook_assemble.py` now
+  asserts "no interior 00000000" to catch it. Prefer arranging one store/path to
+  *fall through* into the branch-back, like the working no-op probe does.)
 - Relative branches inside the block (`b`, `bge`, …) are self-relative and stay
   correct because the handler copies the block verbatim to its cave.
 - Dolphin's C2 cave is SMALL. Stacking many/large C2 codes overflows it and they

@@ -35,6 +35,30 @@ on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the 
 
 ## 1. Quick start on the PC
 
+> **✅ 180fps kit refreshed 2026-08-09 — copy the table below and you're done.**
+> - `dolphin-config/GameSettings/GMSE01.ini` is now the **PC 180fps** config:
+>   `EmulationSpeed = 3.0`, enabled set = `$SMS 180fps bundle (fpspatch, no-ForceOpen)`
+>   (fpspatch-generated, capstone-validated; absorbs TRUE-FIX/glow, BGM, StarFix v4,
+>   game-clock v15, Poink v14, Petey v16/anmrate, Noki 30Hz gate + dedupe, cogwheel SE)
+>   **plus** the rate-agnostic QoL codes `$SaveBox: Continue on top`,
+>   `$Camera look-up extension v10`, `$FOV 62 [kris]`. Do NOT additionally enable the
+>   individual 120fps-era codes — the bundle already contains them (duplicate C2 hooks
+>   at the same address misbehave).
+> - Input configs at `dolphin-config/` root + `Profiles/GCPad/` are now the **Windows
+>   dialect** (`DInput/0/Keyboard Mouse`, `WGInput/0/Xbox One Game Controller`) —
+>   regenerated from the live Mac setup with `research/scripts/input_sync.py` (selftest
+>   passed). Keyboard binds work as-is; if the Xbox pad enumerates under a different
+>   device name, re-pick the Device in Dolphin and the bindings carry.
+>   (`mac-originals/` keeps the Quartz versions — Mac only.)
+> - `saves/` `.gci` + `SRAM.raw` refreshed 2026-08-09.
+> - **Known 180 gaps to verify first play:** (1) blue-coin lifetime v6 is deliberately
+>   NOT in the 180 bundle (calibrated at 120 on the Mac) — spray-coins will vanish
+>   ~1.5× fast until recalibrated; (2) the anim-rate divisor open question (2G=6 vs
+>   constant 4, see fpspatch memory) — check Petey's vomit window / anim speeds;
+>   (3) cogwheel creak-gate cadence still ear-test pending.
+> - Audio still needs the patched Dolphin build (`dolphin-patches/high-fps-dolphin.patch`)
+>   + `AudioPreservePitch = True` (already in the INI [Core]).
+
 Windows Dolphin user folder = `Documents\Dolphin Emulator\` (or the portable `User\` dir).
 Copy:
 
@@ -75,6 +99,12 @@ framerate global and will fight).
 - `$120fps + HOLD Dpad-Left to enter M portals` ← the original manual workaround.
 - Diagnostic/history codes (`PROBE *`, `Bisect-*`, `Diag-*`, `FIX R*`, `TEST *`) — keep for
   reference, don't enable.
+
+**Companion fixes (rate-agnostic, enable alongside the base — they don't touch the framerate
+global):** `$Game-clock fix v15`, `$Petey vomit-window fix v16`, `$Poink premature-explosion
+gate v14`, `$120fps + StarFix`, `$Blue coin timer fix v5`, `$SaveBox: Continue on top`,
+`$BGM music guard`, and **`$Noki pollution counting 30Hz gate`** (Noki Ep.1 perf — see
+`HANDOFF-NOKI-PERF.md`). These are independent and stack cleanly.
 
 ### Current test status (the one open question)
 
@@ -131,6 +161,11 @@ framerate-independent. All gate constants (rise/decay/timers) scale with fps —
   0xD4 rise (0.1), 0xD8/0xDC decays (0.02/0.025)
 - EmitterViewObj truncation sites: **0x802887A8, 0x80288D30, 0x80288DEC**
 - Player/cam position vec for distance checks: `-0x60B4(r13)` = 0x8040E10C
+- **Pollution counting dispatch: `TPollutionManager::perform` = 0x8019D8C8** (obj-cue
+  `cue&0x01000000`→`countObjDegree`, tex-cue `cue&0x02000000`→`countTexDegree`, layer=`(cue>>16)&0xFF`,
+  else→`TJointModelManager::perform` draw). The per-frame goop **readback** here caps polluted
+  levels at high fps — 30Hz-gated by `$Noki pollution counting 30Hz gate`. See `HANDOFF-NOKI-PERF.md`.
+  Related: `TPollutionLayerWave::perform` 0x801A1E3C (goop *draw*, NOT the cost).
 
 ## 4. Custom Dolphin build (REQUIRED for correct audio)
 
@@ -156,6 +191,12 @@ generalizes to any speed (verified in source; HANDOFF-PC §6).**
 
 ## 5. Research toolkit (`research/`)
 
+- **`PERF-PLAYBOOK.md` — read this to chase MORE frames.** The repeatable method for finding
+  and removing framerate bottlenecks (measure-first; the two instruments; the readback-stall
+  decision tree; the reusable "30Hz gate" fix). It's how Noki Ep.1 went 105→119.
+- `fpsprofile.sh` — "browser profiler for Dolphin": samples the running process and surfaces
+  the hot functions on the emulation thread + flags synchronous GPU→CPU readback stalls (the
+  #1 high-fps killer on Metal). Use in a slow area, compare to a fast one.
 - `main.dol` — USA executable, extracted from the RVZ (`dolphin-tool extract`)
 - `scripts/` — capstone-based disasm + Gecko-builder scripts. Setup:
   `python3 -m venv venv && venv/bin/pip install capstone`. Key helpers: robust
@@ -192,5 +233,12 @@ generalizes to any speed (verified in source; HANDOFF-PC §6).**
    `unk54` accumulates remainder differently; read `MarDirectorDirect.cpp` first).
 4. The decomp (`doldecomp/sms`, JP) is the fastest root-cause tool — find the system in JP
    source, then locate the USA address by function-size fingerprinting (scripts show how).
+5. **Per-area frame drops (not the global ceiling) are almost always a per-frame GPU→CPU
+   readback firing N× too often** (N = 4 at 120, 6 at 180, 12 at 360 — SMS is 30fps native).
+   Profile the slow area with `research/fpsprofile.sh`, and if a readback dominates, 30Hz-gate
+   the game code that triggers it (mask `3`→`5`→`11` for 120→180→360). Full method:
+   `research/PERF-PLAYBOOK.md`. First worked example: Noki Ep.1 (`HANDOFF-NOKI-PERF.md`).
+   Candidates to audit the same way: any `GXReadPixMetric`/`GXReadBoundingBox`/`GXCopyTex`-to-RAM
+   user (reflection buffers, heat-haze, boss screen-reads).
 
 `GO GET 360. 🌴`

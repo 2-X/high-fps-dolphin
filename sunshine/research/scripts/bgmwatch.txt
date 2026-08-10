@@ -1,0 +1,7 @@
+[00:58:22] bgmwatch v2 armed — enter/exit levels; empty AND active states are logged
+[00:58:22] attached pid 43571
+[00:58:22]         MSound +A8(enable)=0000016d +7C=00000000 +80=00000000 +A0=80727de0 +A4=00000000
+[00:58:22] slot0 ACTIVE id=8064c988 act=1 tempo=156 cur=80701c8c  vol=0.750  trkVols[-0.00 0.00 0.00 0.00 0.00 0.00]
+[00:58:22] slot1 -- EMPTY --                       vol=0.750
+[00:58:22] slot2 -- EMPTY --                       vol=0.750
+[00:58:22]         mainVol -> 0.750

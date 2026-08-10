@@ -18,7 +18,7 @@ changes. Cursor heartbeat every 5s.
 import os, struct, sys, time, subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from gcmem import Dolphin
+from gcmem import Dolphin, find_dolphin_pid
 
 SM_BGM_IN_TRACK = 0x803E9C80
 S_ROOT_TRACK    = 0x8040E6C0
@@ -30,13 +30,10 @@ def valid(p):
 
 
 def find_game(dol):
-    out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command",
-         "(Get-Process Dolphin -ErrorAction SilentlyContinue).Id"],
-        capture_output=True, text=True).stdout.split()
-    for pid in out:
+    pid = find_dolphin_pid()
+    if pid:
         try:
-            return Dolphin(int(pid), dol), int(pid)
+            return Dolphin(pid, dol), pid
         except SystemExit:
             pass
         except Exception:
