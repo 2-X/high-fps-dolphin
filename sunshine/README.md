@@ -57,7 +57,31 @@ on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the 
 >   constant 4, see fpspatch memory) — check Petey's vomit window / anim speeds;
 >   (3) cogwheel creak-gate cadence still ear-test pending.
 > - Audio still needs the patched Dolphin build (`dolphin-patches/high-fps-dolphin.patch`)
->   + `AudioPreservePitch = True` (already in the INI [Core]).
+>   + `AudioPreservePitch = True` (already in the INI [Core]). **The patch grew on
+>   2026-08-09** (expanded [hifps] DSP-HLE diagnostics) — re-apply and rebuild the PC
+>   Dolphin if it was built before then.
+>
+> **Updates 2026-08-09 (evening):**
+> - **FOV**: enabled code is now **`$FOV 60 [kris]`** — the gated unified variant
+>   (LR allow-list, `fov73-unified.txt` lineage, value word `4270`). The previously
+>   shipped `$FOV 62 [kris]` was the UNGATED C_MTXPerspective-entry sledgehammer,
+>   which forces effect/screen-texture reprojections too and caused the heat-shimmer
+>   misalignment seen on the PC. It stays defined but must remain unticked. Retune:
+>   swap `4270` in the `3D404270` word (see `research/memory/sunshine-fov-mod.md`).
+>   Residual known artifact: shimmer inside portal previews (needs a preview-pass gate).
+> - **Widescreen**: `$Widescreen [gamemasterplc]` + `$Widescreen wipe fix v2` are now
+>   embedded in the kit INI and enabled. The old PC config enabled a bare `$Widescreen`
+>   title that matched nothing in the user INI (same exact-match-phantom class as the
+>   FOV 62 bug — Dolphin silently ignores enabled titles with no matching code; check
+>   for this whenever a code "stops working").
+> - **`$GameHeap 7MB (HD portals)`** is defined but deliberately unticked — only needed
+>   when running the HD-portal ISO; tick it if you switch back to that image.
+> - **Enabled sets trimmed on both machines** (Mac 120 / PC kit 180): bundle + SaveBox +
+>   Camera v10 + FOV 60 (+ widescreen pair on PC). The individual 120-era fix codes were
+>   double-enabled alongside the bundle that absorbs them — duplicate C2 hooks + cave
+>   pressure; prime suspect for the Ricco-Harbor red-coins-not-appearing regression
+>   (fix pending in-game confirmation; if still broken, regenerate the bundle with
+>   `--no-bluecoin` and bisect).
 
 Windows Dolphin user folder = `Documents\Dolphin Emulator\` (or the portable `User\` dir).
 Copy:
