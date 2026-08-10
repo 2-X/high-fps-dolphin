@@ -1,0 +1,61 @@
+Skid-turn (turn-around run) stick-freshness fix v1 — GMSE01 (SMS USA)
+======================================================================
+
+SYMPTOM: under the high-fps bundles the running U-turn skid (flip the stick
+while dashing) gets progressively unreliable — Mario arcs around instead of
+planting the skid turn. User-reported 2026-08-10, worse at higher rates.
+
+ROOT CAUSE (static, MarioRun.cpp / USA disasm):
+  TMario::running enters MARIO_STATUS_TURN when the inlined isRunningTurnning
+  sees |mIntendedYaw(+0x90) - mFaceAngle.y(+0x96)| > 0x471C (~100 deg) AND
+  mForwardVel >= mTurnNeedSp (10.0).  USA sites: 0x8025AF64 (running entry
+  check), 0x8025A874 (turnning cancel check).  All terms are CUE_MOVE work,
+  120 Hz at every G — the check is rate-invariant.  What changed is STICK
+  FRESHNESS: stock reads the pad once per rendered frame (30 Hz) and reuses
+  the sample for 4 substeps, so a flip lands as one huge stale jump and the
+  100-deg gap always opens.  The bundle reads the pad every substep frame
+  (~120 Hz); the intendedYaw target now sweeps smoothly through the player's
+  real thumb roll and doRunning's yaw pursuit (IConverge at rotSp
+  0x200..0x400/tick ~ 675 deg/s) tracks THROUGH the flip — for a normal
+  >~110 ms roll the gap never crosses 0x471C.  Only near-instant
+  center-crossed flicks still trigger, hence "almost impossible".
+
+FIX: run the running()-entry compare against mFaceAngle.y from FOUR SIM TICKS
+  AGO (= exactly the 33 ms staleness stock 30 Hz sampling gave the check),
+  leaving actual steering fully fresh.  Sub-threshold steering can't
+  false-trigger (delayed face trails <= 4*rotSp ~ 20 deg only while
+  converging); real flips get the stock ~130 ms trigger window back.
+  4 is a CONSTANT at every G (sim ticks pinned at 120 Hz — Poink-40
+  reasoning).  turnning()'s cancel check is left stock (face is frozen during
+  the turn; delayed == current there).
+
+  Hook C2 @0x8025AF64 (lha r3,0x96(r31)).  Scratch: low arena 0x80001720
+  (lastCtr u32) / 0x1724 (face ring u16[4], indexed substepCtr&3) / 0x172C
+  (owner TMario*).  Ring reseeds to vanilla behavior on tick gaps (state
+  change/pause — prevents stale-face false skids on run-start) and on owner
+  change (TEMario in Shadow-Mario chases — both actors degrade to vanilla
+  instead of cross-contaminating).  Self-gates on framerate global
+  0x804167B8 != 0.5f: inert without the fps bundle, so this ONE code is valid
+  at every target rate.  Clobbers r0/r4/r12/cr0 — all dead at the hook.
+
+  Emitted by fpspatch.py (build knob turnfix / --no-turnfix) in every bundle
+  with the substep retune; this file is the standalone form for A/B testing.
+
+$Turnaround skid fix v1 (delayed-face threshold)
+C225AF64 00000010
+A87F0096 3D808041
+800C67B8 3C803F00
+7C002000 41820064
+818D9FB8 280C0000
+41820058 808C005C
+3D808000 800C1720
+908C1720 7C002050
+2C000001 800C172C
+93EC172C 40820024
+7C00F800 4082001C
+54800F7C 7D8C0214
+A80C1724 B06C1724
+7C030378 48000014
+B06C1724 B06C1726
+B06C1728 B06C172A
+60000000 00000000

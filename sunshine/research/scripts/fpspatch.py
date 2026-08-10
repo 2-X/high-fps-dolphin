@@ -10,6 +10,7 @@ that assumption is exactly how the fixed 1-in-2 particle gate shipped at 180fps:
   2. the emitter gate                      →  1 substep in G      (_rate_gate)
   3. substep granularity                   →  stock 600/5 scaled by G
   4. the Noki pollution gate               →  1 frame in FPS/30 (= 2G, not G)
+  5. the shine-select screen gate         →  1 frame in ceil(G/2) (select_gate)
 
 Rate-INDEPENDENT, and correct as-is at every G:
   * hooks that READ the framerate global and self-scale — the 15 raw anim-rate
@@ -22,6 +23,9 @@ Rate-INDEPENDENT, and correct as-is at every G:
   * the cogwheel rope-creak SE gate — its bare 1-in-4 looks rate-tied but the
     substep clock it divides is pinned at 120 Hz at every G, so 1-in-4 is the
     native 30/sec everywhere (same reasoning as the Poink 40)
+  * the skid-turn freshness fix — its bare 4-tick face delay is the stock 30 Hz
+    pad staleness expressed in 120 Hz sim ticks, constant at every G (same
+    reasoning again); it self-gates on the framerate global != 0.5f
 
 Deliberately NOT generalized: the blue-coin lifetime fix, calibrated against this
 machine's measured substep rate rather than derived from G, so it is emitted only
@@ -271,22 +275,227 @@ ANMRATE_STUB = """042A7BD8 C0228028
 # runs a substep), so there are no skip frames to guard: the gate is
 # unreachable, and emitting it would only waste cave words — return None.
 # Only valid alongside substep_granularity(g), which pins budget=10/quantum=5G.
-def input_latch(g):
+#
+# select_n (the shine-select divisor, see select_gate below) adds a SECOND
+# director case: when the vtable is TSelectDir's instead, pad reads are held to
+# 1 frame in select_n, phase-locked to select_gate's counter. The predicate
+# tests (ctr+1) % select_n because this hook runs BEFORE TSelectDir::direct in
+# the frame (gameLoop: read() -> updateMeaning -> mDirector->direct()) and it
+# is select_gate that increments ctr — so both gates pass on the same physical
+# frame and every trigger edge is consumed by exactly one menu tick.
+def input_latch(g, select_n=None):
     thresh = 5 * g - 10
     if thresh <= 0:
         return None
-    words = [0x807F0004, 0x2C030000, 0x4182005C,      # mDirector; null -> read()
+    if not select_n:
+        words = [0x807F0004, 0x2C030000, 0x4182005C,  # mDirector; null -> read()
+                 0x80830000, 0x3CA0803D, 0x60A5F0C8,  # vptr vs TMarDirector vtable
+                 0x7C042800, 0x40820048,              # not TMarDirector -> read()
+                 0x80830054,                          # lwz r4,0x54(r3)  accumulator
+                 0x2C040000 | (thresh & 0xFFFF),      # cmpwi r4,5G-10
+                 0x4080003C,                          # bge -> read()
+                 0x38C00000]                          # li r6,0
+        for off in (0x20, 0x24, 0x28, 0x2C):          # mGamePads[0..3]
+            words += [0x80BF0000 | off, 0x90C5001C, 0x90C50020]
+        words += [0x48000014,                         # b -> after the call
+                  0x3D80802A, 0x618C8054, 0x7D8903A6, 0x4E800421]   # bctrl read()
+        return _c2(0x802A600C, words)
+    sgate = _rate_gate(select_n, ctr=4, tmp=0, tmp2=6)
+    L = len(sgate)
+    i_sel, i_zero, i_read, i_after = 12, 20 + L, 34 + L, 38 + L
+    def beq(i, t):  return 0x41820000 | (((t - i) * 4) & 0xFFFC)
+    def bge(i, t):  return 0x40800000 | (((t - i) * 4) & 0xFFFC)
+    def bne(i, t):  return 0x40820000 | (((t - i) * 4) & 0xFFFC)
+    def b(i, t):    return 0x48000000 | (((t - i) * 4) & 0x03FFFFFC)
+    words = [0x807F0004, 0x2C030000, beq(2, i_read),  # mDirector; null -> read()
              0x80830000, 0x3CA0803D, 0x60A5F0C8,      # vptr vs TMarDirector vtable
-             0x7C042800, 0x40820048,                  # not TMarDirector -> read()
+             0x7C042800, bne(7, i_sel),               # not TMarDirector -> SEL
              0x80830054,                              # lwz r4,0x54(r3)  accumulator
              0x2C040000 | (thresh & 0xFFFF),          # cmpwi r4,5G-10
-             0x4080003C,                              # bge -> read()
-             0x38C00000]                              # li r6,0
+             bge(10, i_read),                         # substep frame -> read()
+             b(11, i_zero)]                           # skip frame -> zero triggers
+    words += [0x3CA00000 | (SELECT_DIR_VTABLE >> 16),          # SEL:
+              0x60A50000 | (SELECT_DIR_VTABLE & 0xFFFF),       # TSelectDir vtable
+              0x7C042800, bne(15, i_read),            # other director -> read()
+              0x3CA08000,                             # lis r5,0x8000
+              0x80000000 | (4 << 21) | (5 << 16) | SELECT_CTR,  # lwz r4,ctr
+              0x38840001]                             # addi r4,r4,1  (predicted)
+    words += sgate                                    # cr0 <- (ctr+1) % select_n
+    words.append(beq(19 + L, i_read))                 # pass frame -> read()
+    assert len(words) == i_zero
+    words.append(0x38C00000)                          # li r6,0
     for off in (0x20, 0x24, 0x28, 0x2C):              # mGamePads[0..3]
         words += [0x80BF0000 | off, 0x90C5001C, 0x90C50020]
-    words += [0x48000014,                             # b -> after the call
-              0x3D80802A, 0x618C8054, 0x7D8903A6, 0x4E800421]   # bctrl read()
+    words.append(b(33 + L, i_after))                  # b -> after the call
+    assert len(words) == i_read
+    words += [0x3D80802A, 0x618C8054, 0x7D8903A6, 0x4E800421]   # bctrl read()
     return _c2(0x802A600C, words)
+
+
+# ---- Shine-select (in-stage episode select) cadence gate --------------------
+# The episode/shine select screen is run by TSelectDir — a SEPARATE director:
+# its direct() (USA 0x80175EC4) calls plain JDrama::TDirector::direct()
+# (USA 0x802F7D28, the bl at 0x80175FE8), which fires CUE_MOVE|CUE_CALC_ANIM on
+# the menu once per RENDERED frame. None of the TMarDirector gating applies, so
+# the menu logic runs at 30 Hz stock but 60*G Hz under the bundle — and its
+# stick-repeat timing, thresholds of the form N * (this+0x14C) ticks where
+# +0x14C = 1.0/SMSGetAnmFrameRate() (computed at USA 0x801744D0, one of the §8
+# "reciprocal" sites), is doubly wrong because the v11 stub pins the rate at
+# 0.5. Same story for the pad's own button-repeat (TMarioGamePad::reset:
+# delay 20/rate, interval 6/rate = 40/12 ticks under the stub) since read()
+# free-runs at render rate on this director. Net effect at 360fps: repeat
+# delay ~0.11s at 30 steps/sec — one tap of left/right skips most of the ring.
+#
+# Fix: hold the select-screen SIM tick (pad read via input_latch's TSelectDir
+# case + the CUE_MOVE|CUE_CALC_ANIM testPerform pass inside TDirector::direct)
+# to 1 frame in ceil(G/2) — a 120 Hz cadence, exactly what every
+# 0.5-stub-derived constant is calibrated for (the sim substep rate). At that
+# cadence the menu's 40-tick repeat delay is 0.33s at 10 steps/sec — bit-exact
+# stock timing — and CALC_ANIM at 120 Hz x rate 0.5 = 60 anim units/s, also
+# stock. The CUE_DRAW pass (the second testPerform, 0x802F7DD0) is NOT gated
+# and re-renders the frozen state every frame. Two shipped-and-user-sighted
+# traps (2026-08-10) define this shape:
+#   v1 skipped the whole TDirector::direct call (hook @0x80175FE8): 2-in-3
+#   frames presented with no fresh render — PWM-dimmed a real 360 Hz panel to
+#   ~1/3 duty ("reduced gamma") + periodic black blink from the XFB beat.
+#   v2 skipped just the MOVE|CALC_ANIM testPerform: the 3D shines FLICKERED
+#   translucent — TSelectShineManager enters its J3D models into the draw
+#   buffers on CUE_CALC_ANIM (perform +0x37C..0x3F0: set frame from +0x3C,
+#   then two virtuals = calc + entry) and the DRAW cue draws then CLEARS the
+#   buffers (J3DDrawBuffer frameInit x2 at its tail) — so a draw with no
+#   preceding entry draws no shines.
+# Hence v3: gated frames still CALL testPerform but with r4 = CUE_CALC_ANIM
+# only — entry stays alive every frame, while MOVE (input, repeat timers,
+# state machine) holds the 120 Hz cadence. Safe because the CALC_ANIM
+# consumers are idempotent appliers, not advancers: the shine manager
+# re-stores the SAME +0x3C frame before applying, and TSelectMenu's perform
+# ignores CALC_ANIM outright (its non-MOVE path handles only CUE_DRAW).
+# The hook lives INSIDE the shared TDirector::direct, so it fires
+# for every plain-direct director (menu/logo/movie); the vtable compare keeps
+# it inert everywhere but TSelectDir. At G=2 the cadence is already 120 Hz and
+# no gate is needed (the select screen was always correct at 120fps). Odd G
+# rounds up: G=3 gates 1-in-2 (90 Hz, timings uniformly 4/3 of stock — mild,
+# no exact divisor exists). The counter lives in the low arena next to the
+# Noki pair; this block INCREMENTS it, the input_latch case only predicts (see
+# there), so a --no-input-latch build degrades to fast-but-usable, not frozen.
+SELECT_DIR_VTABLE = 0x803C0EF0   # TSelectDir vtable (ctor @0x80177538 stores it)
+SELECT_HOOK = 0x802F7DBC         # TDirector::direct's MOVE-pass `bl testPerform`
+TESTPERFORM = 0x802FCC94         # TViewObj::testPerform (r3=unk10,r4=3,r5=&gfx set)
+SELECT_CTR = 0x16E8              # low arena; 0x16E0/0x16E4 = Noki, 0x16F0 = camera
+
+def _select_divisor(g):
+    """1-in-N frame divisor holding the select screen at ~120 Hz; None if 1."""
+    n = (g + 1) // 2
+    return n if n >= 2 else None
+
+def select_gate(g):
+    n = _select_divisor(g)
+    if n is None:
+        return None
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=10)
+    L = len(gate)
+    i_call = 11 + L
+    words = [0x819E0000,                              # lwz r12,0(r30)  this->vptr
+             0x3D600000 | (SELECT_DIR_VTABLE >> 16),  # lis r11,hi(vtable)
+             0x616B0000 | (SELECT_DIR_VTABLE & 0xFFFF),  # ori r11,r11,lo
+             0x7C0C5800,                              # cmpw r12,r11
+             0x40820000 | (((i_call - 4) * 4) & 0xFFFC),  # other director -> CALL
+             0x3D808000,                              # lis r12,0x8000
+             0x80000000 | (11 << 21) | (12 << 16) | SELECT_CTR,  # lwz r11,ctr
+             0x396B0001,                              # addi r11,r11,1
+             0x90000000 | (11 << 21) | (12 << 16) | SELECT_CTR]  # stw r11,ctr
+    words += gate                                     # cr0 <- ctr % n
+    words += [0x41820008,                             # pass frame -> CALL (cue=3)
+              0x38800002,                             # gated: r4 = CUE_CALC_ANIM only
+              0x3D800000 | (TESTPERFORM >> 16),       # CALL: lis r12,hi
+              0x618C0000 | (TESTPERFORM & 0xFFFF),    # ori r12,r12,lo
+              0x7D8903A6, 0x4E800421]                 # mtctr ; bctrl testPerform
+    assert words[i_call] == 0x3D800000 | (TESTPERFORM >> 16)
+    return _c2(SELECT_HOOK, words)
+
+
+# ---- Turn-around (skid U-turn) stick-freshness fix ---------------------------
+# TMario::running (USA 0x8025ab04 region) enters the skid turn when the inlined
+# isRunningTurnning sees |mIntendedYaw - mFaceAngle.y| > 0x471C (~100deg) with
+# mForwardVel >= mTurnNeedSp (10.0).  Every term is CUE_MOVE/substep work — 120 Hz
+# at every G — so the check itself is rate-invariant.  What is NOT invariant is
+# STICK FRESHNESS: stock reads the pad at 30 Hz (one read per rendered frame,
+# reused by all 4 substeps), so a physical stick flip lands as one big stale jump
+# and the 100deg gap is guaranteed.  Under the bundle the pad is read on every
+# substep frame (~120 Hz), the intendedYaw target sweeps smoothly through the
+# player's real thumb roll, and doRunning's yaw pursuit (IConverge at
+# mRunningRotSp 0x200..0x400/tick ~ 675 deg/s) tracks THROUGH the flip: for a
+# normal >~110 ms roll the gap never crosses 0x471C and Mario arcs instead of
+# skidding.  (A perfectly center-crossed <100 ms flick still works — which is
+# why the bug reads as "sometimes possible, mostly not".)
+#
+# FIX: run the threshold compare against mFaceAngle.y from FOUR SIM TICKS AGO —
+# exactly the 33 ms staleness the stock 30 Hz pad quantization gave the check —
+# while leaving the actual steering pursuit (doRunning) fully fresh.  For
+# deflections that never exceed the threshold the delayed face trails the
+# current one by at most 4*rotSp (~20deg) DURING convergence and by 0 at rest,
+# so sub-100deg steering cannot false-trigger; for real flips the extra ~20deg
+# of retained lag restores the stock ~130 ms trigger window (vanilla-at-120Hz
+# cuts it to ~110 ms).  The delay is the CONSTANT 4, not f(G): sim ticks are
+# pinned at 120 Hz at every G (same reasoning as the Poink 40 / cogwheel 4).
+#
+# Mechanics: hook the inlined check's `lha r3,0x96(r31)` in running() at USA
+# 0x8025AF64.  A 4-deep ring of face angles lives in the low arena at 0x80001724
+# (0x1720 = last substep-counter value, 0x172C = owning TMario*), indexed by
+# gpMarDirector's substep counter (+0x5C, the same word the particle parity gate
+# reads).  Ring slot (ctr&3) is read (the value written 4 ticks ago) before
+# being overwritten with the current face.  Two guards reseed the whole ring
+# with the current face and fall back to vanilla behavior for that tick:
+#   * counter delta != 1 — the previous running() tick was not the previous
+#     substep (state change, pause, level load): prevents a stale pre-WAIT face
+#     from false-triggering a skid on run-start;
+#   * owner != r31 — a second TMario (TEMario in the Shadow Mario chase levels)
+#     shares the hook: alternating actors reseed each other every tick, so both
+#     silently degrade to vanilla instead of cross-contaminating.
+# turnning()'s own copy of the check (USA 0x8025A874, the turn-CANCEL predicate)
+# is deliberately NOT hooked: face is frozen during the turn, so delayed ==
+# current there and stock cancel semantics are preserved.
+# Gated on the framerate global != 0.5f, so the block is inert without the
+# bundle (r0/r3/r4/r12/cr0 all dead at the hook: r3 is being overwritten, r4 is
+# li'd on the next instruction, cr0 is redefined by the cmpwi that follows).
+TURNAROUND_HOOK = 0x8025AF64
+TURNAROUND_SCRATCH = 0x1720          # low arena: ctr u32, ring u16[4], owner u32
+
+def turnaround_fix():
+    S = TURNAROUND_SCRATCH
+    return _c2(TURNAROUND_HOOK, [
+        0xA87F0096,                        # lha    r3,0x96(r31)   current face (orig)
+        0x3D808041,                        # lis    r12,0x8041
+        0x800C67B8,                        # lwz    r0,0x67B8(r12) framerate global
+        0x3C803F00,                        # lis    r4,0x3F00      0.5f
+        0x7C002000,                        # cmpw   r0,r4
+        0x41820064,                        # beq    OUT            stock -> inert
+        0x818D9FB8,                        # lwz    r12,-0x6048(r13) gpMarDirector
+        0x280C0000,                        # cmplwi r12,0
+        0x41820058,                        # beq    OUT
+        0x808C005C,                        # lwz    r4,0x5C(r12)   substep counter
+        0x3D808000,                        # lis    r12,0x8000
+        0x800C0000 | S,                    # lwz    r0,lastCtr
+        0x908C0000 | S,                    # stw    r4,lastCtr
+        0x7C002050,                        # subf   r0,r0,r4       delta
+        0x2C000001,                        # cmpwi  r0,1
+        0x800C0000 | (S + 0xC),            # lwz    r0,owner       (cr0 survives)
+        0x93EC0000 | (S + 0xC),            # stw    r31,owner
+        0x40820024,                        # bne    RESEED         gap in RUN ticks
+        0x7C00F800,                        # cmpw   r0,r31
+        0x4082001C,                        # bne    RESEED         different TMario
+        0x54800F7C,                        # rlwinm r0,r4,1,29,30  (ctr&3)*2
+        0x7D8C0214,                        # add    r12,r12,r0
+        0xA80C0000 | (S + 4),              # lha    r0,ring[idx]   face 4 ticks ago
+        0xB06C0000 | (S + 4),              # sth    r3,ring[idx]   store current
+        0x7C030378,                        # mr     r3,r0          compare vs delayed
+        0x48000014,                        # b      OUT
+        0xB06C0000 | (S + 4),              # RESEED: ring[0..3] = current face
+        0xB06C0000 | (S + 6),
+        0xB06C0000 | (S + 8),
+        0xB06C0000 | (S + 0xA),
+        NOP,                               # OUT: falls into the branch-back
+    ])
 
 
 # ---- NPC talk-initiation debounce fix ---------------------------------------
@@ -503,6 +712,83 @@ def cogwheel_se_gate():
     return "\n".join(block(*h) for h in COGWHEEL_HOOKS)
 
 
+# ---- Test5 morph-wipe EFB-copy reduction (the decompose/recompose lag) ------
+# The scene-transition "decompose/recompose" effect is the Hx wipe module's
+# Hx_Test5 (USA 0x8017DF74; whole TU maps JP-0xC0388, verified against the fn
+# table at 0x803C129C and Hx_CameraInit). Every RENDERED frame in wipe state 2
+# it walks the screen in 64x64 tiles (10x8 = 80) and, PER TILE, calls
+# Hx_GetFrBuffer (0x80182A20) = GXSetTexCopySrc/Dst + GXCopyTex(clear=TRUE) +
+# GXPixModeSync — an EFB copy into the static 8KB tile buffer at 0x803F4440
+# (globals 0x803F43C0 + 0x80) — then redraws the tile as a 16-segment swirled
+# fan. 80 EFB copies/frame is native-30fps work: 2,400 copies/s by design,
+# 28,800/s at 360fps. Each copy is a render-pass switch in Dolphin, so the
+# framerate collapses for exactly the ~20 rendered frames the wipe runs
+# (Hx_TimerCountDown counts frames, +0x3C = 20), which is why the recompose
+# crawls while Mario (substep-scheduled) plays normally underneath. Test4 and
+# the fade wipes do no copies; Circle and Door do 1-5 small morph copies per
+# frame (__Hx_FrBufferMorf / Hxs_FrBufferMorf2/2B) — all fine. Test5 is the
+# only monster.
+#
+# FIX: double the tile grid to 128x128 (5x4 = 20 copies/frame, a 4x cut) using
+# the GX half-scale copy idiom so the 8KB buffer still fits: src rect 128x128,
+# GXSetTexCopyDst(64, 64, fmt, mipmap=TRUE) box-filters the copy to the same
+# 64x64 texture the fan already samples at normalized coords. Visual delta:
+# transition chunks are 2x coarser and tile content is half-res DURING the
+# morph only — imperceptible in motion; the final reveal frame hands back the
+# normally-rendered scene.
+#
+# The copy-size change lives in ONE atomic cave (hooking the bl GXSetTexCopySrc
+# inside Hx_GetFrBuffer, discriminated by dest == Test5's buffer — the other
+# callers pass heap pointers) so a silently-dropped C2 can never pair "src
+# widened" with "dst not halved": that pairing would GXCopyTex 16-32KB over the
+# 8KB buffer and stomp BSS. Drop modes are all safe: cave dropped -> fully
+# stock captures (strides/f22 alone just leave un-animated gaps during the
+# wipe); strides dropped -> stock. Registers: r12/ctr free at the hook (GX
+# leaf calls, Test5's own r24-r31 are behind GetFrBuffer's frame), r29 = dest
+# is GetFrBuffer's own saved nonvolatile so it survives the bctrl — the flag
+# is recomputed after the call instead of parked in a volatile.
+#
+# Emitted at G >= 3: at 120fps the 4x copy rate never measurably dipped (M2
+# Max held 119), so the stock 64px look is kept there.
+WIPE5_BUF = 0x803F4440          # Test5's static tile buffer (globals + 0x80)
+GX_SETTEXCOPYSRC = 0x8035E388   # writes BP 0x49/0x4A (copy src TL/WH)
+GX_SETTEXCOPYDST = 0x8035E48C   # (w, h, fmt, mipmap) — mipmap = half-scale
+WIPE5_GRAB_HOOK = 0x80182A5C    # Hx_GetFrBuffer's bl GXSetTexCopySrc
+WIPE5_RESUME = 0x80182A74       # past the original GXSetTexCopyDst call
+
+def wipe5_opt():
+    grab = _c2(WIPE5_GRAB_HOOK, [
+        0x3D800000 | (WIPE5_BUF >> 16),        # lis   r12,hi(tile buffer)
+        0x618C0000 | (WIPE5_BUF & 0xFFFF),     # ori   r12,r12,lo
+        0x7C1D6040,                            # cmplw r29,r12    Test5's capture?
+        0x4082000C,                            # bne   CALL       other caller: stock
+        _rlwinm(5, 5, 1, 0, 30),               # slwi  r5,r5,1    src w 64 -> 128
+        _rlwinm(6, 6, 1, 0, 30),               # slwi  r6,r6,1    src h 64 -> 128
+        0x3D800000 | (GX_SETTEXCOPYSRC >> 16), # CALL: lis/ori/mtctr/bctrl
+        0x618C0000 | (GX_SETTEXCOPYSRC & 0xFFFF),
+        0x7D8903A6, 0x4E800421,                # GXSetTexCopySrc(x, y, srcw, srch)
+        0x57C3043E,                            # clrlwi r3,r30,16  dst w = 64 (orig)
+        0x57E4043E,                            # clrlwi r4,r31,16  dst h = 64 (orig)
+        0x38A00004,                            # li    r5,4        GX_TF_RGB565 (orig)
+        0x38C00000,                            # li    r6,0        mipmap off (orig)
+        0x3D800000 | (WIPE5_BUF >> 16),        # re-test dest (r29 nonvolatile;
+        0x618C0000 | (WIPE5_BUF & 0xFFFF),     #  volatiles died in the bctrl)
+        0x7C1D6040,                            # cmplw r29,r12
+        0x40820008,                            # bne   DST
+        0x38C00001,                            # li    r6,1        half-scale copy
+        0x3D800000 | (GX_SETTEXCOPYDST >> 16), # DST: lis/ori/mtctr/bctrl
+        0x618C0000 | (GX_SETTEXCOPYDST & 0xFFFF),
+        0x7D8903A6, 0x4E800421,                # GXSetTexCopyDst(64, 64, fmt, mip)
+        0x3D800000 | (WIPE5_RESUME >> 16),     # resume past the original dst call
+        0x618C0000 | (WIPE5_RESUME & 0xFFFF),
+        0x7D8903A6, 0x4E800420,                # mtctr; bctr
+    ])
+    f22 = _c2(0x8017E18C, [0xC2C2B9FC,         # lfs f22,-0x4604(r2) = 32 (orig)
+                           _fadds(22, 22, 22)])  # f22 = 64: half-tile offset/radius
+    strides = "0417E39C 3B5A0080\n0417E3D8 3B390080"   # x/y tile strides 64 -> 128
+    return "\n".join([grab, f22, strides])
+
+
 # ---- Poink premature-explosion gate (v14, Bianco 5) -------------------------
 # Poink's flight is ended early by an anim-cue-driven push to the Explosion
 # nerve at flyTimer ~9; stock fires at ~36, far enough to reach Petey. Hook
@@ -688,7 +974,8 @@ def integer_g(fps):
 
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
-          cogwheel=True, input_latch_fix=True):
+          cogwheel=True, input_latch_fix=True, select_fix=True, wipe_opt=True,
+          turnfix=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -699,11 +986,21 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         parts += [substep_granularity(gate_g), ANMRATE_STUB]
         # skip frames desync the talk-start handshake — see TALK_INIT_FIX
         parts.append(TALK_INIT_FIX)
+        # ~120 Hz pad sampling lets yaw pursuit track through a stick flip and
+        # starves the skid-turn threshold — see turnaround_fix (constant 4-tick
+        # delay, valid only while the retune pins sim ticks at 120 Hz)
+        if turnfix:
+            parts.append(turnaround_fix())
+        # the shine-select fix rides the same 0.5-stub calibration and needs
+        # the pad-latch block for its select case — see select_gate
+        sel_n = _select_divisor(gate_g) if (select_fix and input_latch_fix) else None
         if input_latch_fix:
             # the latch predicate reads the retuned accumulator — substep only
-            il = input_latch(gate_g)
+            il = input_latch(gate_g, sel_n)
             if il:
                 parts.append(il)
+        if sel_n:
+            parts.append(select_gate(gate_g))
     tf = timerfix(fps)
     if tf:
         parts.append(tf)
@@ -723,6 +1020,8 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
             parts.append(ng)
             parts.append(noki_dedupe())        # REQUIRED companion — see noki_dedupe
             parts.append(noki_copy_gate(fps))  # REQUIRED companion — see noki_copy_gate
+    if wipe_opt and gate_g >= 3:               # 120fps keeps the stock 64px look
+        parts.append(wipe5_opt())
     if bluecoin and g == 2:                    # calibrated at G=2 only — see BLUECOIN
         parts.append(BLUECOIN)
     if sun_probe:
@@ -874,6 +1173,37 @@ def check(bundle, fps=None):
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
 
+    # Test5 morph-wipe optimization: all four pieces must ship together. The
+    # dangerous partial is "strides doubled but grab cave absent/mangled" only
+    # in the sense of visual gaps (memory safety is carried by the atomic grab
+    # cave itself), but a half-emitted set means the generator broke — flag it.
+    grab = codes.get(("C2", WIPE5_GRAB_HOOK))
+    f22b = codes.get(("C2", 0x8017E18C))
+    w5_strides = [codes.get(("04", a)) for a in (0x8017E39C, 0x8017E3D8)]
+    if any(x is not None for x in (grab, f22b, *w5_strides)):
+        if gate_g < 3:
+            errs.append("wipe5 blocks emitted at G<3 — 120fps keeps the stock look")
+        if grab is None or f22b is None or None in w5_strides:
+            errs.append("wipe5 optimization partially emitted — grab cave, f22 "
+                        "double and both stride words must ship together")
+        else:
+            if w5_strides != [0x3B5A0080, 0x3B390080]:
+                errs.append(f"wipe5 strides: {[w and f'{w:08X}' for w in w5_strides]}"
+                            f" != ['3B5A0080', '3B390080'] (128px tile steps)")
+            for target, what in ((GX_SETTEXCOPYSRC, "GXSetTexCopySrc"),
+                                 (GX_SETTEXCOPYDST, "GXSetTexCopyDst"),
+                                 (WIPE5_RESUME, "resume point")):
+                if (0x618C0000 | (target & 0xFFFF)) not in grab:
+                    errs.append(f"wipe5 grab cave: missing lis/ori of {what} "
+                                f"0x{target:08X}")
+            if 0x38C00001 not in grab:
+                errs.append("wipe5 grab cave: half-scale flag li r6,1 missing — "
+                            "a 128x128 full-res copy would overflow the 8KB "
+                            "tile buffer at 0x803F4440")
+            if f22b[0] != 0xC2C2B9FC or _fadds(22, 22, 22) not in f22b:
+                errs.append("wipe5 f22 block must re-exec lfs f22,-0x4604(r2) "
+                            "then double it (fan offset/radius 32 -> 64)")
+
     # Talk-initiation debounce: with the substep retune present, the stock
     # bit1 test at 0x8029A908 is starved by skip frames (impossible at G=6,
     # ~50% dropped at G=3) — the bundle must carry the bit0 retarget.
@@ -884,6 +1214,29 @@ def check(bundle, fps=None):
                         f"{got is not None and f'{got:08X}' or 'MISSING'} != "
                         f"{TALK_INIT_WORD:08X} — NPC dialogue cannot start on "
                         f"skip-frame-desynced ticks (impossible at 360fps)")
+
+    # Turn-around freshness fix: with the substep retune present the pad samples
+    # at ~120 Hz and yaw pursuit tracks through stick flips, so the bundle must
+    # carry the delayed-face compare. Structure: the 0.5f gate, the ring index
+    # rlwinm, and the constant-4 ring (a G-scaled delay here would be WRONG —
+    # sim ticks are 120 Hz at every G).
+    body = codes.get(("C2", TURNAROUND_HOOK))
+    if body is not None:
+        if body[0] != 0xA87F0096:
+            errs.append(f"turnaround fix @{TURNAROUND_HOOK:08X}: first word "
+                        f"{body[0]:08X} != the re-executed original lha r3,0x96(r31)")
+        if 0x3C803F00 not in body:
+            errs.append(f"turnaround fix @{TURNAROUND_HOOK:08X}: missing the 0.5f "
+                        f"stock gate — the block would corrupt the check with the "
+                        f"fps codes off")
+        if 0x54800F7C not in body:
+            errs.append(f"turnaround fix @{TURNAROUND_HOOK:08X}: missing the "
+                        f"(ctr&3)*2 ring index — the delay must be the constant 4 "
+                        f"ticks (stock 30 Hz staleness), never scaled by G")
+    elif ("04", 0x8029985C) in codes:
+        errs.append("turnaround freshness fix MISSING with the substep retune "
+                    "present — 120 Hz pad sampling starves the skid-turn "
+                    "threshold (turn-around run nearly impossible)")
 
     # Input pad-latch gate (v9): a frame runs a substep when remainder >= 5G-10,
     # so the gate's cmpwi must carry exactly that threshold. Its absence at G>=3
@@ -905,6 +1258,54 @@ def check(bundle, fps=None):
         errs.append(f"input latch MISSING at G={gate_g} with the substep retune "
                     f"present — edge inputs will drop on skip frames (the "
                     f"2026-08-09 dropped-inputs regression)")
+
+    # Shine-select cadence gate: both halves must agree. The MOVE-pass gate
+    # (C2 inside TDirector::direct) encodes 1-in-ceil(G/2) on the low-arena
+    # counter, must re-target TViewObj::testPerform, and must carry the vptr
+    # type check; the input-latch block must carry the TSelectDir vtable case
+    # so pad reads stay phase-locked to the menu tick.
+    sel_body = codes.get(("C2", SELECT_HOOK))
+    latch_body = codes.get(("C2", 0x802A600C))
+    sel_n = _select_divisor(gate_g)
+    sel_vt_ori = 0x60A50000 | (SELECT_DIR_VTABLE & 0xFFFF)
+    if sel_body is not None:
+        n = _implied_divisor(sel_body, ctr=11)
+        if n != sel_n:
+            errs.append(f"select gate @{SELECT_HOOK:08X}: encodes 1-in-{n}, expected "
+                        f"1-in-{sel_n} (ceil(G/2) at G={gate_g})")
+        target = None
+        for j, w in enumerate(sel_body[:-1]):
+            if (w >> 26) == 15 and ((w >> 21) & 31) == 12 and j + 1 < len(sel_body):
+                nxt = sel_body[j + 1]
+                if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
+                    target = ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
+        if target != TESTPERFORM:
+            errs.append(f"select gate @{SELECT_HOOK:08X}: call target "
+                        f"{target and f'{target:08X}'} != TViewObj::testPerform "
+                        f"{TESTPERFORM:08X}")
+        if 0x819E0000 not in sel_body:
+            errs.append(f"select gate @{SELECT_HOOK:08X}: missing the vptr load "
+                        f"lwz r12,0(r30) — without the director type check the "
+                        f"gate throttles EVERY plain-direct director (logo/menu/"
+                        f"movie)")
+        if 0x38800002 not in sel_body:
+            errs.append(f"select gate @{SELECT_HOOK:08X}: missing `li r4,2` — "
+                        f"gated frames must still testPerform with CUE_CALC_ANIM "
+                        f"or the J3D shines flicker translucent (draw buffers "
+                        f"cleared each draw, entered only on CALC_ANIM; the "
+                        f"v2 regression)")
+        if latch_body is None or sel_vt_ori not in latch_body:
+            errs.append(f"select gate present but the input-latch block has no "
+                        f"TSelectDir case — pad repeat free-runs at render rate "
+                        f"and menu edges are consumed off-phase")
+    elif latch_body is not None and sel_vt_ori in latch_body:
+        errs.append(f"input latch has the TSelectDir case but the select gate "
+                    f"@{SELECT_HOOK:08X} is missing — its counter never advances, "
+                    f"so pad reads freeze on whatever phase the counter holds")
+    elif sel_n and ("04", 0x8029985C) in codes and latch_body is not None:
+        errs.append(f"shine-select gate MISSING at G={gate_g} with the substep "
+                    f"retune present — the episode-select screen runs {2 * gate_g}x "
+                    f"stock cadence with ~3x-fast repeat (unusable at 360fps)")
 
     # Cogwheel SE gate: the divisor is a CONSTANT 4 at every fps (substeps are
     # pinned at 120 Hz; 120/30 native = 4), and each gated path must exit through
@@ -946,7 +1347,10 @@ def main():
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
     ap.add_argument("--no-cogwheel", action="store_true", help="omit the Noki urn-lift rope-creak SE cadence gate (constant 1-in-4 substeps)")
-    ap.add_argument("--no-input-latch", action="store_true", help="omit the v9 pad-latch gate (pad reads locked to sim frames; confirmed in-game at 180fps 2026-08-09 — omitting it drops ~1 in 3 edge inputs at G>=3)")
+    ap.add_argument("--no-input-latch", action="store_true", help="omit the v9 pad-latch gate (pad reads locked to sim frames; confirmed in-game at 180fps 2026-08-09 — omitting it drops ~1 in 3 edge inputs at G>=3; also disables the shine-select fix, which needs the latch block)")
+    ap.add_argument("--no-select", action="store_true", help="omit the shine-select screen cadence gate (episode select runs at render rate: ~3x-fast cursor repeat at 360fps)")
+    ap.add_argument("--no-wipeopt", action="store_true", help="omit the Test5 morph-wipe EFB-copy reduction (decompose/recompose transitions run 80 EFB copies/frame and tank the framerate at G>=3)")
+    ap.add_argument("--no-turnfix", action="store_true", help="omit the skid-turn stick-freshness fix (120Hz pad sampling lets yaw pursuit track through a stick flip; the turn-around run threshold then almost never trips)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -960,7 +1364,9 @@ def main():
                    stars=not a.no_stars, sun_probe=a.sun_probe,
                    noki=not a.no_noki, poink=not a.no_poink,
                    bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
-                   input_latch_fix=not a.no_input_latch)
+                   input_latch_fix=not a.no_input_latch,
+                   select_fix=not a.no_select, wipe_opt=not a.no_wipeopt,
+                   turnfix=not a.no_turnfix)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)
