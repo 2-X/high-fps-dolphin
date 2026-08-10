@@ -289,6 +289,28 @@ def input_latch(g):
     return _c2(0x802A600C, words)
 
 
+# ---- NPC talk-initiation debounce fix ---------------------------------------
+# Starting a conversation (B near an NPC) is gated in TMarDirector::movement_game
+# (USA 0x8029A788, runs once per SUBSTEP) by a two-phase handshake on
+# director+0x128: movement_game sets bit0 ("talk NPC near this tick") and only
+# opens the talk window when BIT1 is set AND the B talk-meaning edge (+0xD4 &
+# 0x800) fired this frame. Bit0 is promoted to bit1 by the tail of
+# changeState (USA 0x802981EC), which runs once per RENDERED frame. Under the
+# substep retune those cadences diverge: at G=6 the two skip frames between
+# substeps promote-then-CLEAR bit1 before the next movement_game ever runs, so
+# the check can never pass — talk initiation is structurally impossible at
+# 360fps (and ~50% dropped at 180: the first substep frame after each skip
+# frame sees bit1 cleared). Fix: retarget the test at USA 0x8029A908 from bit1
+# (rlwinm. r0,r0,0,30,30) to bit0 (rlwinm. r0,r0,0,31,31), which movement_game
+# itself just set two instructions earlier. The vanilla "NPC was already near"
+# debounce is still enforced upstream: the 0x800 meaning only exists when pad
+# flag 0x4 was set at frame start, and only an EARLIER movement_game tick sets
+# it. At G=2/stock cadence the change is behaviorally identical (bit1 == "bit0
+# last frame" == NPC near, exactly when flag 0x4 is set), so it is emitted
+# whenever the substep retune is — rate-independent, no cave words.
+TALK_INIT_FIX = "0429A908 540007FF"
+TALK_INIT_WORD = 0x540007FF
+
 # ---- BGM tempo guard (v12) --------------------------------------------------
 # JASystem outer tempo proportion reads 0.0 across some scene transitions and
 # the sequence stalls; substitute 1.0. Pure value guard, no rate constant.
@@ -675,6 +697,8 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     if substep:
         # the stub is only valid while the substep retune pins the sim at 120 Hz
         parts += [substep_granularity(gate_g), ANMRATE_STUB]
+        # skip frames desync the talk-start handshake — see TALK_INIT_FIX
+        parts.append(TALK_INIT_FIX)
         if input_latch_fix:
             # the latch predicate reads the retuned accumulator — substep only
             il = input_latch(gate_g)
@@ -849,6 +873,17 @@ def check(bundle, fps=None):
 
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
+
+    # Talk-initiation debounce: with the substep retune present, the stock
+    # bit1 test at 0x8029A908 is starved by skip frames (impossible at G=6,
+    # ~50% dropped at G=3) — the bundle must carry the bit0 retarget.
+    if ("04", 0x8029985C) in codes:
+        got = codes.get(("04", 0x8029A908))
+        if got != TALK_INIT_WORD:
+            errs.append(f"talk-init fix @0x8029A908: "
+                        f"{got is not None and f'{got:08X}' or 'MISSING'} != "
+                        f"{TALK_INIT_WORD:08X} — NPC dialogue cannot start on "
+                        f"skip-frame-desynced ticks (impossible at 360fps)")
 
     # Input pad-latch gate (v9): a frame runs a substep when remainder >= 5G-10,
     # so the gate's cmpwi must carry exactly that threshold. Its absence at G>=3

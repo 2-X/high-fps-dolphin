@@ -591,3 +591,37 @@ re-enable earlier versions, and note changes here.
   MSMarioPosVolume; same gating family as everything else.
 - Logger `bgmlog2.py` is self-arming (waits for game boot, re-arms between
   sessions) — leave one running during any test.
+
+---
+
+# ★ SESSION 7 (2026-08-10): NPC talk-INITIATION fix (impossible at 360fps)
+
+Symptom: B near an NPC would not open dialogue at 360fps AT ALL; flaky-feeling
+at lower rates. This is NOT the v9 latch class — dialogue-ADVANCE was fine.
+
+Root cause (decomp `MarDirectorEvent.cpp` + USA disasm, all verified):
+- `TMarDirector::movement_game` (USA **0x8029A788**, runs once per SUBSTEP via
+  the director's virtual `movement` 0x8029A4AC) starts a talk only if
+  `(director+0x128 & 2) && (pad->mEnabledFrameMeaning & 0x800)`. It sets
+  bit0 of +0x128 each tick a talkable NPC is near (0x8029A8F8), and sets pad
+  flag 0x4 (+0xE2) which is what makes updateMeaning translate B → talk
+  meaning 0x800 next frame (`MarioGamePad.cpp:131`).
+- The tail of `changeState` (USA **0x802981EC**, runs once per RENDERED frame)
+  promotes bit0→bit1 and clears; on frames where bit0 wasn't set it CLEARS bit1.
+- Under the substep retune, skip frames run changeState but not movement_game:
+  at G=6 (2 skips between substeps) bit1 is promoted then cleared before the
+  next movement_game ever tests it → **talk initiation structurally impossible
+  at 360**. At G=3 the first substep frame after each skip sees bit1 cleared →
+  ~50% of initiation presses eaten.
+
+Fix (in fpspatch, emitted with the substep retune; also in `--check`):
+**`0429A908 540007FF`** — retarget the test `rlwinm. r0,r0,0,30,30` (bit1) to
+bit0, which movement_game itself just set. Vanilla-equivalent at stock/G=2:
+the 0x800 meaning can only exist if pad flag 0x4 was set at frame start, which
+only an earlier movement_game tick does — the "NPC already near" debounce
+survives via that path. Rate-independent, zero cave words.
+
+Verified: only two real consumers of +0x128 exist (movement_game, changeState
+tail; the 0x128(r1) hit at 0x802BCB80 is a stack slot). 120/180/360 bundles
+regenerated `--check`-clean and reinstalled into the live INI
+(`%APPDATA%\Dolphin Emulator\GameSettings\GMSE01.ini`).
