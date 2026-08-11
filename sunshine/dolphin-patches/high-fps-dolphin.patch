@@ -1,5 +1,5 @@
 diff --git a/Source/Core/Core/Config/GraphicsSettings.cpp b/Source/Core/Core/Config/GraphicsSettings.cpp
-index f91b87e490..a5beac8638 100644
+index f91b87e..a5beac8 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.cpp
 +++ b/Source/Core/Core/Config/GraphicsSettings.cpp
 @@ -57,6 +57,8 @@ const Info<bool> GFX_SHOW_NETPLAY_MESSAGES{{System::GFX, "Settings", "ShowNetPla
@@ -12,7 +12,7 @@ index f91b87e490..a5beac8638 100644
  const Info<bool> GFX_OVERLAY_SCISSOR_STATS{{System::GFX, "Settings", "OverlayScissorStats"}, false};
  const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION{{System::GFX, "Settings", "ShowInternalResolution"},
 diff --git a/Source/Core/Core/Config/GraphicsSettings.h b/Source/Core/Core/Config/GraphicsSettings.h
-index 502d2f0764..324064c3b6 100644
+index 502d2f0..324064c 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.h
 +++ b/Source/Core/Core/Config/GraphicsSettings.h
 @@ -59,6 +59,7 @@ extern const Info<bool> GFX_SHOW_NETPLAY_PING;
@@ -23,8 +23,187 @@ index 502d2f0764..324064c3b6 100644
  extern const Info<bool> GFX_OVERLAY_PROJ_STATS;
  extern const Info<bool> GFX_OVERLAY_SCISSOR_STATS;
  extern const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION;
+diff --git a/Source/Core/Core/CoreTiming.cpp b/Source/Core/Core/CoreTiming.cpp
+index 1fa39d7..e918246 100644
+--- a/Source/Core/Core/CoreTiming.cpp
++++ b/Source/Core/Core/CoreTiming.cpp
+@@ -456,12 +456,40 @@ void CoreTimingManager::Throttle(const s64 target_cycle)
+         target_cycle, m_system.GetSystemTimers().GetTicksPerSecond());
+   }};
+ 
++  // [hifps] RefreshConfig can run before the emulated clock rate is known
++  // (GetTicksPerSecond() == 0 at that point), which makes UpdateSpeedLimit derive a
++  // throttle clock of 0 == "unlimited". On GameCube the PPC clock never changes, so
++  // AdjustEventQueueTimes never re-derives it and the throttle stays disengaged for
++  // the whole session (the unbounded-fps bug). Lazily derive it here once running.
++  if (m_throttle_adj_clock_per_sec == 0 && m_emulation_speed > 0.0)
++  {
++    UpdateSpeedLimit(target_cycle, m_emulation_speed);
++    if (m_throttle_adj_clock_per_sec != 0)
++    {
++      WARN_LOG_FMT(CORE, "[hifps] Throttle clock late-initialized: {}x speed limit now active",
++                   m_emulation_speed);
++    }
++  }
++
+   if (IsSpeedUnlimited())
+   {
++    // [hifps] The 360fps hunt: log exactly why the throttle is disengaged, once per episode.
++    if (!m_logged_speed_unlimited)
++    {
++      m_logged_speed_unlimited = true;
++      WARN_LOG_FMT(CORE, "[hifps] Throttle DISENGAGED ({})",
++                   Core::GetIsThrottlerTempDisabled() ? "hotkey temp-disable held" :
++                                                        "emulation speed set to unlimited");
++    }
+     ResetThrottle(target_cycle);
+     m_throttle_disable_vi_int = false;
+     return;
+   }
++  if (m_logged_speed_unlimited)
++  {
++    m_logged_speed_unlimited = false;
++    WARN_LOG_FMT(CORE, "[hifps] Throttle re-engaged");
++  }
+ 
+   // Push throttle reference values forward by exact seconds.
+   // This avoids drifting from cumulative rounding errors.
+@@ -498,8 +526,11 @@ void CoreTimingManager::UpdateSpeedLimit(s64 cycle, double new_speed)
+ {
+   m_emulation_speed = new_speed;
+ 
+-  const u32 new_clock_per_sec =
+-      std::lround(m_system.GetSystemTimers().GetTicksPerSecond() * new_speed);
++  // [hifps] std::lround returns a 32-bit `long` on Windows (LLP64): at 6x speed the
++  // GC clock is 486MHz * 6 = 2.92e9, which overflows long's 2.147e9 — every speed
++  // above ~4.4x silently broke the throttle. llround (64-bit) fits u32's 4.29e9.
++  const u32 new_clock_per_sec = static_cast<u32>(
++      std::llround(m_system.GetSystemTimers().GetTicksPerSecond() * new_speed));
+ 
+   const bool was_limited = m_throttle_adj_clock_per_sec != 0;
+   if (was_limited)
+diff --git a/Source/Core/Core/CoreTiming.h b/Source/Core/Core/CoreTiming.h
+index 29d636e..3e41792 100644
+--- a/Source/Core/Core/CoreTiming.h
++++ b/Source/Core/Core/CoreTiming.h
+@@ -215,6 +215,7 @@ private:
+   TimePoint m_throttle_reference_time = Clock::now();
+   u32 m_throttle_adj_clock_per_sec = 0;
+   bool m_throttle_disable_vi_int = false;
++  bool m_logged_speed_unlimited = false;  // [hifps] one-shot throttle-disengage logging
+ 
+   DT m_max_fallback = {};
+   DT m_max_variance = {};
+diff --git a/Source/Core/Core/GeckoCode.cpp b/Source/Core/Core/GeckoCode.cpp
+index 79b8449..1dcf203 100644
+--- a/Source/Core/Core/GeckoCode.cpp
++++ b/Source/Core/Core/GeckoCode.cpp
+@@ -17,6 +17,7 @@
+ #include "Core/AchievementManager.h"
+ #include "Core/Config/MainSettings.h"
+ #include "Core/Core.h"
++#include "Core/HW/Memmap.h"
+ #include "Core/Host.h"
+ #include "Core/PowerPC/MMU.h"
+ #include "Core/PowerPC/PowerPC.h"
+@@ -152,9 +153,77 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+     }
+   }
+ 
+-  const u32 codelist_base_address =
++  u32 codelist_base_address =
+       INSTALLER_BASE_ADDRESS + static_cast<u32>(data.size()) - CODE_SIZE;
+-  const u32 codelist_end_address = INSTALLER_END_ADDRESS;
++  u32 codelist_end_address = INSTALLER_END_ADDRESS;
++
++  // [hifps] Relocate the code list into over-provisioned MEM1 when the RAM override
++  // provides memory beyond the retail 24MB. Retail-sized games cannot see or allocate
++  // that region, so it is guaranteed unused — list capacity goes from ~400 code lines
++  // (wedged between the handler and the OS globals at 0x80003000) to thousands.
++  // The handler locates the list through one hard-coded lis/ori pair (codehandleronly.s),
++  // which we re-point at the extended region after copying the handler in.
++  const u32 mem1_size = guard.GetSystem().GetMemory().GetRamSizeReal();
++  if (mem1_size > Memory::MEM1_SIZE_RETAIL)
++  {
++    const u32 extended_base = 0x80000000 + Memory::MEM1_SIZE_RETAIL;
++    const u32 extended_end =
++        std::min(0x80000000 + mem1_size, extended_base + 0x40000);  // cap the list at 256KB
++    bool patched = false;
++    for (u32 h = 0; h + 4 < data.length(); h += 4)
++    {
++      const u32 w1 = PowerPC::MMU::HostRead<u32>(guard, INSTALLER_BASE_ADDRESS + h);
++      const u32 w2 = PowerPC::MMU::HostRead<u32>(guard, INSTALLER_BASE_ADDRESS + h + 4);
++      const bool is_lis = (w1 >> 26) == 15 && ((w1 >> 16) & 0x1F) == 0 &&
++                          (w1 & 0xFFFF) == (codelist_base_address >> 16);
++      const bool is_ori = (w2 >> 26) == 24 && (w2 & 0xFFFF) == (codelist_base_address & 0xFFFF) &&
++                          ((w2 >> 16) & 0x1F) == ((w1 >> 21) & 0x1F);
++      if (is_lis && is_ori)
++      {
++        PowerPC::MMU::HostWrite<u32>(guard, (w1 & 0xFFFF0000) | (extended_base >> 16),
++                                     INSTALLER_BASE_ADDRESS + h);
++        PowerPC::MMU::HostWrite<u32>(guard, (w2 & 0xFFFF0000) | (extended_base & 0xFFFF),
++                                     INSTALLER_BASE_ADDRESS + h + 4);
++        patched = true;
++        break;
++      }
++    }
++    if (patched)
++    {
++      codelist_base_address = extended_base;
++      codelist_end_address = extended_end;
++
++      // The GC OS maps its 24MB through BAT pairs 0-3 (16MB + 8MB); the extended
++      // region beyond retail MEM1 is NOT covered, so every access to it would fail
++      // translation and drop silently. Map it (data + instruction — C2 caves execute
++      // from the list) through the spare BAT pair 4, which GC games never program.
++      auto& ppc = guard.GetSystem().GetPPCState();
++      const u32 ext_size = 0x00800000;  // 8MB block covers the whole extended region
++      const u32 bl = (ext_size >> 17) - 1;
++      const u32 batu = (extended_base & 0xFFFE0000) | (bl << 2) | 0x3;            // Vs|Vp
++      const u32 batl = ((extended_base - 0x80000000) & 0xFFFE0000) | 0x2;         // PP=RW
++      ppc.spr[SPR_DBAT4U] = batu;
++      ppc.spr[SPR_DBAT4L] = batl;
++      ppc.spr[SPR_IBAT4U] = batu;
++      ppc.spr[SPR_IBAT4L] = batl;
++      HID4(ppc).SBE = 1;
++      auto& mmu = guard.GetSystem().GetMMU();
++      mmu.DBATUpdated();
++      mmu.IBATUpdated();
++
++      NOTICE_LOG_FMT(ACTIONREPLAY,
++                     "[hifps] Gecko code list relocated to {:08x}..{:08x} ({} code lines max), "
++                     "BAT4 mapped",
++                     codelist_base_address, codelist_end_address,
++                     (codelist_end_address - codelist_base_address) / CODE_SIZE - 2);
++    }
++    else
++    {
++      WARN_LOG_FMT(ACTIONREPLAY,
++                   "[hifps] MEM1 is extended but the handler's list pointer was not found — "
++                   "using the legacy in-place code list");
++    }
++  }
+ 
+   // Write a magic value to 'gameid' (codehandleronly does not actually read this).
+   // This value will be read back and modified over time by HLE_Misc::GeckoCodeHandlerICacheFlush.
+@@ -210,6 +279,15 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+   {
+     ppc_state.iCache.Invalidate(memory, jit_interface, INSTALLER_BASE_ADDRESS + j);
+   }
++  // [hifps] A relocated code list lives outside the installer region, and C2 code
++  // caves execute from list memory — invalidate the written extent there too.
++  if (codelist_base_address >= INSTALLER_END_ADDRESS)
++  {
++    for (u32 j = codelist_base_address; j < next_address + CODE_SIZE; j += 32)
++    {
++      ppc_state.iCache.Invalidate(memory, jit_interface, j);
++    }
++  }
+   Host_JitCacheInvalidation();
+   return Installation::Installed;
+ }
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
-index 5db3c55aa8..1694ce8432 100644
+index 5db3c55..1694ce8 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 @@ -250,6 +250,17 @@ void ZeldaUCode::HandleMailDefault(u32 mail)
@@ -99,7 +278,7 @@ index 5db3c55aa8..1694ce8432 100644
  
    if (!(m_flags & LIGHT_PROTOCOL))
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
-index ce712519d5..0cea573793 100644
+index ce71251..0cea573 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 @@ -293,6 +293,14 @@ private:
@@ -118,7 +297,7 @@ index ce712519d5..0cea573793 100644
    ZeldaAudioRenderer m_renderer;
  };
 diff --git a/Source/Core/Core/HW/SystemTimers.cpp b/Source/Core/Core/HW/SystemTimers.cpp
-index 1790a97f05..2426c5a81d 100644
+index 1790a97..2426c5a 100644
 --- a/Source/Core/Core/HW/SystemTimers.cpp
 +++ b/Source/Core/Core/HW/SystemTimers.cpp
 @@ -44,6 +44,8 @@ IPC_HLE_PERIOD: For the Wii Remote this is the call schedule:
@@ -151,8 +330,34 @@ index 1790a97f05..2426c5a81d 100644
  }
  
  void SystemTimersManager::AudioDMACallback(Core::System& system, u64 userdata, s64 cycles_late)
+diff --git a/Source/Core/Core/PowerPC/MMU.cpp b/Source/Core/Core/PowerPC/MMU.cpp
+index 940e93c..91582c0 100644
+--- a/Source/Core/Core/PowerPC/MMU.cpp
++++ b/Source/Core/Core/PowerPC/MMU.cpp
+@@ -2002,7 +2002,10 @@ void MMU::DBATUpdated()
+ {
+   m_dbat_table = {};
+   UpdateBATs(m_dbat_table, SPR_DBAT0U);
+-  bool extended_bats = m_system.IsWii() && HID4(m_ppc_state).SBE;
++  // [hifps] Honor the spare BAT pairs on GameCube too: GC games never program
++  // BAT4-7 or HID4.SBE, but the extended-Gecko installer maps its relocated
++  // code list (in over-provisioned MEM1) through DBAT4/IBAT4.
++  bool extended_bats = HID4(m_ppc_state).SBE;
+   if (extended_bats)
+     UpdateBATs(m_dbat_table, SPR_DBAT4U);
+   if (m_memory.GetFakeVMEM())
+@@ -2030,7 +2033,8 @@ void MMU::IBATUpdated()
+ {
+   m_ibat_table = {};
+   UpdateBATs(m_ibat_table, SPR_IBAT0U);
+-  bool extended_bats = m_system.IsWii() && HID4(m_ppc_state).SBE;
++  // [hifps] See DBATUpdated — spare BATs allowed on GC for the extended Gecko list.
++  bool extended_bats = HID4(m_ppc_state).SBE;
+   if (extended_bats)
+     UpdateBATs(m_ibat_table, SPR_IBAT4U);
+   if (m_memory.GetFakeVMEM())
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.cpp b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
-index 248146e2b6..c52b5d7a8e 100644
+index 248146e..c52b5d7 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 @@ -691,4 +691,41 @@ std::string GenerateImGuiPixelShader(bool linear_space_output)
@@ -198,7 +403,7 @@ index 248146e2b6..c52b5d7a8e 100644
 +
  }  // namespace FramebufferShaderGen
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.h b/Source/Core/VideoCommon/FramebufferShaderGen.h
-index c97fec8991..ff505af8d9 100644
+index c97fec8..ff505af 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.h
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.h
 @@ -26,4 +26,9 @@ std::string GenerateEFBRestorePixelShader();
@@ -212,7 +417,7 @@ index c97fec8991..ff505af8d9 100644
 +
  }  // namespace FramebufferShaderGen
 diff --git a/Source/Core/VideoCommon/Present.cpp b/Source/Core/VideoCommon/Present.cpp
-index 41d05f3652..27c5d485d0 100644
+index 41d05f3..27c5d48 100644
 --- a/Source/Core/VideoCommon/Present.cpp
 +++ b/Source/Core/VideoCommon/Present.cpp
 @@ -14,16 +14,27 @@
@@ -478,7 +683,7 @@ index 41d05f3652..27c5d485d0 100644
  
  void Presenter::ImmediateSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height)
 diff --git a/Source/Core/VideoCommon/Present.h b/Source/Core/VideoCommon/Present.h
-index 91ba870967..e4d435093c 100644
+index 91ba870..e4d4350 100644
 --- a/Source/Core/VideoCommon/Present.h
 +++ b/Source/Core/VideoCommon/Present.h
 @@ -17,6 +17,9 @@
@@ -527,7 +732,7 @@ index 91ba870967..e4d435093c 100644
  
  }  // namespace VideoCommon
 diff --git a/Source/Core/VideoCommon/Statistics.cpp b/Source/Core/VideoCommon/Statistics.cpp
-index 642df5694a..a212dcf95c 100644
+index 642df56..a212dcf 100644
 --- a/Source/Core/VideoCommon/Statistics.cpp
 +++ b/Source/Core/VideoCommon/Statistics.cpp
 @@ -8,6 +8,8 @@
