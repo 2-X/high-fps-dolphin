@@ -1,0 +1,41 @@
+Tank Controls v1 (Mario-relative movement, camera decoupled)
+GMSE01 (US). Rocket-League / VR-style controls: stick is interpreted
+relative to Mario's current facing instead of the camera.
+  forward = keep heading, back = turn around, left/right = turn.
+
+Patch site: TMario::checkController, mIntendedYaw computation.
+Vanilla @80251dbc..80251de0:
+  lwz  r3, 0x108(r31)      ; controller work
+  lfs  f0, 0x14(r3)        ; stickV
+  lfs  f2, 0x10(r3)        ; stickH
+  fneg f1, f0
+  bl   matan               ; r3 = stick angle (forward = 0x8000)
+  lwz  r4, -0x7118(r13)    ; gpCamera            <- patched
+  lha  r0, 0x258(r4)       ; camera yaw          <- patched
+  add  r0, r0, r30         ; + dizzy yawJitter
+  add  r0, r3, r0          ; + stick angle
+  sth  r0, 0x90(r31)       ; mIntendedYaw
+
+Patched:
+  80251dd0: lha  r4, 0x96(r31)    ; mFaceAngle.y (A89F0096)
+  80251dd4: addi r0, r4, -0x8000  ; forward-stick (0x8000) cancels (38048000)
+
+Result: mIntendedYaw = stickAngle + mFaceAngle.y - 0x8000 (+ jitter).
+Every consumer (run/jump/swim/special) reads mIntendedYaw, so ground,
+air, and water movement are all covered by this one site. The mag==0
+branch (intendedYaw = faceAngle) is untouched. r4 dies immediately
+after the patched pair, so clobbering it is safe.
+
+Known-behavior notes for v1:
+- Holding straight back continuously re-targets 180 deg from current
+  facing, so Mario keeps executing turnarounds while held. Tap-back to
+  turn, then forward, is the intended input grammar. If it feels bad,
+  v2 could latch a rear-cone deadzone or add hysteresis.
+- C-stick camera is unchanged; camera now affects view only, which is
+  the point for VR.
+- L-button camera mode (playerControl faceAngle override @8024df04)
+  still camera-snaps Mario's facing; left vanilla on purpose.
+
+Gecko:
+04251DD0 A89F0096
+04251DD4 38048000

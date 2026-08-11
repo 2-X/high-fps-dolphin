@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""
+r"""
 gecko.py — reliably add / replace / list / remove Gecko codes in a Dolphin
 per-game GameSettings INI (default: the USA Super Mario Sunshine user INI).
 
 WHY THIS EXISTS
 ---------------
 Dolphin loads the *user* GameSettings INI at
-  ~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini
+  macOS:   ~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini
+  Windows: %APPDATA%\Dolphin Emulator\GameSettings\GMSE01.ini
 and REWRITES it from its in-memory copy whenever it closes after you touched
 per-game settings (e.g. toggled a Gecko code). So any edit made to that file
 *while Dolphin is running* is silently reverted on quit. That is the "codes
@@ -28,6 +29,8 @@ USAGE
   python3 gecko.py remove --title "Diag-S"
 
   # enable a code so its checkbox is ticked on next launch
+  # (--title may be a substring; it is resolved against [Gecko] and the FULL
+  #  matched title is written — Dolphin matches enabled entries by exact title)
   python3 gecko.py enable --title "120fps + Diag-S"
 
 Options: --ini PATH (override target), --force (skip the Dolphin-running guard).
@@ -35,12 +38,21 @@ Every mutating op backs up the INI to <ini>.bak first.
 """
 import argparse, os, re, subprocess, sys, shutil
 
-USER_INI = os.path.expanduser(
-    "~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini")
+if sys.platform == "win32":
+    USER_INI = os.path.join(os.environ.get("APPDATA", ""),
+                            "Dolphin Emulator", "GameSettings", "GMSE01.ini")
+else:
+    USER_INI = os.path.expanduser(
+        "~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini")
 
 
 def dolphin_running():
     try:
+        if sys.platform == "win32":
+            out = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq Dolphin.exe", "/NH"],
+                capture_output=True, text=True).stdout
+            return "Dolphin.exe" in out
         out = subprocess.run(["pgrep", "-if", "dolphin"],
                              capture_output=True, text=True).stdout
         # ignore this script / editors that merely mention "dolphin"
@@ -175,19 +187,42 @@ def cmd_add(text, args):
 
 
 def _enable(text, title):
+    """Append $title to [Gecko_Enabled]. `title` must be the FULL exact title
+    from [Gecko] — Dolphin matches enabled entries by exact title, so a partial
+    title here silently never ticks the code."""
     text = ensure_section(text, "Gecko_Enabled")
-    if f"${title}" in text[slice(*get_section(text, "Gecko_Enabled"))]:
-        return text
     s, e = get_section(text, "Gecko_Enabled")
+    enabled = [ln[1:].strip() for ln in text[s:e].splitlines()
+               if ln.startswith("$")]
+    if title in enabled:
+        return text
     seg = text[s:e].rstrip("\n") + f"\n${title}\n"
     return text[:s] + seg + text[e:]
+
+
+def resolve_title(text, title_substr):
+    """Resolve a (sub)string against the $ titles in [Gecko] (same substring
+    matching as `remove`) and return the single full title. Exits on zero or
+    ambiguous matches; an exact match wins over other substring matches."""
+    titles = code_titles(text)
+    matches = [t for t in titles if title_substr in t]
+    if title_substr in matches:
+        return title_substr
+    if not matches:
+        sys.exit(f"no [Gecko] code title contains {title_substr!r}\n"
+                 "run `gecko.py list` to see available titles")
+    if len(matches) > 1:
+        sys.exit(f"{title_substr!r} is ambiguous, matches:\n"
+                 + "\n".join(f"  ${t}" for t in matches))
+    return matches[0]
 
 
 def cmd_enable(text, args):
     if not args.title:
         sys.exit("--title required")
-    print(f"enabled ${args.title}")
-    return _enable(text, args.title)
+    full = resolve_title(text, args.title)
+    print(f"enabled ${full}")
+    return _enable(text, full)
 
 
 def cmd_remove(text, args):

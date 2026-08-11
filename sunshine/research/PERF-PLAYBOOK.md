@@ -134,6 +134,16 @@ suspect area first, then check the decomp for these call patterns:
   (reflection/refraction buffers, procedural textures, the pollution coverage map).
 - **Heat-haze / water-refraction screen grabs**, lens/flare occlusion, real-time shadow-map
   readbacks — screen-reading effects on specific bosses/areas.
+- ~~**Screen-transition tile morphs**~~ — FOUND AND FIXED (2026-08-10): the
+  decompose/recompose wipe `Hx_Test5` does **80 EFB copies per rendered frame**
+  (64×64 tile grid, capture+clear+redraw each tile each frame) — 12× the designed
+  rate at 360fps, tanking fps for exactly the wipe's 20 rendered frames. Fixed
+  game-side: `fpspatch.py wipe5_opt()` (128px tiles + half-scale copies = 4× fewer
+  copies, look preserved), emitted at G ≥ 3. Full RE + fix design:
+  `memory/sunshine-wipe-morph-perf.md`. Diagnostic A/B:
+  `codes/wipe5-test4-swap-diag.txt`. Note this one is copy-COUNT churn (render-pass
+  switches), not a CPU readback — it shows as class B in a profile, not class A,
+  and the 30Hz gate does NOT apply (skipping wipe frames flashes the raw scene).
 - **Any actor whose per-frame `perform` does GX state floods** at N× where the *visual* only
   needs 30Hz (slow ambient surfaces, distant animated decals).
 

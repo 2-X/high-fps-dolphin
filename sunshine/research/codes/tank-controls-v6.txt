@@ -1,0 +1,58 @@
+Tank Controls v6 (150-degree moving arc, max turn at pivot boundary)
+GMSE01 (US). Supersedes v5 (remove v5 when enabling).
+
+Change over v5 (user request): the moving arc was too narrow (full speed
+only within +/-45deg, pivot past 75deg, half-speed mush between). v6:
+
+  |theta| < 0x3555 (+/-75deg = 150deg arc): FULL speed. Turn rate is
+      linear in theta (theta>>6) and reaches its cap 0xD5 EXACTLY at
+      the 75deg boundary (0x3555>>6 = 0xD5) -> maximum turning while
+      still running, right before the pivot point.
+  0x3555..0x6000 (75-135deg): pivot in place (mag x 1/64 epsilon,
+      keeps mInput bit0x1 / PIVOT anim alive) at the same capped turn
+      rate 0xD5 -> continuous rate across the boundary.
+  >= 0x6000: latched turnaround, unchanged (full-speed run-out).
+
+The v5 intermediate x0.5/x0.25 speed zones are deleted — they made
+"max turning while moving" impossible (nearly stopped by the time
+turning peaked). Speed now steps once at the pivot boundary.
+
+Turn cap 0xD5/frame = ~1.17 rev/s at 360fps. Air-lead equilibrium
+(leak>>6 vs cap) lands at 0xD5<<6 = 0x3540 ~ 75deg, matching the arc;
+sin(75)=0.97 so air/hover/slide authority is near-max. Hover side band
+(0x1555..0x6AAA) still contains the lead. Everything else (integrator,
+leak, latch, neutral re-arm C2 @80251DE8) as v4/v5.
+
+TUNING KNOBS: arc edge 0x3555 (words 2C003555; keep cap = edge>>6 in
+2C0400D5/388000D5/2C04FF2B/3880FF2B); epsilon halvings 6 (38600006);
+leak shift 6; window 0x168; rear cone 0x6000.
+
+Gecko:
+C2251DDC 00000018
+38838000 7C840734
+2C046000 40800084
+2C04A000 4081007C
+7C83FE70 7C801A78
+7C030050 2C003555
+41800020 38600006
+7C6903A6 C01F008C
+C0228028 EC000072
+4200FFFC D01F008C
+38000000 B01F0092
+7C843670 2C0400D5
+40810008 388000D5
+2C04FF2B 40800008
+3880FF2B A87F0090
+A81F0096 7C001850
+7C000734 7C003670
+7C601850 7C032214
+7C00F214 48000030
+A87F0092 2C030000
+40820018 A81F0090
+7C002214 38600168
+B07F0092 48000010
+3863FFFF B07F0092
+A81F0090 00000000
+C2251DE8 00000002
+A81F0096 38800000
+B09F0092 00000000

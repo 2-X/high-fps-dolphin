@@ -1,0 +1,26 @@
+FLUDD Aim Invert v1 (up aims up, down aims down)
+GMSE01 (US).
+
+Vanilla squat-spray aiming is inverted (stick up aims the nozzle down).
+This flips the vertical axis so the nozzle follows the stick direction.
+
+Patch point: TNozzleBase::calcGunAngle @ 8026D0E8 (found by pattern in
+research/main.dol: unique lfs f1,0xAC(r3) [pad->mCompSPos[1], stick Y]
+next to the MARIO_STATUS_SQUAT 0x0C008220 compare). The squat branch does
+
+  8026D164  lfs    f1, 0xac(r3)     ; stick Y (composed, +1.0 = up)
+  8026D16C  fmuls  f0, f1, f0       ; * mEmitParams.mRButtonMult
+  8026D170  fctiwz f0, f0
+  8026D178  lwz    r0, 0x8c(r1)     ; integer stick delta
+  8026D17C  add    r4, r4, r0       ; angle(unk36E) += delta  <-- patched
+
+Single-word patch: add r4,r4,r0 -> subf r4,r0,r4 (r4 = r4 - r0), which
+negates the per-frame stick contribution to the aim integrator. Clamps
+(mLAngleMin/Max) and chase smoothing run after and are unaffected. This
+is the only stick-driven aim path in the game (decomp: WaterGun.cpp:229
+is the sole aiming use of mCompSPos); running-spray and hover use fixed
+status-based angles, and L-camera first-person aim follows camera pitch
+(untouched, per request only the movement-stick aim is flipped).
+
+Gecko:
+0426D17C 7C802050

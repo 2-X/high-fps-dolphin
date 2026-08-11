@@ -106,3 +106,37 @@ Emitted automatically by `fpspatch.py` alongside the gate (`noki_dedupe()`).
 
 Verify: Bianco Ep.1 loads and plays; goop stamping/cleaning behaves; Noki Bay
 Ep.1 still holds ~119.
+
+## v3 (2026-08-11) — REDESIGN: call-site gates; v1 gate + v2 dedupe RETIRED
+
+**Symptom that exposed v1/v2's flaw (user, 240fps):** entering an M portal, the
+rainbow-surface ripples of Mario's atom-dots hitting the gate "appear way later
+than when the dots hit." Live capture (`research/scripts/warplog.py`) proved the
+whole warp logic chain substep-clean — the desync was OUR code: the gate-surface
+impact ripples are model stamps through `pushModelStampTask`. v1's whole-perform
+`blr` also skipped the layer-0 stamp-queue drain (`calcViewMtx` 0x8019B16C), so
+stamps batched 2G frames; the v2 dedupe then collapsed every same-model stamp in
+the batch to ONE — at 240fps up to 7 of every 8 ripple stamps were silently
+discarded, and survivors landed on pass frames. Ripples = late + sparse.
+
+**v3 (in `fpspatch.py noki_gate()`, emitted per-fps):** gate ONLY the two
+expensive counting calls at their call sites; everything else — crucially the
+drain — runs every frame, so batches never form and the v2 dedupe is
+unnecessary (removed; it also deleted legitimate same-frame stamps that stock
+allows):
+| hook | call | policy |
+|---|---|---|
+| 0x8019D8F0 | countObjDegree (GXReadPixMetric) | tick objCtr 0x800016E0, 1-in-FPS/30 |
+| 0x8019D90C | calcViewMtx = stamp drain (layer 0) | tick texCtr 0x800016E4, ALWAYS |
+| 0x8019D91C | per-layer countTexDegree (ReadTexels) | read texCtr, 1-in-FPS/30 |
+| 0x8019D934 | last-layer finish | read texCtr, 1-in-FPS/30 |
+`noki_copy_gate` (TEfbCtrlTex) is unchanged — texCtr still ticks exactly once
+per rendered frame, so its phase contract holds. Perf is identical to v1 (the
+readbacks were always the whole cost; the drain is cheap pointer walking).
+`--check` now errors if the old 0x8019D8C8 / 0x8019B120 blocks reappear.
+
+Verify at 240/360: M-portal entry — ripple rings appear ON dot impacts; goop
+stamps/clears normally; Bianco Ep.1 still loads (the freeze can't recur: no
+batching means no duplicate entry()). The old standalone `$Noki pollution
+counting 30Hz gate` INI title and the pre-v3 120fps bundles still carry v1/v2
+blocks — harmless while unticked, but never enable them alongside a v3 bundle.

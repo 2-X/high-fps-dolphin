@@ -1,5 +1,9 @@
 # Super Mario Sunshine — High-FPS Project (Mac → PC migration)
 
+> **💻 ON THE LAPTOP? Read [HANDOFF-LAPTOP.md](HANDOFF-LAPTOP.md) FIRST (2026-08-11).**
+> 120fps kit: `dolphin-config/GameSettings/GMSE01.ini.laptop120` — same fixes as the
+> desktop 240 setup (widescreen, FOV 60, FLUDD invert, QoL), speed 2.0, fresh save.
+
 > **🍎 ON THE MACBOOK? Read [HANDOFF-MAC.md](HANDOFF-MAC.md) FIRST (2026-08-04).**
 > It is the return-migration router: Mac setup, which Gecko bundle at 120fps
 > (⚠️ NOT `$180fps v12` — its input gate breaks at 120), the one-shot 180 attempt
@@ -35,9 +39,16 @@ on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the 
 
 ## 1. Quick start on the PC
 
-> **✅ 180fps kit refreshed 2026-08-09 — copy the table below and you're done.**
-> - `dolphin-config/GameSettings/GMSE01.ini` is now the **PC 180fps** config:
->   `EmulationSpeed = 3.0`, enabled set = `$SMS 180fps bundle (fpspatch, no-ForceOpen)`
+> **✅ Kit refreshed 2026-08-11 — copy the table below and you're done.**
+> - `dolphin-config/GameSettings/GMSE01.ini` is now the **PC 240fps** config
+>   (synced verbatim from the live desktop INI 2026-08-11): `EmulationSpeed = 4.0`,
+>   enabled set = `$SMS 240fps bundle` + `$SaveBox` + `$Camera look-up v10` + `$FOV 60`
+>   + `$Widescreen` + `$FLUDD Aim Invert v2`. All four fps bundles (120/180/240/360)
+>   in the INI are regenerated with today's fpspatch (talk-fix + skid-turn fix included).
+>   `GMSE01.ini.laptop120` is the same file at `EmulationSpeed = 2.0` with the 120fps
+>   bundle enabled instead — see [HANDOFF-LAPTOP.md](HANDOFF-LAPTOP.md).
+> - Historical note (2026-08-09 kit): enabled set was the **PC 180fps** bundle
+>   `$SMS 180fps bundle (fpspatch, no-ForceOpen)`
 >   (fpspatch-generated, capstone-validated; absorbs TRUE-FIX/glow, BGM, StarFix v4,
 >   game-clock v15, Poink v14, Petey v16/anmrate, Noki 30Hz gate + dedupe, cogwheel SE,
 >   and — since 2026-08-09 — the v9 input pad-latch gate, now default-on in fpspatch at
@@ -77,6 +88,21 @@ on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the 
 >   title that matched nothing in the user INI (same exact-match-phantom class as the
 >   FOV 62 bug — Dolphin silently ignores enabled titles with no matching code; check
 >   for this whenever a code "stops working").
+>
+> **Update 2026-08-11 (the broken first-loading-screen wipe):** two changes.
+> (1) `$Widescreen wipe fix v2` is **unticked** (defined but disabled, kit + live INI):
+> its ortho stretch draws wipes ×4/3 wide while the EFB-copy wipes copy/clear at
+> unstretched coordinates — a real misalignment, but disabling it did NOT fix the
+> user-reported artifact, and it never fixed the wipe-bars bug it was written for
+> (`HANDOFF-WIPE-BARS.md`). Keep it unticked anyway.
+> (2) The actual fix: the fpspatch bundle now **redirects wipe ids 5/6 to Hx_Test4 at
+> G≥3** (`wipe5_swap`, default; `--no-wipe-swap` restores the old tile morph). The
+> wipe5_opt 128px half-scale tile morph was verified applying exactly as designed
+> (every cave word checked in live RAM) and still looked broken — wrong-scale chunks
+> + black slabs on the boot→plaza reveal — so plaza loads now use the door-style
+> Test4 wipe: zero EFB copies, no perf hit, clean at any fps. The authentic tile
+> dissolve can return later via the single-capture redesign sketched in
+> `research/memory/sunshine-wipe-morph-perf.md`.
 > - **`$GameHeap 7MB (HD portals)`** is defined but deliberately unticked — only needed
 >   when running the HD-portal ISO; tick it if you switch back to that image.
 > - **Enabled sets trimmed on both machines** (Mac 120 / PC kit 180): bundle + SaveBox +

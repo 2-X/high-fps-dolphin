@@ -17,11 +17,31 @@ D021FFF8 8161FFF8
 3D404292 9141FFF8
 C021FFF8 7C0802A6
 60000000 00000000
+C22260CC 00000008
+7C0802A6 3D804220
+9181FFF8 C001FFF8
+FC010000 41800024
+3D804260 9181FFF8
+C001FFF8 FC010000
+40800010 3D804292
+9181FFF8 C021FFF8
+60000000 00000000
 
 * Unified FOV override: single C2 at C_MTXPerspective entry (USA 0x8034A404).
 * Gate = LR allow-list (6 scene callers -> flat 73) + value window [40,56) on the
 * two data-driven JDrama camera callers (TPolarCamera/TLookAtCamera::perform).
-* Retune fovy: change 4292 (word 0x3D404292) to the float upper half:
-*   60=4270 75=4296 80=42A0 82=42A4 85=42AA 90=42B4 100=42C8 110=42DC 120=42F0
+*
+* Second C2 = entity-culling fix at SetViewFrustumClipCheckPerspective entry
+* (USA 0x802260CC). The clip frustum was still built from the stale mFovy
+* field (~50), so with a wider render FOV, actors near the screen edges were
+* culled while visible. Gate = same [40,56) value window on incoming f1, so
+* NpcManager's swapped-args call (f1 = aspect ~1.33, a stock game bug) and any
+* out-of-range demo fovs stay stock. Fixes clipActorsAux / conductor /
+* gesso / enemyAttachment / fishoid / AnimalManager in one hook.
+*
+* Retune fovy: change BOTH substitute words to the float upper half:
+*   3D404292 (render hook) and 3D804292 (clip hook), in lockstep.
+*   58=4268 60=4270 62=4278 75=4296 80=42A0 82=42A4 85=42AA 90=42B4 100=42C8
 * Replaces the old 3-hook $FOV 73 [kris]. Disable $FOV 120 DIAG when installing.
 * Design audit: sunshine/research/scripts/fovcallers.py (8 callers total, complete).
+* Clip-hook design + address derivation: sunshine/research/memory/sunshine-fov-mod.md

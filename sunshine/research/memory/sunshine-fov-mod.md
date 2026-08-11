@@ -1,6 +1,6 @@
 ---
 name: sunshine-fov-mod
-description: "SMS USA FOV override Gecko — USA CPolarSubCamera layout (mFovy@+0x48, not JP's +0x30), three C2 hook sites (perform, effect-mtx, mirror), substitute-f1 pattern"
+description: "SMS USA FOV override Gecko — USA CPolarSubCamera layout (mFovy@+0x48, not JP's +0x30), unified C_MTXPerspective hook + entity-culling companion hook at SetViewFrustumClipCheckPerspective 0x802260CC, substitute-f1 pattern"
 metadata:
   type: project
 ---
@@ -109,6 +109,48 @@ C021FFF8 00000000
 To retune, swap `A4` in all three lis words (bytes at positions 3 of
 lines 2, 5, 8) in lockstep — folding the hooks into ONE entry keeps that
 edit local.
+
+## Entity-culling companion hook (fixed 2026-08-10)
+
+Symptom: with the FOV widened, actors/enemies vanish near the screen edges
+while still visible — the game's frustum culling still used the stale ~50°.
+
+All entity culling funnels through one function:
+`SetViewFrustumClipCheckPerspective(fovy, aspect, near, far)` = USA
+**0x802260CC** (JP 0x800C1414; found by scanning for `bl` preceded by
+`lfs f1,0x48/lfs f2,0x4C` camera arg setup — 10 dispersed callers; body
+verified: 4× fcmpu early-out vs sKeepViewClip* statics at r13-0x612C…,
+`bl tanf` = 0x8033C5CC, tail `bl SetViewFrustumClipCheck` = 0x80226174,
+size 0xA8 same as JP). Callers: TLiveManager::clipActorsAux,
+TConductor::clipAloneActors, gesso, enemyAttachment, fishoid,
+TAnimalManagerBase, NpcManager.
+
+Fix = 4th C2 hook at its ENTRY substituting f1, gated on value window
+[40,56) — same philosophy as the unified render gate:
+
+```
+C22260CC 00000008
+7C0802A6 3D804220    ; mflr r0 (re-exec original) ; lis r12,40.0 hi
+9181FFF8 C001FFF8    ; stw/lfs f0 via -8(r1)
+FC010000 41800024    ; f1 < 40 -> stock
+3D804260 9181FFF8    ; 56.0 hi
+C001FFF8 FC010000
+40800010 3D80XXYY    ; f1 >= 56 -> stock ; XXYY = FOV float upper half
+9181FFF8 C021FFF8    ; f1 = FOV
+60000000 00000000
+```
+
+Why the window gate (not a flat force): **NpcManager passes fovy/aspect
+SWAPPED** (stock game bug — `SetViewFrustumClipCheckPerspective(mAspect,
+mFovy, ...)`), so its f1 ≈ 1.33 must pass through untouched to preserve
+stock NPC clip behavior. Out-of-window demo fovs also stay stock; worst
+case there is a clip frustum wider than render = slightly less culling,
+which is invisible (the dangerous direction is narrower-than-render).
+
+Retune = change BOTH substitute words in lockstep: `3D40XXYY` (render
+hook, r10) and `3D80XXYY` (clip hook, r12). Installed in the live INI as
+$FOV 58/60/62 (all unified+clip form now); reference file
+`sunshine/research/codes/fov73-unified.txt`.
 
 ## Known limitation (as of 2026-08-09)
 

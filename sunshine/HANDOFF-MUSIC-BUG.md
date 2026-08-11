@@ -262,3 +262,53 @@ Superseded: §4's hypotheses (HLE/AI side) are all dead — the HLE was innocent
 the §7 instrumentation + §8 vpbdump were the path to the answer. The
 `HIFPS_NO_AUDIO_SLOWDOWN` toggle and `[hifps]` logging remain in the build as
 diagnostics.
+
+## 10. SECOND KILLER at 240fps (2026-08-10, PC): SE-request flood thrashes the voice pool
+
+User report at 240 (PC, all §9 fixes verified applied): **music never plays;
+occasionally catches when re-entering Delfino Plaza.** Same VPB kill-at-birth
+signature as §8, but a DIFFERENT killer — `DSP_LIMIT_RATIO` read back 0.0 live.
+
+**Live evidence (240fps session, `vpbdump.py` + a 60Hz sampler):**
+- Game side textbook-healthy (§2 profile): BGM slot active, sequencer advancing
+  at the correct wall-clock rate (0.699 for tempo 140), mainVol 0.75.
+- DSP voice pool **pinned at 64/64** and churning: ~55 of 64 voices were a
+  different sound instance 6s later.
+- **~306 SFX-bank voice births/sec** (stock plaza is a few dozen); BGM-bank
+  births ~30/sec and **every one had resampling_ratio == 0** — steal-killed at
+  birth (`getLogicalChannel`/`breakLower` → `forceStop`, prio ≤ 126).
+
+**Mechanism.** `MSound::mainLoop` (USA **0x80014DA8**, sole caller
+TApplication::gameLoop @0x802A62DC) is the whole per-frame audio pump:
+frameLoopDyna set-sound refresh, `JAIBasic::startFrameInterfaceWork` (USA
+0x80301C1C → processFrameWork 0x80301C3C: SE request processing, continuous-SE
+life countdown, fades), MSModBgm. All native-30Hz work. Stock invariant: FOUR
+120Hz-substep SE requests collapse into every processed frame. At 240 the pump
+runs 240Hz vs 120Hz requests = **0.5 requests/frame** — every continuous SE hits
+a processed frame with no keep-alive, expires, restarts → the birth storm →
+pool saturation → every allocation steals → sequenced BGM (lowest prio) never
+survives its first frame. Plaza re-entry briefly quiets the storm = the
+occasional catch. 180 survives at 0.67 requests/frame (half the flicker rate,
+under the 64-voice ceiling); the cogwheel rope-creak (fpspatch) was this same
+class patched per-site.
+
+**FIX: `audio_pump_gate` in fpspatch (default-on, FPS%30==0):** gate
+MSound::mainLoop to 1 rendered frame in FPS/30 = native 30Hz. C2 at the entry
+instruction (mflr r0); gated frames `blr` straight back to gameLoop (LR intact
+at entry — Noki-gate trick), pass frames re-exec mflr. Counter = low arena
+0x800016F8. Restores the stock 4-requests-per-processed-frame invariant at
+every G; direct startBGM/startSound calls don't route through mainLoop, so
+starts still land ≤33ms (stock latency). `--check` enforces divisor, counter,
+blr and the mflr tail. Installed to all bare*.txt 2026-08-10.
+
+**VERIFIED LIVE post-fix (same evening, user's 240 session after relaunch):**
+counter 0x800016F8 ticking at exactly 240/s (hook live, gate 1-in-8); BGM-bank
+voice births went from 121/121 ratio==0 (all killed at birth) to **0/134** —
+dolby=0 voices now show real ratios, matching target/current channel volumes
+(frontL/R + revU sends, proper stereo spread) and advancing ARAM cursors: the
+§8 healthy-VPB baseline. Sequenced BGM is mixing at 240fps.
+Residual observation, not chased: SFX births ~193/s (down from 306/s) with the
+pool still hovering near 64 in the plaza — possibly legitimate plaza ambience
+demand, possibly a per-rendered-frame requester (not substep-paced) still
+flooding. If SE dropouts/steal artifacts are ever audible, measure THAT with
+the vpb birth-rate sampler before touching anything.

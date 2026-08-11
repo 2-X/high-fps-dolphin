@@ -1,0 +1,62 @@
+Tank Controls v4 (heading integrator + neutral re-arm)
+GMSE01 (US). Supersedes v3 (remove v3 when enabling v4).
+
+Fixes over v3 (both user-reported):
+1. Left/right dead in air / FLUDD hover / slides. Those states never
+   rotate mFaceAngle toward mIntendedYaw the way ground running does;
+   they use angleDiff = mIntendedYaw - mFaceAngle.y directly:
+     - air (doJumping/slipFalling/etc): vel += k*cos(angleDiff),
+       face += k*sin(angleDiff)*slideControl
+     - hover: front/rear cone = thrust only; SIDE band (0x1555..0x6AAA)
+       = face IConverge at mHoverParams.mRotSp + nozzle tilt
+     - slides: steering force from sin(intendedYaw - unk9E)
+   v3 derived intendedYaw from face each frame, so angleDiff <= 0xC0
+   (~1deg) -> sin ~ 0 -> no steering authority in those states.
+   v4 integrates the heading on mIntendedYaw ITSELF (persists at
+   this+0x90): out = prev + clamp(theta>>6,+/-0xC0) - leak, where
+   leak = (prev - face)>>6 slowly re-syncs the heading to the real
+   facing (heals wall bonks/warps in ~0.2s) while allowing ~67deg of
+   lead in air (sin ~ 0.92 -> full air/hover/slide authority).
+   Ground feel unchanged: face tracks heading within ~1deg there.
+2. Release-back then press-back went straight instead of re-flipping.
+   The latch cleared only on steering frames; neutral stick takes the
+   game's OWN else-branch (intendedYaw = face @80251de8) which our
+   main hook never sees. Second micro-C2 there zeroes the latch, so
+   letting go of the stick instantly re-arms the turnaround.
+
+Hooks:
+  C2 @ 80251DDC (36 words): main heading logic (regs r0/r3/r4 free,
+     r30 = dizzy jitter, r31 = TMario*; latch timer at this+0x92 =
+     vestigial unk92, see v3 notes).
+  C2 @ 80251DE8 (4 words): re-exec `lha r0,0x96(r31)`, zero latch.
+     (r4 is reloaded at 80251df0, safe to clobber.)
+
+TUNING KNOBS (per-frame, tuned for G=6 / 360fps):
+  steer shift 6 (7C843670) / cap 0xC0     -> turn rate
+  leak shift 6 (7C003670)                 -> air lead cap ~67deg & resync speed
+  window 0x168 (38600168)                 -> held-back re-flip period (1s)
+  cone 0x6000                             -> turnaround threshold
+
+Gecko:
+C2251DDC 00000012
+38838000 7C840734
+2C046000 40800054
+2C04A000 4081004C
+38000000 B01F0092
+7C843670 2C0400C0
+40810008 388000C0
+2C04FF40 40800008
+3880FF40 A87F0090
+A81F0096 7C001850
+7C000734 7C003670
+7C601850 7C032214
+7C00F214 48000030
+A87F0092 2C030000
+40820018 A81F0090
+7C002214 38600168
+B07F0092 48000010
+3863FFFF B07F0092
+A81F0090 00000000
+C2251DE8 00000002
+A81F0096 38800000
+B09F0092 00000000

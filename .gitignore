@@ -19,3 +19,14 @@ __pycache__/
 sunshine/research/preview-work/
 sunshine/research/tools/
 sunshine/research/thp-assets/
+
+# PC-era clones (separate git repos, not vendored — dolphin-patches/ has our patch)
+dolphin-src/
+sms-decomp/
+# stray portable-Dolphin dir created by a repo-root launch
+/GameSettings/
+# transient logs
+/debug.log
+sunshine/research/scripts/*-ini-watcher.log
+# per-machine Claude settings
+.claude/settings.local.json

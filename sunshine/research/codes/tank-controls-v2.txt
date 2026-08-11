@@ -1,0 +1,70 @@
+Tank Controls v2 (rate-limited steering, tuned for 360fps bundle)
+GMSE01 (US). Supersedes tank-controls-v1 (remove v1 when enabling v2).
+
+v1 problem (user-confirmed at 360fps): downstream yaw chase is
+  mFaceAngle.y = mIntendedYaw - IConverge(diff, 0, rotSp, rotSp)
+i.e. a CLAMPED FIXED STEP per sim frame (rotSp ~0x600-0x800 while
+running). v1 set intendedYaw = face + stickOffset each frame, so any
+deflection > ~rotSp saturated the clamp -> max turn step EVERY frame,
+and at 360fps that is 6x the per-second rate -> spin-in-circles on
+slight side deflection. Scaling the stick angle alone can't fix it
+(mid deflections still saturate the clamp), so v2 emits the per-frame
+turn increment itself.
+
+Hook: C2 @ 80251ddc (replaces the final `add r0,r3,r0` before
+`sth r0,0x90(r31)` in TMario::checkController). Live regs:
+r3 = matan stick angle (forward = 0x8000), r30 = dizzy yawJitter,
+r31 = TMario* this. r0/r4 free (r4 held gpCamera, dead after patch).
+
+Logic (theta = stick angle - 0x8000, signed s16, 0 = dead ahead):
+  if |theta| >= 0x6000 (rear ~90deg cone): offset = theta
+      -> full target flip; triggers the vanilla skid/turnaround state
+         (its trigger threshold is 0x471C) and IConverge's own clamp
+         paces the rotation. Back = instant turnaround, preserved.
+  else: offset = clamp(theta >> 6, +/-0xC0)
+      -> proportional steering: 22deg deflection ~0.35 rev/s,
+         45deg ~0.7 rev/s, capped ~1.05 rev/s at 360fps.
+  mIntendedYaw = mFaceAngle.y + offset + yawJitter
+
+TUNING KNOBS (for feel iteration, all in the block):
+  srawi shift 6  (word 0x7C803670) -> steering gain; 5 = twice as fast
+  cap 0xC0       (words 0x380000C0/0x2C0000C0 and FF40 pair) -> max turn rate
+  cone 0x6000    (words 0x2C046000/0x2C04A000) -> turnaround threshold
+NOTE: rates are per-sim-frame, so feel scales with G. Tuned for G=6
+(360fps). At other G, scale shift/cap accordingly; folding this into
+fpspatch.py as a G-parameterized emitter is the clean follow-up.
+
+Assembly (19 instr + nop pad, single terminal 00000000):
+  addi  r4,r3,-0x8000   38838000
+  extsh r4,r4           7C840734
+  cmpwi r4,0x6000       2C046000
+  bge   FULL            4080002C
+  cmpwi r4,-0x6000      2C04A000
+  ble   FULL            40810024
+  srawi r0,r4,6         7C803670
+  cmpwi r0,0xC0         2C0000C0
+  ble   +2              40810008
+  li    r0,0xC0         380000C0
+  cmpwi r0,-0xC0        2C00FF40
+  bge   JOIN            40800010
+  li    r0,-0xC0        3800FF40
+  b     JOIN            48000008
+FULL: mr r0,r4          7C802378
+JOIN: lha r4,0x96(r31)  A89F0096
+  add r0,r0,r4          7C002214
+  add r0,r0,r30         7C00F214
+  nop                   60000000
+  (branch-back)         00000000
+
+Gecko:
+C2251DDC 0000000A
+38838000 7C840734
+2C046000 4080002C
+2C04A000 40810024
+7C803670 2C0000C0
+40810008 380000C0
+2C00FF40 40800010
+3800FF40 48000008
+7C802378 A89F0096
+7C002214 7C00F214
+60000000 00000000

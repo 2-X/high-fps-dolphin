@@ -1,0 +1,42 @@
+Tank Controls v8 (no forced pivot — natural threshold, uncapped steer)
+GMSE01 (US). Supersedes v7 (remove v7 when enabling).
+
+Change over v7 (user request): the explicit pivot band is gone. The
+magnitude is NEVER touched — the game's own StartToWalkLevel (15/32)
+already provides "pivot only when the movement vector is under a
+threshold": light tilt at any angle = wait-state pivot in place (vanilla
+mechanic), harder tilt = walk/run at deflection-proportional speed.
+
+  |theta| < 0x6000 (front 270deg): mag untouched; steer = theta>>6,
+      UNCAPPED — linear from 0 to 0x17F (~2.1 rev/s @360fps) right at
+      the rear-cone edge: "turn even more until you can't turn anymore".
+  >= 0x6000 (rear 90deg cone): latched turnaround (flip once, 1s
+      window, neutral or forward re-arms), unchanged.
+
+Air-lead equilibrium (leak>>6 vs max steer 0x17F) ~ 0x5FC0 (~135deg),
+still inside the hover side band (0x6AAA). No float/CTR use anymore —
+block is back to pure integer, 30 words.
+
+TUNING KNOBS: steer shift 6 (7C843670); leak shift 6 (7C003670);
+window 0x168; rear cone 0x6000. Steer max is implicitly cone>>shift.
+
+Gecko:
+C2251DDC 0000000F
+38838000 7C840734
+2C046000 4080003C
+2C04A000 40810034
+38000000 B01F0092
+7C843670 A87F0090
+A81F0096 7C001850
+7C000734 7C003670
+7C601850 7C032214
+7C00F214 48000030
+A87F0092 2C030000
+40820018 A81F0090
+7C002214 38600168
+B07F0092 48000010
+3863FFFF B07F0092
+A81F0090 00000000
+C2251DE8 00000002
+A81F0096 38800000
+B09F0092 00000000

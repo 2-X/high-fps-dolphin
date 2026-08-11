@@ -1,0 +1,68 @@
+Tank Controls v5 (v4 + stick-angle speed scaling: turn without running)
+GMSE01 (US). Supersedes v3/v4 (remove both when enabling).
+
+Adds over v4 (user request): stick direction controls SPEED as well as
+turning — pure side = pivot in place, blending to full run as the stick
+rotates toward forward. Implementation: scale mIntendedMag (this+0x8C,
+f32, already stored before the hook) by |theta| zone via repeated x0.5
+(0.5f constant @ 0x8040EBC8 = lfs -0x7fd8(r2)), CTR loop:
+
+  |theta| < 0x2000 (<45deg):  x1      full speed, angle = turn rate
+  0x2000..0x2AAA (45-60deg):  x0.5    mag<=16, slow walk/run ramp
+  0x2AAA..0x3555 (60-75deg):  x0.25   mag<=8, below StartToWalkLevel(15)
+                                      -> won't start walking; brakes a run
+  0x3555..0x6000 (75-135deg): x1/64   epsilon ~0.5: stays nonzero so
+                                      mInput bit0x1 sets and the WAIT
+                                      state's built-in pivot runs
+                                      (IConverge @ mWaitingRotSp, PIVOT
+                                      anim) -- Mario turns in place
+  rear cone >=0x6000:         x1      latched turnaround unchanged (full
+                                      speed run-out when held)
+
+Why epsilon not zero: mInput |= 0x1 requires mIntendedMag > 0 (synthesized
+after the hook); the wait-state pivot and PIVOT anim are gated on it.
+StartToWalkLevel default = 15.0 (PARAM_INIT, MarioInit.cpp:748).
+
+FPR/CTR safety: hook sits right after the matan() call, so volatile
+f0/f1/CTR are dead; downstream code reloads its FPRs.
+
+Everything else (heading integrator, leak, latch window, neutral re-arm
+C2 @80251DE8) identical to v4 — see tank-controls-v4.txt.
+
+TUNING KNOBS: zone edges 0x2000/0x2AAA/0x3555 + halving counts 1/2/6;
+steer shift 6 / cap 0xC0; leak shift 6; window 0x168; cone 0x6000.
+
+Gecko:
+C2251DDC 0000001D
+38838000 7C840734
+2C046000 408000A8
+2C04A000 408100A0
+7C83FE70 7C801A78
+7C030050 38600000
+2C002000 41800020
+38600001 2C002AAA
+41800014 38600002
+2C003555 41800008
+38600006 2C030000
+4182001C 7C6903A6
+C01F008C C0228028
+EC000072 4200FFFC
+D01F008C 38000000
+B01F0092 7C843670
+2C0400C0 40810008
+388000C0 2C04FF40
+40800008 3880FF40
+A87F0090 A81F0096
+7C001850 7C000734
+7C003670 7C601850
+7C032214 7C00F214
+48000034 A87F0092
+2C030000 40820018
+A81F0090 7C002214
+38600168 B07F0092
+48000014 3863FFFF
+B07F0092 A81F0090
+60000000 00000000
+C2251DE8 00000002
+A81F0096 38800000
+B09F0092 00000000

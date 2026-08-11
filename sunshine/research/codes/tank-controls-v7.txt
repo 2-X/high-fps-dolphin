@@ -1,0 +1,59 @@
+Tank Controls v7 (deflection = speed, full-speed 180deg front arc)
+GMSE01 (US). Supersedes v6 (remove v6 when enabling).
+
+Change over v6 (user request): NO angle-based speed scaling in the front
+arc. Speed comes from stick DEFLECTION (the game's own
+mIntendedMag = 32*(dist/64)^2, untouched); angle only sets turn rate.
+Mario has no backwards gait, so everything the body can run, runs full:
+
+  |theta| < 0x4000 (+/-90deg, 180deg arc): mag UNTOUCHED — full-speed
+      running in any front direction, incl. straight sideways; partial
+      deflection = the vanilla slow walk/run, at any angle. Turn rate
+      linear (theta>>6), cap 0x100 hit EXACTLY at the 90deg boundary
+      (0x4000>>6 = 0x100, ~1.4 rev/s @360fps).
+  0x4000..0x6000 (90-135deg): pivot in place (mag x 1/64 epsilon),
+      capped turn rate -> continuous across the boundary.
+  >= 0x6000: latched turnaround, unchanged.
+
+Air-lead equilibrium (leak>>6 vs cap 0x100) = 0x4000 = 90deg, sin=1.0:
+maximum air/hover/slide authority. Hover side band (up to 0x6AAA) still
+contains the lead. Integrator/leak/latch/neutral re-arm C2 as v4+.
+
+TUNING KNOBS: arc edge 0x4000 (2C004000; keep cap = edge>>6 in
+2C040100/38800100/2C04FF00/3880FF00); epsilon halvings 6; leak shift 6;
+window 0x168; rear cone 0x6000.
+
+VR note: the heading source is one load in this block — swapping the
+stick-relative frame for a headset-yaw-relative frame later means
+replacing the base of the addition with a scratch word Dolphin (or a
+sidecar) writes each frame. See discussion in session 2026-08-10.
+
+Gecko:
+C2251DDC 00000018
+38838000 7C840734
+2C046000 40800084
+2C04A000 4081007C
+7C83FE70 7C801A78
+7C030050 2C004000
+41800020 38600006
+7C6903A6 C01F008C
+C0228028 EC000072
+4200FFFC D01F008C
+38000000 B01F0092
+7C843670 2C040100
+40810008 38800100
+2C04FF00 40800008
+3880FF00 A87F0090
+A81F0096 7C001850
+7C000734 7C003670
+7C601850 7C032214
+7C00F214 48000030
+A87F0092 2C030000
+40820018 A81F0090
+7C002214 38600168
+B07F0092 48000010
+3863FFFF B07F0092
+A81F0090 00000000
+C2251DE8 00000002
+A81F0096 38800000
+B09F0092 00000000

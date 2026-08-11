@@ -11,10 +11,29 @@ that assumption is exactly how the fixed 1-in-2 particle gate shipped at 180fps:
   3. substep granularity                   →  stock 600/5 scaled by G
   4. the Noki pollution gate               →  1 frame in FPS/30 (= 2G, not G)
   5. the shine-select screen gate         →  1 frame in ceil(G/2) (select_gate)
+  6. the Hx wipe clock                     →  1 frame in FPS/30 (wipe_pace) —
+     every wipe (incl. the level-entry decompose/recompose) is frame-counted
+     for 30fps rendering and otherwise plays 2G x too fast
+  7. the audio pump MSound::mainLoop       →  1 frame in FPS/30 (audio_pump_gate)
+     — SE request processing must never outrun the 120 Hz substep request rate
+     or continuous SEs flicker-restart and thrash the 64-voice pool (the 240fps
+     total-music-silence bug)
+  8. the THP movie clock                   →  divisor 5994*G (thp_pace) — the
+     SDK THPPlayer paces off VI retraces, which fire G x wall speed under
+     EmulationSpeed=G, so silent movies (the M-portal previews) play G x fast;
+     audio-mastered cutscene THPs are excluded via the audioExist discriminator
+     to keep their A/V sync
+  9. the Ricco hook slide-clank            →  1 frame in FPS/30
+     (riccohook_se_gate) — keyed on the audio pump's frame counter, because
+     the pump gate alone measurably does not tame this per-tick SE flood (the
+     240fps "womp womp womp" near the gondola)
 
 Rate-INDEPENDENT, and correct as-is at every G:
-  * hooks that READ the framerate global and self-scale — the 15 raw anim-rate
-    /(2G) fixes, and the game-clock fix (v15), which divides OSCheckStopwatch
+  * hooks that READ the framerate global and self-scale — the raw anim-rate
+    x0.25 fixes (constant, because calc_anim is pinned at 120 Hz by the substep
+    retune — an earlier /(2G) form was wrong at G>=3), the animal movement-rate
+    x4 restores (substep-paced speeds, see ANIMAL_SPEED_SITES), and the
+    game-clock fix (v15), which divides OSCheckStopwatch
     ticks by G (shift for powers of two, long division for 180)
   * M-portal glow (XZ-distance reimpl) and ForceOpen (calls the real startOpen)
   * BGM DSP voice-limiter kill + tempo guard; the HUD stars fix
@@ -381,7 +400,40 @@ def input_latch(g, select_n=None):
 SELECT_DIR_VTABLE = 0x803C0EF0   # TSelectDir vtable (ctor @0x80177538 stores it)
 SELECT_HOOK = 0x802F7DBC         # TDirector::direct's MOVE-pass `bl testPerform`
 TESTPERFORM = 0x802FCC94         # TViewObj::testPerform (r3=unk10,r4=3,r5=&gfx set)
-SELECT_CTR = 0x16E8              # low arena; 0x16E0/0x16E4 = Noki, 0x16F0 = camera
+SELECT_CTR = 0x16E8              # low arena; 0x16E0/0x16E4 = Noki (map below at WIPE_CTR)
+
+# ---- Select-screen gradient background 30Hz gate (v4 companion) -------------
+# TSelectGrad::perform (USA 0x80175560, vtable 0x803C0EC8) advances its
+# background color-cycle on CUE_CALC_ANIM: three channel bytes at +0x20/21/22
+# ramp by a RAW +/-2 per call (state machine at +0x10/14/18) — native 30 Hz
+# work, family-B raw-rate class, NOT AnmFrameRate-scaled. The v3 CALC_ANIM
+# passthrough (required for J3D shine entry, see select_gate) therefore ran it
+# at full render rate: 8x-fast color cycling at 240fps, user-sighted as the
+# shines "micro-flickering" against the strobing gradient. Gate the ramp body
+# to 1 frame in 2G (= 30 Hz at every G) on the same select counter, READ-ONLY
+# (select_gate owns the increment). Both exits jump to the function's own
+# no-CALC_ANIM join (0x80175728, the cue&8 draw test), so draw is untouched.
+# Only emitted alongside select_gate (G>=3): at G=2 the counter never ticks
+# and gating on a frozen value could freeze the ramp entirely.
+SELECT_GRAD_HOOK = 0x80175584    # the `beq -> join` after perform's cue&2 test
+SELECT_GRAD_JOIN = 0x80175728    # cue&8 draw test; original beq target
+
+def select_grad_gate(g):
+    if _select_divisor(g) is None:
+        return None
+    n = 2 * g
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=10)
+    L = len(gate)
+    words = [0x40820014,                              # cue&2 set -> GATE
+             0x3D800000 | (SELECT_GRAD_JOIN >> 16),   # EXIT: lis r12,hi(join)
+             0x618C0000 | (SELECT_GRAD_JOIN & 0xFFFF),  # ori r12,r12,lo
+             0x7D8903A6, 0x4E800420,                  # mtctr ; bctr (skip body)
+             0x3D808000,                              # GATE: lis r12,0x8000
+             0x80000000 | (11 << 21) | (12 << 16) | SELECT_CTR]  # lwz r11,ctr
+    words += gate                                     # cr0 <- ctr % 2G
+    words.append(0x40820000 | (((1 - (7 + L)) * 4) & 0xFFFC))  # != 0 -> EXIT
+    return _c2(SELECT_GRAD_HOOK, words)               # == 0: fall to ramp body
+
 
 def _select_divisor(g):
     """1-in-N frame divisor holding the select screen at ~120 Hz; None if 1."""
@@ -460,6 +512,7 @@ def select_gate(g):
 # li'd on the next instruction, cr0 is redefined by the cmpwi that follows).
 TURNAROUND_HOOK = 0x8025AF64
 TURNAROUND_SCRATCH = 0x1720          # low arena: ctr u32, ring u16[4], owner u32
+                                     # (slot map at WIPE_CTR; camera block is 1730+)
 
 def turnaround_fix():
     S = TURNAROUND_SCRATCH
@@ -551,41 +604,80 @@ SUN_PROBE = "0402E28C 60000000"
 #
 # Two independent counters in the OS low arena, so no cue-ordering assumptions:
 #   0x800016E0 obj counter (ticked once per obj cue), 0x800016E4 tex counter.
-# (0x800016F0 is the camera code's scratch — do not collide.)
+# (0x80001730-0x8000176F is the camera look-up code's 0x40-byte scratch — do
+# not collide. It lived at 0x16F0 until 2026-08-10, when its 0x40-byte reach —
+# assumed 4 bytes in this map — stomped WIPE_CTR/AUDIO_PUMP_CTR/TURNAROUND
+# and froze every wipe the camera hook ran through: the sand-castle soft-lock.)
 # The shipping v1 hardcoded `andi. r0,r11,3`, i.e. 1-in-4, correct only at
 # 120fps; at 180 that is not even a valid 1-in-6 test. Rebuilt on _rate_gate so
 # the branch offsets track the gate length.
+#
+# v3 REDESIGN (2026-08-11, the M-portal late-ripples fix). v1/v2 blr'd the
+# WHOLE perform on gated frames, which also skipped the model-stamp queue
+# drain (calcViewMtx, USA 0x8019B16C, called at layer 0 of the tex pass:
+# walks slots at this+0x34/0x38 and entry()s each model). That batched 2G
+# frames of stamps per pass frame, which (a) required the v2 dedupe to avoid
+# the J3D self-loop freeze, and (b) DISCARDED up to 2G-1 of every 2G
+# same-model stamps — the M-portal's rainbow-surface impact ripples are
+# exactly such stamps, hence "the ripples of Mario's atoms hitting the portal
+# appear way later than when the dots hit" (user, 240fps). v3 gates ONLY the
+# two expensive counting calls at their call sites and lets everything else —
+# CRUCIALLY the drain — run every frame:
+#   0x8019D8F0  bl countObjDegree (GXReadPixMetric)   -> tick objCtr, 1-in-N
+#   0x8019D90C  bl calcViewMtx / drain (layer 0)      -> tick texCtr, ALWAYS
+#   0x8019D91C  bl per-layer countTexDegree (ReadTexels) -> read texCtr, 1-in-N
+#   0x8019D934  bl last-layer finish                  -> read texCtr, 1-in-N
+# (call sites verified by disasm of perform 0x8019D8C8: obj cue rlwinm at
+# +0x08, tex cue at +0x30, layer extract at +0x38, draw bl 0x801887AC never
+# touched.) With per-frame drain there is no batch, so duplicates cannot
+# accumulate and the v2 dedupe is RETIRED — stock allows the queue semantics
+# it was second-guessing. noki_copy_gate stays: it reads texCtr WITHOUT
+# ticking, and texCtr still ticks exactly once per rendered frame (layer 0),
+# so its phase contract is unchanged. r0/r11/r12/ctr/cr0 are dead at all four
+# hooks (each replaces a bl; the caller's live state is r3/r4 args + saved
+# nonvolatiles r29-r31, all untouched).
 NOKI_OBJ_CTR, NOKI_TEX_CTR = 0x16E0, 0x16E4
+NOKI_OBJ_CALL = (0x8019D8F0, 0x8019CA18)   # bl countObjDegree
+NOKI_DRAIN_CALL = (0x8019D90C, 0x8019B16C)  # bl calcViewMtx (layer-0 drain)
+NOKI_TEX_CALL = (0x8019D91C, 0x8019B3A0)   # bl per-layer counting
+NOKI_FIN_CALL = (0x8019D934, 0x8019B334)   # bl last-layer finish
+
+def _tick(ctr):
+    return [0x3D808000,                                  # lis  r12,0x8000
+            0x80000000 | (11 << 21) | (12 << 16) | ctr,  # lwz  r11,ctr
+            0x396B0001,                                  # addi r11,r11,1
+            0x90000000 | (11 << 21) | (12 << 16) | ctr]  # stw  r11,ctr
+
+def _read_ctr(ctr):
+    return [0x3D808000,
+            0x80000000 | (11 << 21) | (12 << 16) | ctr]  # lwz r11,ctr
+
+def _call(target):
+    return [0x3D800000 | (target >> 16),
+            0x618C0000 | (target & 0xFFFF),
+            0x7D8903A6, 0x4E800421]                      # lis/ori/mtctr/bctrl
 
 def noki_gate(fps):
-    """Pollution-counting gate at native 30Hz. None when FPS/30 is not integral."""
+    """Pollution-counting call-site gates at native 30Hz; the stamp-queue drain
+    runs every frame. None when FPS/30 is not integral."""
     if fps % 30 or fps < 60:
         return None
     n = int(fps // 30)
-    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)   # r4 is live (the cue); r12 is free here
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
     L = len(gate)
-    i_check_tex, i_gate_tex, i_skip, i_cont = 8 + L, 16 + L, 20 + 2 * L, 21 + 2 * L
-    def beq(at, to):  return 0x41820000 | (((to - at) * 4) & 0xFFFC)
-    def bne(at, to):  return 0x40820000 | (((to - at) * 4) & 0xFFFC)
-    def b(at, to):    return 0x48000000 | (((to - at) * 4) & 0x03FFFFFC)
-    w  = [0x548C01CF,                          # rlwinm. r12,r4,0,7,7   obj cue?
-          beq(1, i_check_tex),
-          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_OBJ_CTR,
-          0x396B0001, 0x90000000 | (11 << 21) | (12 << 16) | NOKI_OBJ_CTR]
-    w += gate
-    w += [bne(6 + L, i_skip), b(7 + L, i_cont),
-          0x548C018D,                          # rlwinm. r12,r4,0,6,6   tex cue?
-          beq(9 + L, i_cont),
-          0x548C863F,                          # rlwinm. r12,r4,16,24,31  layer
-          bne(11 + L, i_gate_tex),
-          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR,
-          0x396B0001, 0x90000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR,
-          0x3D808000, 0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR]
-    w += gate
-    w += [bne(18 + 2 * L, i_skip), b(19 + 2 * L, i_cont),
-          0x4E800020,                          # blr — gated out, hold last count
-          0x7C0802A6]                          # mflr r0 (the overwritten original)
-    return _c2(0x8019D8C8, w)
+    def gated_call(hook, target, pre):
+        # [pre][gate][bne SKIP][call x4][SKIP -> branch-back]
+        w = pre + gate
+        w.append(0x40820000 | (4 * 5 & 0xFFFC))          # bne +20 -> past the call
+        w += _call(target)
+        return _c2(hook, w)
+    blocks = [
+        gated_call(*NOKI_OBJ_CALL, pre=_tick(NOKI_OBJ_CTR)),
+        _c2(NOKI_DRAIN_CALL[0], _tick(NOKI_TEX_CTR) + _call(NOKI_DRAIN_CALL[1])),
+        gated_call(*NOKI_TEX_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+        gated_call(*NOKI_FIN_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+    ]
+    return "\n".join(blocks)
 
 
 # ---- Noki gate COMPANION 2: pollution EFB-copy gate (v3, the vanishing-goop fix) --
@@ -712,6 +804,54 @@ def cogwheel_se_gate():
     return "\n".join(block(*h) for h in COGWHEEL_HOOKS)
 
 
+# ---- Ricco hook/gondola slide-clank cadence (the 240fps "womp womp" wall) ----
+# TRiccoHook::perform (USA 0x800c7a54; located via the live vtable 0x803B8344 —
+# decomp RiccoHook.cpp is a stub) requests the crane slide clank on EVERY move
+# tick once mTimer(+0x154) reaches 0, and nothing ever re-arms the timer, so
+# each of Ricco Harbor's four cable hooks (the ride-basket "gondola" hangs from
+# one) floods requests forever. The id is MSD_SE_OBJ_CRANE_SIDEMOVE1 0x3034 or
+# _SIDEMOVE2 0x3035 picked by mInstanceIndex(+0x7C) parity — per-hook variety,
+# NOT a time alternation. Stock the flood collapses to one audible retrigger
+# per rendered frame = the designed 30/sec harbor clank; hacked, the retrigger
+# follows the render rate — "womp womp womp, a little staticy, faster the more
+# fps" (240fps report, 2026-08-10). Confirmed live with the full 240 bundle
+# INCLUDING the 30 Hz audio-pump gate, so the pump alone does not tame this
+# site and it needs the per-site treatment (cogwheel class).
+#
+# FIX: gate the SE block to 1 rendered frame in FPS/30, keyed on the audio
+# pump's own low-arena frame counter (AUDIO_PUMP_CTR, incremented once per
+# rendered frame at MSound::mainLoop entry, before the pump's own modulo).
+# Keying that counter caps requests at the native 30/sec wall-clock AND lands
+# them near pump-processed frames, and it stays correct whether the perform
+# tick turns out substep-paced or render-paced. Gated ticks bctr to the
+# function's own common exit (the epilogue both SE paths fall through to); the
+# mTimer bookkeeping sits ABOVE the hook and is untouched. Clobbers only
+# r0/r11/r12/cr0/ctr — r11 is unused in the whole function, r12 is dead since
+# the vtable dispatch, cr0 is redefined by the very next game instruction, ctr
+# is never used there. Fail-open: without the pump cave the counter stays 0,
+# the modulo passes every tick, and behavior is exactly stock.
+RICCOHOOK_HOOK = 0x800C7AB8     # lha r0,0x7C(r29) — sole entry to both SE sites
+RICCOHOOK_SKIP = 0x800C7B28     # the function's common exit (epilogue restore)
+RICCOHOOK_ORIG = 0xA81D007C     # the overwritten lha, dol-verified
+
+def riccohook_se_gate(fps):
+    """Hold the Ricco hook slide-clank SE at native 30/sec. None when FPS/30 is
+    not integral (no pump counter exists to key on)."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    words = ([0x3D808000,                                       # lis  r12,0x8000
+              0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR]  # lwz r11,ctr
+             + gate                                             # cr0 <- ctr % n
+             + [0x41820014,                                     # beq +0x14: pass frame
+                0x3D800000 | (RICCOHOOK_SKIP >> 16),            # gated: exit through
+                0x618C0000 | (RICCOHOOK_SKIP & 0xFFFF),         # the fn's own epilogue
+                0x7D8903A6, 0x4E800420,                         # mtctr r12 ; bctr
+                RICCOHOOK_ORIG])                                # pass: original lha
+    return _c2(RICCOHOOK_HOOK, words)
+
+
 # ---- Test5 morph-wipe EFB-copy reduction (the decompose/recompose lag) ------
 # The scene-transition "decompose/recompose" effect is the Hx wipe module's
 # Hx_Test5 (USA 0x8017DF74; whole TU maps JP-0xC0388, verified against the fn
@@ -787,6 +927,279 @@ def wipe5_opt():
                            _fadds(22, 22, 22)])  # f22 = 64: half-tile offset/radius
     strides = "0417E39C 3B5A0080\n0417E3D8 3B390080"   # x/y tile strides 64 -> 128
     return "\n".join([grab, f22, strides])
+
+
+# ---- Wipe pacing gate (the "map loads way too fast" fix) --------------------
+# Every Hx wipe times itself in RENDERED frames: each wipe fn stores a hardcoded
+# frame count into globals+0x3C (Test5 = 20, Test4 = 38, Circle = 25/30, Logo,
+# GameOver, ... — a full-TU sweep found ONLY immediates plus two movie-struct
+# counts) and ends when Hx_TimerCountDown (0x80181E58) has decremented it to 0;
+# the sweep/slide wipes additionally advance Hx_MotionSet-built motion structs
+# once per call to Hx_MotionUpdate (0x80181D74). NOTHING in the TU reads the
+# rate (globals+0x18), the elapsed accumulator (+0x14) or the duration (+0x1C)
+# that TSMSFader passes in — the seconds-scaled duration Hx_StartWipe stores is
+# dead weight. So every wipe is calibrated for the stock 30fps render rate and
+# runs FPS/30 = 2G x too fast under the bundle: the level-entry decompose/
+# recompose (Test5, wipe ids 5/6) collapses from 0.67s to 55ms at 360fps — the
+# "map loads way faster" symptom (it was masked before wipe5_opt because the 80
+# EFB copies/frame tanked the framerate for exactly those 20 frames).
+#
+# FIX: hold the wipe CLOCK, not the wipe DRAW, to native 30 Hz. A low-arena
+# counter ticks once per rendered wipe frame in Hx_UpdateWipe's state-2 body
+# (hook the `stfs f31,0x18(r31)` at 0x80181F7C, just before the blrl into the
+# wipe fn), and the two shared timing helpers pass 1 frame in N = FPS/30:
+#   * Hx_TimerCountDown: hook the decrement (`addi r0,r3,-1` @0x80181E70,
+#     reached only when the timer is nonzero) — gated frames store the timer
+#     back unchanged. Callers that decrement multiple times per frame (Logo
+#     calls it 4x back-to-back) keep their stock ratio: all-or-nothing per
+#     frame preserves -4 per pass frame = stock -4 per 30Hz frame.
+#   * Hx_MotionUpdate: hook the entry (`lfs f0,0(r3)` @0x80181D74) — gated
+#     frames skip the whole advance and bctr to the tail (0x80181DD8:
+#     lfs f1,0x20(r3); blr) so the caller still gets the current value.
+# The draw path is untouched: wipe fns run and re-render every frame from
+# frozen state (the select_gate lesson: gate cadence, never presentation).
+# Coverage is airtight because BOTH helpers' 39 call sites live inside wipe
+# fns, wipe fns are reachable ONLY via Hx_UpdateWipe's fn-table blrl (zero
+# direct bl anywhere in .text), and Hx_UpdateWipe's one caller is TSMSFader::
+# drawWipe, once per rendered frame. The one outside entry, Hx_MovieStartSyncEx
+# (bl from 0x802B5CF4), calls neither helper. Counter phase is shared by both
+# helpers, so timer and motion advance on the same frames, exactly like stock;
+# a fresh wipe waits at most N-1 frames (< 33ms) for its first tick.
+#
+# The divisor is FPS/30 (render-rate class, like the Noki gate — NOT the
+# substep-pinned constants): the wipe clock must match the RENDER rate ratio.
+# Emitted whenever FPS is a multiple of 30 >= 60; the bug exists at 120fps too
+# (wipes 4x fast) even though nobody reported it before 240/360 made it silly.
+# Low-arena slot map (KEEP CURRENT — a stale copy of this map caused the
+# 2026-08-10 sand-castle wipe soft-lock): 16E0/16E4 Noki, 16E8 select,
+# 16F4 wipe, 16F8 pump, 1720-172F turnaround, 1730-176F camera look-up
+# (0x40-byte block owned by the hand-written Gecko code, NOT this script).
+WIPE_CTR = 0x16F4               # low arena; see slot map above
+WIPE_TICK_HOOK = 0x80181F7C     # Hx_UpdateWipe state 2: stfs f31,0x18(r31)
+WIPE_TIMER_HOOK = 0x80181E70    # Hx_TimerCountDown: addi r0,r3,-1
+WIPE_MOTION_HOOK = 0x80181D74   # Hx_MotionUpdate entry: lfs f0,0(r3)
+WIPE_MOTION_TAIL = 0x80181DD8   # its tail: lfs f1,0x20(r3); blr
+
+def wipe_pace(fps, smooth56=False):
+    """Hold the Hx wipe clock at native 30 Hz. None when FPS/30 is not integral.
+    smooth56: exempt wipe ids 5/6 (Test5) from the timer gate — REQUIRED (and
+    only valid) when wipe5_smooth() rescales Test5's own frame constants by
+    FPS/30, which needs the timer to decrement every rendered frame. Emitting
+    either half without the other runs Test5 2Gx fast or 2Gx slow."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    tick = _c2(WIPE_TICK_HOOK, [
+        0xD3FF0018,                                    # stfs f31,0x18(r31) (orig)
+        0x3D808000,                                    # lis  r12,0x8000
+        0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR,   # lwz r11,ctr
+        0x396B0001,                                    # addi r11,r11,1
+        0x90000000 | (11 << 21) | (12 << 16) | WIPE_CTR])  # stw r11,ctr
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    L = len(gate)
+    def beq(at, to):  return 0x41820000 | (((to - at) * 4) & 0xFFFC)
+    def ble(at, to):  return 0x40810000 | (((to - at) * 4) & 0xFFFC)
+    def b(at, to):    return 0x48000000 | (((to - at) * 4) & 0x03FFFFFC)
+    pre = []
+    if smooth56:
+        pre = [0x3D80803F,                             # lis    r12,0x803F
+               0x896C43D1,                             # lbz    r11,0x43D1(r12) wipe id
+               0x380BFFFB,                             # addi   r0,r11,-5  (5->0, 6->1)
+               0x28000001]                             # cmplwi r0,1
+    P = len(pre)                                       # ble slot appended below
+    if smooth56:
+        pre.append(0)                                  # patched to ble -> PASS
+        P = len(pre)
+    i_pass, i_skip = P + 5 + L, P + 6 + L
+    if smooth56:
+        pre[P - 1] = ble(P - 1, i_pass)                # ids 5/6: decrement every frame
+    timer = (pre
+             + [0x3D808000,                            # lis  r12,0x8000
+                0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]  # lwz r11,ctr
+             + gate                                    # cr0 <- ctr % n
+             + [beq(P + 2 + L, i_pass),                # pass frame -> decrement
+                0x38030000,                            # gated: r0 = r3 (hold timer)
+                b(P + 4 + L, i_skip),
+                0x3803FFFF])                           # PASS: addi r0,r3,-1 (orig)
+    motion = ([0x3D808000,                             # lis  r12,0x8000
+               0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]  # lwz r11,ctr
+              + gate                                   # cr0 <- ctr % n
+              + [beq(2 + L, 7 + L),                    # pass frame -> advance
+                 0x3D800000 | (WIPE_MOTION_TAIL >> 16),      # gated: return the
+                 0x618C0000 | (WIPE_MOTION_TAIL & 0xFFFF),   # current value via
+                 0x7D8903A6, 0x4E800420,               # the fn's own tail
+                 0xC0030000])                          # lfs f0,0(r3) (orig)
+    return "\n".join([tick, _c2(WIPE_TIMER_HOOK, timer),
+                      _c2(WIPE_MOTION_HOOK, motion)])
+
+
+# ---- Test5 SMOOTH pacing (the "choppy vs 240fps-smooth Mario" complaint) -----
+# wipe_pace holds the wipe clock at native 30 Hz — stock wall-clock duration,
+# but also stock 30 Hz STEPPING, which reads as chop next to Mario moving at
+# 240/360. For the one wipe the player actually stares at (Test5, the
+# decompose/recompose), go beyond stock: instead of gating its clock, rescale
+# its progress axis by N = FPS/30 so it advances a little EVERY rendered frame
+# and finishes in the stock 0.67s:
+#   * state-0 frame count `li r0,20` @0x8017E078 -> li r0,20*N (04, fps-baked)
+#   * progress divisor: the `lfs f1,-0x4614(r2)` (pooled 20.0, shared constant
+#     — cannot be edited in place) @0x8017E14C grows a C2 that multiplies by
+#     2G read from the framerate global (-0x3E8(r2)): f1 = 20 * 2G = 20N. Both
+#     axes scale together, so f3 = timer/(20N) sweeps 0..1 over 20N frames in
+#     per-frame steps. (f0 is dead at the hook: the next read at 0x8017E164 is
+#     preceded by its own lfd at 0x8017E15C.)
+# REQUIRES wipe_pace(smooth56=True): ids 5/6 must be exempt from the shared
+# TimerCountDown gate or the rescaled wipe runs 2Gx slow; conversely the
+# exemption without this rescale runs it 2Gx fast. check() enforces pairing.
+# Test5 never calls Hx_MotionUpdate, so the motion gate needs no exemption.
+WIPE5_COUNT_SITE = 0x8017E078   # li r0,0x14 (state-0 frame count)
+WIPE5_DIV_SITE = 0x8017E14C     # lfs f1,-0x4614(r2) (pooled 20.0)
+LFS_F1_20 = 0xC022B9EC          # the overwritten original
+
+def wipe5_smooth(fps):
+    """Per-frame Test5 progress at stock duration. None when FPS/30 not integral."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    count = f"04{WIPE5_COUNT_SITE & 0x01FFFFFF:06X} {0x38000000 | (20 * n):08X}"
+    div = _c2(WIPE5_DIV_SITE, [
+        LFS_F1_20,                          # lfs   f1,-0x4614(r2) = 20.0 (orig)
+        _lfs(0, 2, ANMRATE_GLOBAL_DISP),    # lfs   f0,framerate global = G
+        _fadds(0, 0, 0),                    # f0 = 2G
+        (59 << 26) | (1 << 21) | (1 << 16) | (0 << 6) | (25 << 1)])  # fmuls f1,f1,f0
+    return "\n".join([count, div])
+
+
+# ---- Test5 -> Test4 swap (the SHIPPING Test5 treatment at G >= 3) -----------
+# 2026-08-11: the wipe5_opt tile morph was REJECTED in playtest at 240fps. The
+# user's screenshots of the boot->plaza reveal show scene chunks at wrong
+# scale/position plus large black slabs. Live-RAM verification (gcmem: every
+# hook word, every cave word, strides, f22 double, id-5/6 bypass) proved the
+# opt/smooth blocks apply EXACTLY as designed and the $Widescreen wipe fix v2
+# ortho stretch was disabled — i.e. the artifact is inherent to the 128px
+# half-scale morph as Dolphin renders it, not a dropped block. Rather than
+# iterate on the morph look blind, ship the pre-vetted fallback from the
+# original design ("nuclear fallback, zero cost"): point wipe ids 5/6 at
+# Hx_Test4 (pure sin/cos geometry, ZERO EFB copies — the door-transition wipe,
+# which the user sees constantly and reported as fine). Pure data-table write.
+#
+# Pacing: WITHOUT the tile morph there must be NO wipe5_smooth and NO id-5/6
+# timer-gate bypass — Test4's own `li 38` frame count is unscaled, so with the
+# bypass it would run FPS/30 x fast. Under the plain wipe_pace 30 Hz gate it
+# steps at stock cadence for its stock ~1.27s, exactly like the door wipes.
+# check() enforces: swap XOR (opt + smooth + bypass).
+#
+# The authentic tile-dissolve could return later via a single-capture redesign
+# (capture the whole 640x448 EFB once per frame into spare MEM1 above 24MB and
+# draw the stock 64px fans from texcoord windows of it — 1 copy/frame instead
+# of 80) — see memory/sunshine-wipe-morph-perf.md.
+WIPE_FNTAB_ID5 = 0x803C12B0     # per-wipe fn-ptr table entry, id 5 (reveal)
+WIPE_FNTAB_ID6 = 0x803C12B4     # id 6 (close)
+HX_TEST4 = 0x8017E46C
+
+def wipe5_swap():
+    return "\n".join(f"04{a & 0x01FFFFFF:06X} {HX_TEST4:08X}"
+                     for a in (WIPE_FNTAB_ID5, WIPE_FNTAB_ID6))
+
+
+# ---- Audio pump 30 Hz gate (the 240fps total-music-silence fix) --------------
+# MSound::mainLoop (USA 0x80014DA8, single caller: TApplication::gameLoop
+# @0x802A62DC) is the game's entire per-frame audio pump: the MSSetSound/
+# MSSetSoundGrp frameLoopDyna refreshers, JAIBasic::startFrameInterfaceWork
+# (SE request-queue processing, continuous-SE life countdown, fades, seq/stream
+# bookkeeping) and MSModBgm::loop. ALL of it is native-30Hz work: on stock
+# hardware it runs once per rendered frame at 30fps, i.e. FOUR 120 Hz substep
+# SE-requests collapse into every processed frame.
+#
+# Under the retune the pump runs at render rate while actor SE requests stay
+# substep-paced (120 Hz at every G), so at 240fps the ratio INVERTS to 0.5
+# requests per processed frame: every continuous SE hits processed frames with
+# no fresh keep-alive request, expires, and is restarted by the next request —
+# measured live (vpbdump churn) at ~300 voice births/sec with the 64-voice DSP
+# pool pinned at 64/64. Every allocation then steals via breakLower/forceStop,
+# and sequenced BGM notes (prio <= 126) lose the war: all 121 observed BGM-bank
+# births had resampling_ratio == 0 (killed at birth). Net effect: total music
+# silence at 240 (the DSP_LIMIT fix is applied and innocent — this is a second,
+# independent killer with the same VPB signature). 180 survives because its
+# request ratio (0.67/frame) halves the flicker rate and stays under the pool
+# ceiling; the mechanism exists at every G >= 2 (the cogwheel rope-creak was
+# this same class, patched per-site).
+#
+# FIX: gate mainLoop to 1 rendered frame in FPS/30 = native 30 Hz wall-clock.
+# Hook the function's FIRST instruction (mflr r0): on gated frames LR is still
+# the caller's, so a bare blr in the cave IS `return;` (same trick as the Noki
+# gate). r0/r11/r12/cr0 are volatile at entry; r3 (this) untouched. Direct
+# startBGM/startSound calls from game code are NOT routed through mainLoop, so
+# music/SE starts enqueue regardless of gate phase and are processed <= 33ms
+# later — exactly stock latency. Requests batch 4 substeps per pass frame =
+# the stock invariant, at every G.
+AUDIO_PUMP_CTR = 0x16F8         # low arena; see slot map at WIPE_CTR
+AUDIO_PUMP_HOOK = 0x80014DA8    # MSound::mainLoop entry: mflr r0
+
+def audio_pump_gate(fps):
+    """Hold the MSound::mainLoop audio pump at native 30 Hz. None when FPS/30
+    is not integral."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    words = ([0x3D808000,                                       # lis  r12,0x8000
+              0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR,  # lwz r11,ctr
+              0x396B0001,                                       # addi r11,r11,1
+              0x90000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR]  # stw r11,ctr
+             + gate                                             # cr0 <- ctr % n
+             + [0x41820008,                                     # beq +8: pass frame
+                0x4E800020,                                     # gated: blr = return;
+                0x7C0802A6])                                    # mflr r0 (orig)
+    return _c2(AUDIO_PUMP_HOOK, words)
+
+
+# ---- THP playback pacing (portal previews shimmer/"mirage" churn fast) ------
+# The SDK THPPlayer paces display frames off the VI post-retrace callback:
+# PlayControl's timing helper @0x8001EB00 computes the target movie frame as
+# retraceCount64 * (movieFps*100) / 5994 (NTSC; the divisor is `li r6,0x176A`
+# @0x8001EBDC feeding __div64; the PAL twin 0x1388 @0x8001EBA4 never runs on
+# GMSE01). 5994 assumes retraces tick at wall-clock 59.94 Hz — but the whole
+# high-fps scheme runs the console at EmulationSpeed=G, so VI retraces fire
+# 59.94*G per WALL second and every THP movie plays G x fast. In-game that is
+# the Delfino portal previews (data/EX128x144_q0.thp) churning at 2-6x: the
+# AI-upscale's temporal shimmer crawls per movie frame ("shimmer more active")
+# and the gate's correctly-paced BTK heat ripple warps over G x-fast content
+# ("mirage pulses faster than normal"). It also multiplies JPEG decode load by
+# G — the same decode-race pressure behind the historical brown-flash flicker.
+#
+# Fix: scale the divisor to 5994*G — but ONLY for silent movies. Fullscreen
+# cutscene THPs carry audio mastered at the emulated rate (it rides AI/DSP at
+# G x wall speed like all game audio), so slowing their video alone would
+# desync them; the portal preview is the no-audio case. At the hook r31 is the
+# player base (0x803EC160, set @0x8001EB14) and +0xA7 is THPPlayer.audioExist
+# (zeroed @0x8001F860 in Open, set only when an audio component exists;
+# readers e.g. 0x8001ED18 branch on it) — `lbz +0xA7 == 0` discriminates
+# exactly. Self-gated on the framerate global != 0.5f so the block is inert if
+# the fps codes are otherwise off. r7/r8/cr0 are dead here (only r3:r4 dividend,
+# r5:r6 divisor survive into the bl). Full RE + address-map correction
+# (ModelGate TU is USA=PAL+0x8128, NOT +0x8000):
+# research/memory/sunshine-portal-preview-upscale.md (2026-08-10).
+THP_PACE_HOOK = 0x8001EBDC          # PlayControl helper: li r6,0x176A (NTSC)
+THP_PACE_ORIG = 0x38C0176A
+THP_AUDIO_EXIST_DISP = 0xA7         # THPPlayer.audioExist, off r31 = player base
+
+def thp_pace(fps):
+    """Repace silent THP movies to wall-clock. None when G is not integral."""
+    g = integer_g(fps)
+    if not g:
+        return None
+    n = 5994 * g
+    words = [THP_PACE_ORIG,                          # li   r6,0x176A (stock default)
+             0x88FF0000 | THP_AUDIO_EXIST_DISP,      # lbz  r7,audioExist(r31)
+             0x2C070000,                             # cmpwi r7,0
+             0x4082001C,                             # bne  -> done (audio: keep sync)
+             0x80E20000 | ANMRATE_GLOBAL_DISP,       # lwz  r7,framerate global(r2)
+             0x3D003F00,                             # lis  r8,0x3F00 (0.5f = stock)
+             0x7C074000,                             # cmpw r7,r8
+             0x4182000C,                             # beq  -> done (codes off)
+             0x3CC00000 | (n >> 16),                 # lis  r6,hi(5994G)
+             0x60C60000 | (n & 0xFFFF)]              # ori  r6,r6,lo(5994G)
+    return _c2(THP_PACE_HOOK, words)
 
 
 # ---- Poink premature-explosion gate (v14, Bianco 5) -------------------------
@@ -879,17 +1292,24 @@ C05F00D0 60000000
 
 # ---- Animation-rate fix (family-B "raw rate" leaks) -------------------------
 # Anims whose frame-rate is set from a RAW param/const instead of through
-# SMSGetAnmFrameRate() advance 4x too fast at 120fps (calc_anim fires 4x more;
-# the API return, forced to 1/G, would have compensated). The correct, fps-general,
-# SELF-DISABLING scale for a raw rate R is  R * SMSGetAnmFrameRate()/2 = R/(2G),
-# where G = the framerate global (FPS/60).  At stock G=0.5 -> 2G=1.0 -> no-op, so
-# these hooks need no gate.  At 120fps (G=2) -> R/4 == the proven v16 x0.25, so this
-# SUPERSEDES the hand-written v16 Petey block (0x800955cc is in the list below).
+# SMSGetAnmFrameRate() advance too fast (calc_anim runs on final substeps, which
+# the substep retune pins at 120 Hz at EVERY G — 4x the native 30 Hz).  The
+# correct scale for a raw rate R is therefore the CONSTANT R/4 at every G — the
+# same value the ANMRATE_STUB serves API users (R * 0.5stub / 2).  An earlier
+# generation divided by 2G instead: identical at G=2 (R/4, the proven v16
+# x0.25), but 1.5x slow at 180 and 2x slow at 240 — calc_anim frequency is
+# pinned by the retune, it does NOT scale with G.  This SUPERSEDES the
+# hand-written v16 Petey block (0x800955cc is in the list below).
 #
-# The scale math injected at each hooked instruction (rate FPR fR, scratch FPR fS):
-#     lfs   fS, -0x3c8(r2)          ; fS = G   (r2 SDA -> framerate global 0x804167B8)
-#     fadds fS, fS, fS              ; fS = 2G
-#     fdivs fR, fR, fS             ; fR = R/(2G)
+# Self-disabling: the framerate global (stock 0.5f) is compared against the
+# native 0.5f constant; equal -> stock game -> skip the scale.
+# The math injected at each hooked instruction (rate FPR fR, scratch fS, fT):
+#     lfs   fS, -0x3e8(r2)          ; fS = G  (framerate global 0x804167B8)
+#     lfs   fT, -0x7fd8(r2)         ; fT = 0.5f (native constant 0x8040EBC8)
+#     fcmpu cr0, fS, fT
+#     beq   +12                     ; G == 0.5 -> stock -> no-op
+#     fmuls fR, fR, fT              ; R * 0.5
+#     fmuls fR, fR, fT              ; R * 0.25
 # store-mode  hooks the game's `stfs fR,0xc(r3)`  -> [scale] + [orig stfs]
 # load-mode   hooks the `lfs f1,off(rX)` before a MActor::setFrameRate call
 #             -> [orig lfs] + [scale f1]  (the original bl then stores the scaled f1)
@@ -907,11 +1327,14 @@ C05F00D0 60000000
 # $Petey v16 block used the absolute form (lis/lwz 0x804167B8) and was correct;
 # the generator regressed it.
 ANMRATE_GLOBAL_DISP = -0x3e8 & 0xFFFF          # framerate global via r2 (SDA2)
+HALF_DISP = -0x7fd8 & 0xFFFF                   # native 0.5f @0x8040EBC8 via r2
 
 def _lfs(frD, rA, d):   return (48 << 26) | (frD << 21) | (rA << 16) | (d & 0xFFFF)
 def _stfs(frS, rA, d):  return (52 << 26) | (frS << 21) | (rA << 16) | (d & 0xFFFF)
 def _fadds(d, a, b):    return (59 << 26) | (d << 21) | (a << 16) | (b << 11) | (21 << 1)
 def _fdivs(d, a, b):    return (59 << 26) | (d << 21) | (a << 16) | (b << 11) | (18 << 1)
+def _fmuls(d, a, c):    return (59 << 26) | (d << 21) | (a << 16) | (c << 6) | (25 << 1)
+def _fcmpu(a, b):       return (63 << 26) | (a << 16) | (b << 11)              # cr0
 
 # (hook_addr, mode, orig_instruction_word)
 ANMRATE_SITES = [
@@ -940,25 +1363,95 @@ ANMRATE_SITES = [
 def _anmrate_block(addr, mode, orig):
     if mode == "store":
         rate = (orig >> 21) & 31                 # stfs source FPR
-        scratch = 1 if rate == 0 else 0          # a dead volatile != rate
-        words = [_lfs(scratch, 2, ANMRATE_GLOBAL_DISP),
-                 _fadds(scratch, scratch, scratch),
-                 _fdivs(rate, rate, scratch),
-                 orig]                            # original store, now of scaled rate
+        s1, s2 = (1, 2) if rate < 2 else (0, 1)  # dead volatiles != rate (post-call)
+        scale = [_lfs(s1, 2, ANMRATE_GLOBAL_DISP),   # G global
+                 _lfs(s2, 2, HALF_DISP),             # 0.5f
+                 _fcmpu(s1, s2),
+                 0x41820000 | 12,                    # beq -> orig (stock: no-op)
+                 _fmuls(rate, rate, s2),
+                 _fmuls(rate, rate, s2)]
+        words = scale + [orig]                    # original store, now of scaled rate
     else:                                        # load-mode: scale f1 after the lfs
-        rate, scratch = 1, 0
+        rate, s1, s2 = 1, 0, 13
         words = [orig,                            # original lfs f1,off(rX)
-                 _lfs(scratch, 2, ANMRATE_GLOBAL_DISP),
-                 _fadds(scratch, scratch, scratch),
-                 _fdivs(rate, rate, scratch)]
-    words += [0x60000000, 0x00000000]            # nop + handler-clobbered last word
-    out = [f"C2{addr & 0x01FFFFFF:06X} {len(words) // 2:08X}"]   # e.g. 0x800955CC -> C20955CC
-    for i in range(0, len(words), 2):
-        out.append(f"{words[i]:08X} {words[i + 1]:08X}")
-    return "\n".join(out)
+                 _lfs(s1, 2, ANMRATE_GLOBAL_DISP),
+                 _lfs(s2, 2, HALF_DISP),
+                 _fcmpu(s1, s2),
+                 0x41820000 | 12,
+                 _fmuls(rate, rate, s2),
+                 _fmuls(rate, rate, s2)]
+    return _c2(addr, words)
 
 def anmrate():
     return "\n".join(_anmrate_block(a, m, o) for a, m, o in ANMRATE_SITES)
+
+
+# ---- Animal movement-rate fix (birds fly at 1/4 speed) ----------------------
+# The Animal family (TAnimalBase / TAnimalBird — the Delfino kamome) multiplies
+# its MOVEMENT speeds by SMSGetAnmFrameRate(): fly speed, turn speed, march
+# speed/accel/decel, landing approach.  That is fine for ANIM rates (calc_anim
+# frequency scales with 1/rate), but animal movement is SUBSTEP-paced: kamome
+# are shared-anim enemies, so TEnemyManager::performShared calls moveObject()
+# on EVERY substep with no final-frame gate, and the substep clock is 120 Hz in
+# stock AND in every retuned G.  Stock therefore consumes speed*2.0 at 120 Hz;
+# under the stub the same 120 Hz consumes speed*0.5 -> birds fly at exactly 1/4
+# speed at EVERY patched framerate.  MEASURED (240fps savestate bench,
+# 2026-08-10): flying kamome 295-300 units/s patched vs ~1235 units/s stock;
+# with this fix 1080-1200 units/s, wing-flap playback still the correct 60
+# anim-frames/s.
+#
+# Fix shape: right after each movement-classified `bl SMSGetAnmFrameRate`,
+# scale the returned f1 by 4 (two fadds) so downstream math sees the stock 2.0.
+# Sites that square the rate (march accel/decel) reuse the same scaled f1, so
+# rate^2 terms come out x16 = stock 4.0^2 automatically.  Hook = bl+4; the cave
+# runs the scale THEN the original instruction (which may consume f1).
+# Sweep: all 14 `bl 0x802a7bd8` sites in the Animal TU range 0x80005000-
+# 0x80013000; 13 are movement (below), the 14th (0x8000AB4C) is the nerve
+# duration helper handled separately by ANIMAL_DURATION.
+ANIMAL_SPEED_SITES = [
+    (0x80008060, 0xFFC00890),   # execWalk moving: rate saved for accel (fmr f30,f1)
+    (0x80008068, 0xEC1F0072),   # execWalk: march target speed
+    (0x80008078, 0xEC3F0072),   # execWalk: chase-speed arg
+    (0x80008094, 0xFFC00890),   # execWalk stopping: rate saved for decel
+    (0x8000809C, 0xEC1F0072),   # execWalk: decel
+    (0x800080C8, 0xEC1E0072),   # execWalk: wait turn speed
+    (0x800080DC, 0xEC1E0072),   # execWalk: walk turn speed
+    (0x800090B4, 0xEC1F0072),   # TAnimalBase::init: initial turn speed
+    (0x8000BEB4, 0xEC7F0072),   # TNerveAnimalBirdWalkOnGround: ground speed
+    (0x8000CD54, 0xEFFF0072),   # TAnimalBird::doLanding: approach speed
+    (0x8000CEB4, 0xEFDF0072),   # TAnimalBird::doLanding: second speed
+    (0x8000D1DC, 0x819F0000),   # doFlyToCurPathNode: fly speed (lwz r12 after bl)
+    (0x8000D1FC, 0xEFFF0072),   # doFlyToCurPathNode: turn speed
+]
+
+def animal_speed():
+    blocks = []
+    for hook, orig in ANIMAL_SPEED_SITES:
+        blocks.append(_c2(hook, [_fadds(1, 1, 1), _fadds(1, 1, 1), orig]))
+    return "\n".join(blocks)
+
+# The bird-nerve duration helper @0x8000AB38 converts a param frame count via
+# N * (1 / SMSGetAnmFrameRate()) — spine-tick durations for perch/flight
+# nerves.  Spine ticks are substep-paced (120 Hz stock and patched), so the
+# stubbed 0.5 makes every bird wait/fly phase 4x LONGER than stock (this
+# masked the 1/4 fly speed: legs covered stock distance at a quarter pace).
+# Scale the quotient by 0.25 to restore stock durations — but ONLY for callers
+# inside the Animal TU range: the helper has two other callers (0x80211984,
+# 0x8023F3D0) that are calc_anim-paced and need the stub semantics.  The hook
+# reads LR (still live at the hooked fdivs) to tell them apart.
+ANIMAL_DURATION_HOOK = 0x8000AB60                # fdivs f0,f0,f1 inside helper
+
+def animal_duration():
+    words = [0xEC000824,                         # fdivs f0,f0,f1 (original)
+             0x7D8802A6,                         # mflr  r12      (caller+4)
+             0x3D608001,                         # lis   r11,0x8001
+             0x396B3000,                         # addi  r11,r11,0x3000 = 0x80013000
+             0x7C0C5840,                         # cmplw r12,r11
+             0x40800010,                         # bge   -> skip (non-Animal caller)
+             _lfs(13, 2, HALF_DISP),             # f13 = 0.5f
+             _fmuls(0, 0, 13),
+             _fmuls(0, 0, 13)]                   # f0 *= 0.25
+    return _c2(ANIMAL_DURATION_HOOK, words)
 
 
 def framerate_word(fps):
@@ -975,7 +1468,8 @@ def integer_g(fps):
 def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
           cogwheel=True, input_latch_fix=True, select_fix=True, wipe_opt=True,
-          turnfix=True):
+          turnfix=True, wipe_pace_fix=True, audio_pump=True, thp_pace_fix=True,
+          riccohook=True, wipe_swap=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -984,6 +1478,9 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     if substep:
         # the stub is only valid while the substep retune pins the sim at 120 Hz
         parts += [substep_granularity(gate_g), ANMRATE_STUB]
+        # the stub breaks substep-paced animal movement/durations — see the
+        # Animal movement-rate fix; only correct alongside stub + retune
+        parts += [animal_speed(), animal_duration()]
         # skip frames desync the talk-start handshake — see TALK_INIT_FIX
         parts.append(TALK_INIT_FIX)
         # ~120 Hz pad sampling lets yaw pursuit track through a stick flip and
@@ -1001,6 +1498,7 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
                 parts.append(il)
         if sel_n:
             parts.append(select_gate(gate_g))
+            parts.append(select_grad_gate(gate_g))  # REQUIRED companion — see it
     tf = timerfix(fps)
     if tf:
         parts.append(tf)
@@ -1008,20 +1506,49 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         parts.append(anmrate())
     if audio:
         parts += [BGM_DSP_LIMIT, BGM_TEMPO_GUARD]
+    if audio_pump:
+        apg = audio_pump_gate(fps)             # render-rate class: FPS/30 divisor
+        if apg:
+            parts.append(apg)
+    if thp_pace_fix:
+        tp = thp_pace(fps)                     # VI-retrace class: G x wall speed
+        if tp:
+            parts.append(tp)
     if stars:
         parts.append(STARFIX)
     if poink:
         parts.append(POINK)
     if cogwheel:
         parts.append(cogwheel_se_gate())       # constant 1-in-4; see COGWHEEL_HOOKS
+    if riccohook:
+        rh = riccohook_se_gate(fps)            # render-rate class: FPS/30 divisor
+        if rh:
+            parts.append(rh)
     if noki:
         ng = noki_gate(fps)
         if ng:
             parts.append(ng)
-            parts.append(noki_dedupe())        # REQUIRED companion — see noki_dedupe
+            # v3 retires noki_dedupe(): the drain runs every frame, so stamp
+            # batches (and the duplicate-entry freeze) cannot form.
             parts.append(noki_copy_gate(fps))  # REQUIRED companion — see noki_copy_gate
-    if wipe_opt and gate_g >= 3:               # 120fps keeps the stock 64px look
+    # Test5 treatment at G>=3 (120fps keeps the stock 64px tile morph): the
+    # default is the Test4 swap (see wipe5_swap — the tile morph was rejected
+    # in playtest 2026-08-11); --no-wipe-swap restores the opt+smooth morph.
+    swap = wipe_swap and gate_g >= 3
+    if swap:
+        parts.append(wipe5_swap())
+    elif wipe_opt and gate_g >= 3:
         parts.append(wipe5_opt())
+    # Test5 smooth pacing pairs 1:1 with the wipe_pace id-5/6 exemption — never
+    # emit one without the other (2Gx fast / 2Gx slow respectively), and never
+    # either with the swap (Test4's own frame count is unscaled).
+    smooth56 = bool(not swap and wipe_pace_fix and gate_g >= 3 and wipe5_smooth(fps))
+    if wipe_pace_fix:
+        wp = wipe_pace(fps, smooth56=smooth56) # render-rate class: FPS/30 divisor
+        if wp:
+            parts.append(wp)
+    if smooth56:
+        parts.append(wipe5_smooth(fps))
     if bluecoin and g == 2:                    # calibrated at G=2 only — see BLUECOIN
         parts.append(BLUECOIN)
     if sun_probe:
@@ -1149,11 +1676,35 @@ def check(bundle, fps=None):
             if codes.get(("04", addr)) != want:
                 errs.append(f"substep {what} @{addr:08X}: {codes[('04', addr)]:08X} != {want:08X}")
 
-    body = codes.get(("C2", 0x8019D8C8))
-    if body is not None:
-        n, want_n = _implied_divisor(body, ctr=11), int(fps // 30)
-        if n != want_n:
-            errs.append(f"Noki gate: encodes 1-in-{n}, expected 1-in-{want_n} (FPS/30)")
+    # Noki v3: whole-perform gate and dedupe must be GONE (they batch stamps
+    # and eat the M-portal ripples), the four call-site blocks present and
+    # consistent, with the drain block unconditional (no divisor).
+    if codes.get(("C2", 0x8019D8C8)) is not None:
+        errs.append("old whole-perform Noki gate @0x8019D8C8 present — v3 gates "
+                    "the counting CALL SITES; the blr design batches model "
+                    "stamps and delays the M-portal impact ripples")
+    if codes.get(("C2", 0x8019B120)) is not None:
+        errs.append("retired noki_dedupe @0x8019B120 present — with the "
+                    "per-frame drain it deletes LEGITIMATE same-frame stamps")
+    noki_bodies = {h: codes.get(("C2", h)) for h, _ in
+                   (NOKI_OBJ_CALL, NOKI_DRAIN_CALL, NOKI_TEX_CALL, NOKI_FIN_CALL)}
+    if any(b is not None for b in noki_bodies.values()):
+        want_n = int(fps // 30) if (fps % 30 == 0 and fps >= 60) else None
+        for (hook, target) in (NOKI_OBJ_CALL, NOKI_DRAIN_CALL, NOKI_TEX_CALL, NOKI_FIN_CALL):
+            b = noki_bodies[hook]
+            if b is None:
+                errs.append(f"Noki v3 block @{hook:08X} missing — all four ship together")
+                continue
+            if (0x618C0000 | (target & 0xFFFF)) not in b:
+                errs.append(f"Noki v3 @{hook:08X}: does not call {target:08X}")
+            n = _implied_divisor(b, ctr=11)
+            if hook == NOKI_DRAIN_CALL[0]:
+                if n is not None:
+                    errs.append(f"Noki v3 drain @{hook:08X} carries a divisor — the "
+                                f"stamp drain must run EVERY frame")
+            elif n != want_n:
+                errs.append(f"Noki v3 @{hook:08X}: encodes 1-in-{n}, expected "
+                            f"1-in-{want_n} (FPS/30)")
 
     # Every anmrate block must reach the framerate global through r2, never a
     # neighbouring constant in the SDA2 pool — the -0x3C8/-0x3E8 slip read 60.0f
@@ -1172,6 +1723,52 @@ def check(bundle, fps=None):
 
     if ("C2", 0x801BE880) in codes and g != 2:
         errs.append("blue-coin block emitted at G!=2 — it is calibrated for 120fps only")
+
+    # Test5->Test4 swap: both fn-table words together, Test4 in both, and
+    # mutually exclusive with every tile-morph block (opt, smooth, bypass) —
+    # the swap makes them moot and the bypass would run Test4 FPS/30 x fast.
+    swap_words = [codes.get(("04", a)) for a in (WIPE_FNTAB_ID5, WIPE_FNTAB_ID6)]
+    has_swap = any(w is not None for w in swap_words)
+    if has_swap:
+        if None in swap_words:
+            errs.append("wipe5 swap: ids 5 and 6 must BOTH be redirected")
+        elif set(swap_words) != {HX_TEST4}:
+            errs.append(f"wipe5 swap: fn-table words {[f'{w:08X}' for w in swap_words]}"
+                        f" != Hx_Test4 0x{HX_TEST4:08X}")
+        if gate_g < 3:
+            errs.append("wipe5 swap emitted at G<3 — 120fps keeps stock Test5")
+
+    # Test5 smooth pacing <-> wipe_pace id-5/6 exemption must pair exactly.
+    w5count = codes.get(("04", WIPE5_COUNT_SITE))
+    w5div = codes.get(("C2", WIPE5_DIV_SITE))
+    wp_timer_body = codes.get(("C2", WIPE_TIMER_HOOK))
+    has_bypass = wp_timer_body is not None and 0x896C43D1 in wp_timer_body
+    if has_swap and (w5count is not None or w5div is not None or has_bypass
+                     or ("C2", WIPE5_GRAB_HOOK) in codes):
+        errs.append("wipe5 swap emitted alongside tile-morph blocks (opt/smooth/"
+                    "bypass) — the swap must ship alone")
+    if (w5count is not None) != (w5div is not None):
+        errs.append("wipe5 smooth: count word and divisor C2 must ship together")
+    if w5count is not None:
+        want_n = int(fps // 30) if (fps % 30 == 0 and fps >= 60) else None
+        if want_n is None:
+            errs.append("wipe5 smooth emitted at a non-multiple-of-30 fps")
+        elif w5count != (0x38000000 | 20 * want_n):
+            errs.append(f"wipe5 smooth count: {w5count:08X} != li r0,{20 * want_n} "
+                        f"(20 x FPS/30)")
+        if not has_bypass:
+            errs.append("wipe5 smooth emitted but wipe_pace timer gate has no "
+                        "id-5/6 bypass — Test5 would run 2Gx SLOW")
+        if w5div is not None:
+            if w5div[0] != LFS_F1_20:
+                errs.append("wipe5 smooth divisor C2 must re-exec lfs f1,-0x4614(r2)")
+            g_lfs = _lfs(0, 2, ANMRATE_GLOBAL_DISP)
+            if g_lfs not in w5div:
+                errs.append("wipe5 smooth divisor must read the framerate global "
+                            "through r2 (the -0x3C8 slip class)")
+    elif has_bypass:
+        errs.append("wipe_pace timer gate carries the id-5/6 bypass but wipe5 "
+                    "smooth is absent — Test5 would run 2Gx FAST")
 
     # Test5 morph-wipe optimization: all four pieces must ship together. The
     # dangerous partial is "strides doubled but grab cave absent/mangled" only
@@ -1203,6 +1800,50 @@ def check(bundle, fps=None):
             if f22b[0] != 0xC2C2B9FC or _fadds(22, 22, 22) not in f22b:
                 errs.append("wipe5 f22 block must re-exec lfs f22,-0x4604(r2) "
                             "then double it (fan offset/radius 32 -> 64)")
+
+    # Wipe pacing gate: three blocks that only make sense together — the tick
+    # (counter increment in Hx_UpdateWipe) plus the two helper gates. A missing
+    # tick with either gate present would freeze the counter and, if it parks
+    # on a non-pass phase, stall every wipe timer forever (transition hang).
+    wp_tick = codes.get(("C2", WIPE_TICK_HOOK))
+    wp_timer = codes.get(("C2", WIPE_TIMER_HOOK))
+    wp_motion = codes.get(("C2", WIPE_MOTION_HOOK))
+    if any(x is not None for x in (wp_tick, wp_timer, wp_motion)):
+        if wp_tick is None or wp_timer is None or wp_motion is None:
+            errs.append("wipe pacing gate partially emitted — tick, timer and "
+                        "motion blocks must ship together (a gate without the "
+                        "tick can stall every wipe timer = transition hang)")
+        else:
+            want_n = int(fps // 30) if fps % 30 == 0 else None
+            for hook, body, what in ((WIPE_TIMER_HOOK, wp_timer, "timer"),
+                                     (WIPE_MOTION_HOOK, wp_motion, "motion")):
+                n = _implied_divisor(body, ctr=11)
+                if n != want_n:
+                    errs.append(f"wipe pacing {what} gate @{hook:08X}: encodes "
+                                f"1-in-{n}, expected 1-in-{want_n} (FPS/30)")
+            ctr_lwz = 0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR
+            for body, what in ((wp_tick, "tick"), (wp_timer, "timer"),
+                               (wp_motion, "motion")):
+                if ctr_lwz not in body:
+                    errs.append(f"wipe pacing {what} block does not read the "
+                                f"shared frame counter 0x8000{WIPE_CTR:04X} — "
+                                f"phases would diverge")
+            if wp_tick[0] != 0xD3FF0018:
+                errs.append("wipe pacing tick block must re-exec stfs f31,"
+                            "0x18(r31) (Hx_UpdateWipe's rate store) first")
+            if 0x3803FFFF not in wp_timer or 0x38030000 not in wp_timer:
+                errs.append("wipe pacing timer gate must carry both the stock "
+                            "decrement (addi r0,r3,-1) and the hold (r0=r3)")
+            wp_real = [w for w in wp_motion if w not in (0, NOP)]
+            if (0x618C0000 | (WIPE_MOTION_TAIL & 0xFFFF)) not in wp_motion \
+                    or wp_real[-1] != 0xC0030000:
+                errs.append("wipe pacing motion gate must bctr to the fn tail "
+                            f"{WIPE_MOTION_TAIL:08X} on gated frames and end "
+                            "with the original lfs f0,0(r3)")
+    elif fps % 30 == 0 and fps >= 60:
+        errs.append(f"wipe pacing gate MISSING at {fps:g}fps — every Hx wipe "
+                    f"is frame-counted for 30fps rendering; the level-entry "
+                    f"decompose/recompose runs {int(fps // 30)}x too fast")
 
     # Talk-initiation debounce: with the substep retune present, the stock
     # bit1 test at 0x8029A908 is starved by skip frames (impossible at G=6,
@@ -1298,6 +1939,27 @@ def check(bundle, fps=None):
             errs.append(f"select gate present but the input-latch block has no "
                         f"TSelectDir case — pad repeat free-runs at render rate "
                         f"and menu edges are consumed off-phase")
+        grad_body = codes.get(("C2", SELECT_GRAD_HOOK))
+        if grad_body is None:
+            errs.append(f"select gate present but the TSelectGrad 30Hz gate "
+                        f"@{SELECT_GRAD_HOOK:08X} is missing — the background "
+                        f"color-cycle runs at render rate ({2 * gate_g}x stock): "
+                        f"the 'micro-flicker' regression")
+        else:
+            gn = _implied_divisor(grad_body, ctr=11)
+            if gn != 2 * gate_g:
+                errs.append(f"grad gate @{SELECT_GRAD_HOOK:08X}: encodes 1-in-{gn}, "
+                            f"expected 1-in-{2 * gate_g} (2G = native 30 Hz)")
+            gt = None
+            for j, w in enumerate(grad_body[:-1]):
+                if (w >> 26) == 15 and ((w >> 21) & 31) == 12 and j + 1 < len(grad_body):
+                    nxt = grad_body[j + 1]
+                    if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
+                        gt = ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
+            if gt != SELECT_GRAD_JOIN:
+                errs.append(f"grad gate @{SELECT_GRAD_HOOK:08X}: exit target "
+                            f"{gt and f'{gt:08X}'} != the no-CALC_ANIM join "
+                            f"{SELECT_GRAD_JOIN:08X}")
     elif latch_body is not None and sel_vt_ori in latch_body:
         errs.append(f"input latch has the TSelectDir case but the select gate "
                     f"@{SELECT_HOOK:08X} is missing — its counter never advances, "
@@ -1331,6 +1993,107 @@ def check(bundle, fps=None):
             errs.append(f"cogwheel gate @{hook:08X}: overwritten-original slot holds "
                         f"{body[-2]:08X}, expected {orig:08X}")
 
+    # Ricco hook slide-clank gate: keys the audio pump's frame counter with the
+    # FPS/30 render-rate divisor, exits gated ticks through the function's own
+    # epilogue, and re-executes the overwritten lha on pass ticks.
+    body = codes.get(("C2", RICCOHOOK_HOOK))
+    if body is not None:
+        n, want_n = _implied_divisor(body, ctr=11), int(fps // 30) if fps % 30 == 0 else None
+        if n != want_n:
+            errs.append(f"ricco hook gate @{RICCOHOOK_HOOK:08X}: encodes 1-in-{n}, "
+                        f"expected 1-in-{want_n} (FPS/30 = native 30/sec)")
+        ctr_lwz = 0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR
+        if ctr_lwz not in body:
+            errs.append(f"ricco hook gate does not read the pump frame counter "
+                        f"0x8000{AUDIO_PUMP_CTR:04X} — any other clock either "
+                        f"scales with G or double-fires on adjacent frames")
+        target = None
+        for j, w in enumerate(body[:-1]):
+            if (w >> 26) == 15 and ((w >> 21) & 31) == 12 and j + 1 < len(body):
+                nxt = body[j + 1]                     # lis r12,hi ; ori r12,r12,lo
+                if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
+                    target = ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
+        if target != RICCOHOOK_SKIP:
+            errs.append(f"ricco hook gate @{RICCOHOOK_HOOK:08X}: exit target "
+                        f"{target and f'{target:08X}'} != the function's own "
+                        f"epilogue {RICCOHOOK_SKIP:08X}")
+        real = [w for w in body if w not in (0, NOP)]
+        if real[-1] != RICCOHOOK_ORIG:
+            errs.append(f"ricco hook gate @{RICCOHOOK_HOOK:08X}: last real word "
+                        f"{real[-1]:08X} != the re-executed original "
+                        f"{RICCOHOOK_ORIG:08X} (lha r0,0x7C(r29))")
+    elif fps % 30 == 0 and fps >= 60 and ("C2", AUDIO_PUMP_HOOK) in codes:
+        errs.append(f"ricco hook slide-clank gate MISSING at {fps:g}fps — the "
+                    f"harbor clank retriggers at render rate near the cable hooks "
+                    f"(the 240fps 'womp womp womp' report, 2026-08-10)")
+
+    # Audio pump gate: SE processing must not outrun the 120 Hz substep request
+    # rate. The gate hooks MSound::mainLoop's ENTRY, so the gated path must be a
+    # bare blr (LR still the caller's) and the pass path must end on the
+    # re-executed mflr r0.
+    body = codes.get(("C2", AUDIO_PUMP_HOOK))
+    if body is not None:
+        n, want_n = _implied_divisor(body, ctr=11), int(fps // 30) if fps % 30 == 0 else None
+        if n != want_n:
+            errs.append(f"audio pump gate @{AUDIO_PUMP_HOOK:08X}: encodes 1-in-{n}, "
+                        f"expected 1-in-{want_n} (FPS/30 = native 30 Hz)")
+        ctr_lwz = 0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR
+        if ctr_lwz not in body:
+            errs.append(f"audio pump gate does not read its frame counter "
+                        f"0x8000{AUDIO_PUMP_CTR:04X}")
+        if 0x4E800020 not in body:
+            errs.append("audio pump gate has no blr — gated frames would fall "
+                        "through into mainLoop with r0/cr0 clobbered")
+        real = [w for w in body if w not in (0, NOP)]
+        if real[-1] != 0x7C0802A6:
+            errs.append(f"audio pump gate: last real word {real[-1]:08X} != the "
+                        f"re-executed original mflr r0 — pass frames would return "
+                        f"through a stale LR save")
+    elif fps % 30 == 0 and fps >= 60:
+        errs.append(f"audio pump gate MISSING at {fps:g}fps — SE processing at "
+                    f"render rate flicker-restarts continuous SEs, thrashes the "
+                    f"64-voice pool and steal-kills every BGM note at birth "
+                    f"(total music silence at 240fps)")
+
+    # THP movie repace: movies are VI-retrace-paced with a wall-clock divisor
+    # (5994), so under EmulationSpeed=G every THP plays G x fast unless the
+    # divisor is scaled. The block must re-exec the stock li (its default),
+    # carry the audioExist discriminator (or cutscene A/V desyncs), read the
+    # framerate global through r2 (the SDA2-slip trap, same as anmrate), and
+    # encode divisor 5994*G exactly.
+    body = codes.get(("C2", THP_PACE_HOOK))
+    if body is not None:
+        if body[0] != THP_PACE_ORIG:
+            errs.append(f"thp pace @{THP_PACE_HOOK:08X}: first word {body[0]:08X} "
+                        f"!= the stock-default li r6,0x176A {THP_PACE_ORIG:08X}")
+        if (0x88FF0000 | THP_AUDIO_EXIST_DISP) not in body:
+            errs.append(f"thp pace @{THP_PACE_HOOK:08X}: audioExist discriminator "
+                        f"(lbz r7,0x{THP_AUDIO_EXIST_DISP:X}(r31)) missing — "
+                        f"audio-mastered cutscene THPs would slow to wall-clock "
+                        f"video under G x audio = A/V desync")
+        for w in body:
+            if (w >> 26) == 32 and ((w >> 16) & 31) == 2:        # lwz rX,d(r2)
+                va = SDA2 + struct.unpack(">h", struct.pack(">H", w & 0xFFFF))[0]
+                if va != FRAMERATE_GLOBAL:
+                    errs.append(f"thp pace: lwz reads 0x{va:08X}, not the framerate "
+                                f"global 0x{FRAMERATE_GLOBAL:08X}")
+                break
+        else:
+            errs.append("thp pace: no framerate-global read — the block would "
+                        "repace movies even with the fps codes off")
+        lis = next((w for w in body if (w >> 16) == 0x3CC0), None)
+        ori = next((w for w in body if (w >> 16) == 0x60C6), None)
+        want_n = 5994 * g if g else None
+        got_n = (((lis & 0xFFFF) << 16) | (ori & 0xFFFF)) \
+            if (lis is not None and ori is not None) else None
+        if got_n != want_n:
+            errs.append(f"thp pace divisor: {got_n} != {want_n} (5994*G at G={g}) — "
+                        f"previews would play at the wrong rate")
+    elif g:
+        errs.append(f"thp pace MISSING at {fps:g}fps — THP movies are VI-retrace-"
+                    f"paced, so the M-portal previews play {g}x fast (fast shimmer/"
+                    f"mirage churn, {g}x JPEG decode load)")
+
     return n_c2, errs
 
 
@@ -1349,8 +2112,13 @@ def main():
     ap.add_argument("--no-cogwheel", action="store_true", help="omit the Noki urn-lift rope-creak SE cadence gate (constant 1-in-4 substeps)")
     ap.add_argument("--no-input-latch", action="store_true", help="omit the v9 pad-latch gate (pad reads locked to sim frames; confirmed in-game at 180fps 2026-08-09 — omitting it drops ~1 in 3 edge inputs at G>=3; also disables the shine-select fix, which needs the latch block)")
     ap.add_argument("--no-select", action="store_true", help="omit the shine-select screen cadence gate (episode select runs at render rate: ~3x-fast cursor repeat at 360fps)")
-    ap.add_argument("--no-wipeopt", action="store_true", help="omit the Test5 morph-wipe EFB-copy reduction (decompose/recompose transitions run 80 EFB copies/frame and tank the framerate at G>=3)")
+    ap.add_argument("--no-wipe-swap", action="store_true", help="do NOT redirect wipe ids 5/6 to Hx_Test4 at G>=3; restores the wipe5_opt+smooth 128px tile morph, which the 2026-08-11 playtest rejected (wrong-scale chunks + black slabs on the boot->plaza reveal)")
+    ap.add_argument("--no-wipeopt", action="store_true", help="with --no-wipe-swap only: omit the Test5 morph-wipe EFB-copy reduction (decompose/recompose transitions run 80 EFB copies/frame and tank the framerate at G>=3)")
     ap.add_argument("--no-turnfix", action="store_true", help="omit the skid-turn stick-freshness fix (120Hz pad sampling lets yaw pursuit track through a stick flip; the turn-around run threshold then almost never trips)")
+    ap.add_argument("--no-wipepace", action="store_true", help="omit the wipe pacing gate (all Hx wipes are frame-counted for 30fps rendering; without it the level-entry decompose/recompose runs FPS/30 x too fast — 55ms instead of 0.67s at 360)")
+    ap.add_argument("--no-audio-pump", action="store_true", help="omit the MSound::mainLoop 30Hz gate (SE processing at render rate flicker-restarts continuous SEs, thrashes the 64-voice pool and steal-kills every BGM note at birth — total music silence at 240fps)")
+    ap.add_argument("--no-thp-pace", action="store_true", help="omit the THP movie repace (movies are VI-retrace-paced, so the M-portal previews play G x fast: fast shimmer/mirage churn plus G x JPEG decode load; audio movies are untouched either way)")
+    ap.add_argument("--no-riccohook", action="store_true", help="omit the Ricco hook/gondola slide-clank SE cadence gate (the harbor clank retriggers at render rate: 'womp womp womp, staticy' near the cable hooks at 240fps)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -1366,7 +2134,9 @@ def main():
                    bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
                    input_latch_fix=not a.no_input_latch,
                    select_fix=not a.no_select, wipe_opt=not a.no_wipeopt,
-                   turnfix=not a.no_turnfix)
+                   turnfix=not a.no_turnfix, wipe_pace_fix=not a.no_wipepace,
+                   audio_pump=not a.no_audio_pump, thp_pace_fix=not a.no_thp_pace,
+                   riccohook=not a.no_riccohook, wipe_swap=not a.no_wipe_swap)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps)

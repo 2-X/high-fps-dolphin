@@ -1,0 +1,45 @@
+Heat-haze shimmer pace fix v1 (TShimmer BTK x0.25, self-gated)
+GMSE01 (US). Companion to the fpspatch bundles; safe to leave enabled at stock
+(self-disables when the framerate global is 0.5).
+
+Symptom: the heat mirage (Delfino/Gelato/Noki ground shimmer) pulsates ~4x too
+fast under any fpspatch bundle (120/180/240/360 alike — constant, not G-scaled).
+
+Cause (family-B raw-rate class, same as the ANMRATE_SITES fixes in fpspatch.py):
+TShimmer::perform (USA 0x8019F83C, matched from PAL 0x801980C4 size 0x288;
+decomp sms-decomp/src/Map/Shimmer.cpp) advances its indirect-warp BTK on every
+CUE_MOVE via a private J3DFrameCtrl at this+0x58 whose rate is pinned to 1.0 by
+J3DFrameCtrl::init in TShimmer::load — it never passes through
+SMSGetAnmFrameRate(), so the substep retune's MOVE cadence (120 Hz at every G,
+vs stock 30 Hz) runs it 4x fast. Not reachable via ANMRATE_SITES (no rate store
+exists to hook — init's 1.0 is the only writer), hence this dedicated hook.
+
+MOVE block in perform:
+  8019F88C  lwz  r4, 0x58(r29)      ; unk58 = J3DFrameCtrl
+  8019F894  lfs  f0, 0x10(r4)       ; ctrl->mFrame
+  8019F898  stfs f0, 0x4(r3)        ; btk->setFrame(frame)
+  8019F89C  lwz  r3, 0x58(r29)      ; <-- C2 hook (re-exec orig, then rate store)
+  8019F8A0  bl   0x802E1730         ; J3DFrameCtrl::update (mFrame += mRate @+0xC)
+
+Hook body: after the original lwz (r3 = frame ctrl), load the framerate global
+0x804167B8 (-0x3E8(r2), r2=0x80416B80) and the native 0.5f (-0x7FD8(r2)); if
+equal (stock, codes off) skip; else store 0.25f into ctrl->mRate (+0xC).
+Idempotent per-tick store, so it survives scene reloads (init re-pins 1.0, we
+re-apply on the first MOVE tick before update runs). 120 Hz x 0.25 = stock
+30 anim-units/s, fractionally interpolated by the BTK (smoother than stock).
+Clobbers: f0/f13/r12/cr0 — all dead at the hook site (f0 last read at 8019F898,
+cr0 redefined by the rlwinm. at 8019F8A4, r12/f13 volatile across the bl).
+
+Not the FOV mod: the $FOV unified hook already substitutes the same fovy into
+SMS_GetLightPerspectiveForEffectMtx (USA 0x8022BA74, caller-whitelisted at
+C_MTXPerspective entry), so world-shimmer alignment tracks the render FOV.
+Known residual: portal-preview passes render ~50 while the hook forces the
+override — preview-only misalignment, documented in sunshine-fov-mod.md.
+
+Gecko:
+C219F89C 00000005
+807D0058 C002FC18
+C1A28028 FC006800
+41820014 3D803E80
+9181FFF8 C001FFF8
+D003000C 00000000

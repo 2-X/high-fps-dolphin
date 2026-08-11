@@ -1,5 +1,17 @@
 # M-portal level previews: mechanism + HD upscale pipeline (2026-08-04)
 
+**⚰️ RETIRED 2026-08-11 — superseded by the UHD texture pack route.** The qashto/razius
+SMS UHD pack (contrary to the note below) DOES ship the full preview movie as 900 hires
+I8 Y/U/V plane textures, and the user judged it far better than our AI bake ("ours is so
+bad by comparison"). The `[HD portals].iso` was sent to the Recycle Bin at the user's
+request; **the canonical game is now the stock `Super Mario Sunshine (USA).rvz` + the
+pruned texture pack** (`%APPDATA%\Dolphin Emulator\Load\Textures\GMSE01\`, see
+`sunshine-hd-texture-prune.md`). The pack's plane hashes key off the STOCK movie, which
+is exactly why the stock RVZ is required. The THP RE below (player pacing, heap limits,
+addresses) remains valid and the `thp_pace` fpspatch block still applies — hires
+replacement changes pixels, not playback pacing. The GameHeap 7MB codes are now inert
+but harmless. Rebuild recipe if ever needed: thp-assets/ + isopatch.py + stock RVZ.
+
 **STATUS: SHIPPED & USER-VALIDATED.** AI 3× (384×432) previews + the 7MB game-heap
 patch confirmed working in-game — user: "wow they are amazing… proves out your heap
 fix." Next planned step: Free Look recapture (see plan section) for maximum quality,
@@ -66,9 +78,10 @@ RVZ→ISO via `DolphinTool.exe convert -f iso`.
   ours are standard Annex-K — 416 vs 281 bytes; not implicated in any failure so far).
 - **4× CONFIRMED TOO BIG (2026-08-04): instant crash on plaza load = the game's own
   `abort in "JKRHeap.cpp" on line 694`** (alloc failure; log captured in the patched
-  build's `Binary/x64/dolphin.log` — note the user launches the *patched* Dolphin, whose
-  portable User dir lives at `dolphin-src\Binary\x64\User`, and file logging is enabled
-  there). thpInit asked for ~1.9MB; stock needs ~121KB.
+  build's `Binary/x64/dolphin.log` — note the user launches the *patched* Dolphin
+  (`Dolphin b6d8bc2`); as of 2026-08-10 it is NOT portable — the live user dir is
+  `%APPDATA%\Dolphin Emulator\`, not `dolphin-src\Binary\x64\User`).
+  thpInit asked for ~1.9MB; stock needs ~121KB.
 - Root cause is structural: scene loading runs inside `TApplication::mHeap`, created with
   a **hardcoded 0x500000 (5MB)** (`Application.cpp:221-223`, `new(-0x20) u8[0x500000]`).
   So Dolphin's MEM1-size override does NOT help — the heap constant, not the arena, is
@@ -344,6 +357,66 @@ top-screen HUD), Dolphin frame dump at 3× IR, ~10s per shot → crop/downscale 
 512×192 strips → stack 3 levels/frame → `thp_from_frames.py`. AI-source flicker note:
 `realesrgan-x4plus` shimmers frame-to-frame (user noticed); `realesr-animevideov3` is
 temporally stable but waxier — recapture sidesteps both.
+
+## ⚠️ ADDRESS CORRECTION (2026-08-10): ModelGate TU shift is +0x8128, NOT +0x8000
+
+Verified against the real TModelGate vtable @0x803D3F9C + GMSP01 symbols.txt:
+perform = USA **0x801EB014** (size 0xAA8; the doc's 0x801EAEEC is the tail of the prior
+fn), loadAfter = USA **0x801EC048** (0x801EBF20 is mid-function), startOpen 0x801EBFD4,
+receiveMessage 0x801EBBDC, screenBlur 0x801EBD84. Other TU shifts: THPPlayer USA =
+PAL − 0xB8 (GetVideoInfo 0x8001E9EC ✓), MActor/particle-mgr USA = PAL + 0x8274,
+VI USA = PAL + 0x7DA4. The `0x801EC168 bl THPPlayerGetVideoInfo` above was right only
+because it was found empirically (it's inside the real loadAfter).
+
+## Mirage/shimmer pacing under fpspatch (2026-08-10 — FIXED, `thp_pace` in fpspatch.py)
+
+UPDATE same session: the proposed fix below was implemented as `thp_pace(fps)` in
+fpspatch.py (default-on at integer G, `--no-thp-pace` to omit, `--check` enforces
+structure/discriminator/divisor 5994·G), shipped in all four regenerated
+`codes/bare*.txt` and installed to the live INI via the watcher pattern. Cave verified
+vs main.dol: hook word 0x38C0176A, r31=player base (set @0x8001EB14), audioExist zeroed
+@0x8001F860 & only set when an audio component exists. Awaiting in-game confirm.
+
+User report at 240fps: "shimmer more active than it should be, heat mirage pulsates
+faster than normal." Full disassembly verdict:
+
+- **The warp/ripple itself is CORRECTLY compensated.** The mirage is real anim files —
+  each gate binds `05_gate0N.btk` (UV-scroll ripple) + `.brk` (color pulse) + `.bpk`
+  (open) via MActor::setBtk/setBrk in loadAfter (0x801EC1F8/0x801EC210, name table
+  0x803D3F38). Every MActor binder stores SMSGetAnmFrameRate into J3DFrameCtrl.mRate at
+  bind time (e.g. 0x802385A0-A4) and MActor::perform (0x802391BC) advances on cue&2 only
+  → stub 0.5 × 120 Hz = stock 2.0 × 30 Hz = 60 anim-frames/s at every G. 1×.
+- perform's CALC_ANIM section has a raw 8-phase TEV stepper (+0xB9/+0xBC/+0xBE, jump
+  table 0x803D4050) that would be 4× fast, but it's gated on this+0xB8==1 and the ONLY
+  writer in the whole text section is loadAfter's `stb 0` (0x801EC1CC) — dead/vestigial.
+- Minor raw 4×/120Hz bits (glow fade steps 0x801EB518/0x801EB540, sparkle counter,
+  sound retriggers, wind-haze JPA requests 0x131-0x134) — particle emits are deduped by
+  (id,owner) in TMarioParticleManager::emitAndBindToMtxPtr and JPA calc is already
+  60Hz-gated by _rate_gate, so haze density ≈ stock. Not the user's pulse.
+- **CULPRIT: THP playback is G× FAST.** THPPlayer paces off the VI post-retrace callback
+  (PlayControl USA 0x8001EC24, registered @0x8001F2A4): 64-bit retrace count × 2997 /
+  5994 (NTSC divisor `li r6,0x176A` @**0x8001EBDC**; PAL 0x1388 @0x8001EBA4) picks the
+  display frame (cmp @0x8001EBF4, dispTextureSet stored @0x8001EE3C → player global
+  0x803EC160 +0xF8). EmulationSpeed=G makes emulated VI run 59.94×G fields per WALL
+  second → movie plays 29.97×G fps: 2×/3×/4×/6× at G=2/3/4/6. Explains BOTH halves of
+  the report: x4plus temporal shimmer crawls per movie frame (4× at 240), and the
+  "mirage pulsing" is the stock-paced warp over 4×-churning content. Bonus: decode load
+  is also G× (~120 decodes/s at G=4) — the same decode-race pressure behind the brown
+  flashes above; repacing would cut it 4×.
+
+**Proposed fix `thp_pace` (constant-rescale family, like the anmrate blocks):** C2 @
+0x8001EBDC — if framerate global 0x804167B8 != 0.5f keep `li r6,0x176A`, else r6 =
+5994·G via lis/ori (5994×6 overflows signed li). **Discriminator: require player+0xA7
+(no-audio flag; r31 = player base in this helper, set @0x8001EB14) == 0** so fullscreen
+cutscene THPs (audio-mastered, audio rides AI/DSP at G×) keep their sync — the gate
+preview THP has no audio. Rejected alt: gating the retrace increment (0x8001ECA8) —
+messier 64-bit carry, hits audio movies too. --check: pre-patch word @0x8001EBDC ==
+0x38C0176A, divisor == 5994·G, gate word == float(G). Optional cosmetic follow-up: 1-in-4
+gate on perform's CALC_ANIM body (branch @0x801EB374) for the 4× glow decay/sparkle/
+sound bits — but PROXIMITY_GLOW's C2 @0x801EBA60 lives inside that block (dropping its
+refresh to 30 Hz is harmless, it's a state pin). Ship thp_pace alone first, re-test
+perception. Disassembly artifacts (dol.py/ppcdis.py/scan.py + extracted main.dol) were
+session-scratchpad only.
 
 ## Non-findings worth remembering
 

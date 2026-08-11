@@ -1,0 +1,22 @@
+$Ricco hook/gondola slide-clank SE cadence gate v1 [kris]
+* Ricco Harbor cable hooks (TRiccoHook "フック", the ride-basket gondola
+* hangs from one): TRiccoHook::perform (USA 0x800c7a54) requests the slide
+* clank (MSD_SE_OBJ_CRANE_SIDEMOVE1 0x3034 / _SIDEMOVE2 0x3035, picked by
+* mInstanceIndex parity) on EVERY move tick once mTimer(+0x154) hits 0 and
+* never re-arms it. JAudio retriggers per rendered frame: 30/sec stock,
+* render-rate hacked -> "womp womp womp, staticy, faster the more fps".
+* Gate the SE block to 1 rendered frame in FPS/30 on the audio pump's own
+* frame counter (0x800016F8, incremented per frame by the pump-gate cave) —
+* caps requests at the native 30/sec and stays correct whether the perform
+* tick is substep- or render-paced. Gated ticks bctr to the function's own
+* epilogue 0x800c7b28. Clobbers r0/r11/r12/ctr/cr0, all dead at the hook.
+* Fail-open: without the pump cave the counter stays 0 = stock behavior.
+* Emitted by fpspatch.py (riccohook_se_gate); this file is the standalone
+* 240fps (divisor 8) reference copy. 120 -> andi 3; 180/360 -> modulo 6/12.
+* Hook 0x800c7ab8 (lha r0,0x7c(r29)), skip 0x800c7b28, orig A81D007C.
+C20C7AB8 00000005
+3D808000 816C16F8
+71600007 41820014
+3D80800C 618C7B28
+7D8903A6 4E800420
+A81D007C 00000000

@@ -8,7 +8,9 @@ description: Add, replace, list, or remove Gecko codes in the Dolphin per-game I
 ## The one gotcha that matters
 
 Dolphin loads the **user** per-game INI at
-`~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini`
+- macOS: `~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini`
+- Windows: `%APPDATA%\Dolphin Emulator\GameSettings\GMSE01.ini`
+
 and **rewrites it from memory when it closes** (after any per-game setting was
 touched — e.g. ticking a Gecko code). So **any edit made while Dolphin is
 running is reverted on quit.** That is the "I added a code but it doesn't show
@@ -23,21 +25,34 @@ cause duplicate/confusing entries. Always target the user INI above.
 ## Workflow
 
 1. **Confirm Dolphin is quit.**
-   `pgrep -if dolphin` → if it prints a PID, Dolphin is running. Ask the user to
-   quit it, or quit it gracefully: `osascript -e 'quit app "Dolphin"'` then wait
-   for the process to disappear (poll `pgrep`). Never edit until it is gone.
+   - macOS: `pgrep -if dolphin` → if it prints a PID, Dolphin is running. Quit it
+     gracefully: `osascript -e 'quit app "Dolphin"'` then wait for the process to
+     disappear (poll `pgrep`).
+   - Windows: `tasklist /FI "IMAGENAME eq Dolphin.exe" /NH` → if it lists
+     `Dolphin.exe`, Dolphin is running. Quit it gracefully with
+     `taskkill /IM Dolphin.exe` (no `/F` — a forced kill skips the on-close INI
+     rewrite but can lose other unsaved state), or ask the user to close it.
+
+   Never edit until the process is gone. (The script also checks this itself.)
 2. **Use the helper script** (it backs up to `<ini>.bak`, sanitizes lines, and is
-   idempotent — re-adding a title replaces the old block):
+   idempotent — re-adding a title replaces the old block). Use `python3` on
+   macOS, `python` on Windows:
    ```bash
-   PY=python3
+   PY=python   # python3 on macOS
    S=.claude/skills/dolphin-gecko/scripts/gecko.py
    $PY $S list
-   $PY $S add --title "120fps + My Fix" --code-file /tmp/mycode.txt
+   $PY $S add --title "120fps + My Fix" --code-file mycode.txt
    $PY $S add --title "Quick" --code $'044167B8 40000000\n042FCB24 60000000'
    $PY $S remove --title "Diag-S"
    $PY $S enable --title "120fps + My Fix"   # tick its checkbox for next launch
    ```
    The script **refuses** to write while Dolphin is running (override: `--force`).
+   `enable --title` accepts a substring: it is resolved against the `$` titles in
+   `[Gecko]` and the **full matched title** is written to `[Gecko_Enabled]`
+   (errors on zero or multiple matches; an exact match wins). Dolphin matches
+   enabled entries by exact title, so a partial title in `[Gecko_Enabled]`
+   silently never ticks the code — this bit us with "FLUDD Aim Invert v1" vs the
+   full title "FLUDD Aim Invert v1 (up aims up)".
 3. **Verify** the code is present and well-formed: `$PY $S list`.
 4. **Tell the user to relaunch Dolphin** and open Properties → Gecko Codes; the
    new code will be at the bottom of the list.

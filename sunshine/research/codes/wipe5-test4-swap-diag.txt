@@ -1,0 +1,17 @@
+# DIAGNOSTIC ONLY — $TEST wipe Test5->Test4 swap
+#
+# Redirects wipe ids 5/6 (Hx_Test5, the decompose/recompose tile-morph wipe:
+# 80 EFB copies per rendered frame) to Hx_Test4 (pure sin/cos geometry, ZERO
+# EFB copies) by rewriting the per-wipe fn-ptr table at 0x803C129C.
+# The transition will LOOK different (Test4's pattern instead of the tile
+# swirl) — that is the point: if the framerate tank during decompose/recompose
+# vanishes with this enabled, Hx_Test5's per-tile EFB captures are confirmed
+# as the cost, with zero risk (data-table write, no code patched).
+#
+# The shipping fix is the wipe5 optimization emitted by fpspatch.py at G>=3
+# (128px tiles + half-scale copies = 4x fewer EFB copies, look preserved).
+# Do not leave this swap enabled alongside it; it makes the fix moot.
+#
+# id 5 (reveal) and id 6 (close) both -> Hx_Test4 @0x8017E46C
+043C12B0 8017E46C
+043C12B4 8017E46C

@@ -1,5 +1,21 @@
 # Widescreen wipe-bars bug — investigation state (2026-08-04, paused)
 
+> **2026-08-11 UPDATE — `$Widescreen wipe fix v2` DISABLED (unticked in live + kit
+> INIs; definition kept).** Its `C2182DD8` ortho stretch (half-width ×0.0625×12 =
+> ×0.75 → all wipe DRAWING magnified ×4/3 about screen center) is copy/draw-
+> inconsistent for the EFB-copy wipes: `Hx_Test5` copies AND clears its tiles at
+> unstretched EFB coordinates, then draws the fans up to ±107px away → scene
+> chunks in the wrong place + never-recovered black slabs. Harmless on pure-
+> geometry wipes (Circle/Test4), which is why only the tile-dissolve loading
+> screens (boot→plaza, plaza returns) looked broken — the user's 2026-08-11
+> "first loading screen every boot / every other one fine" report. Invisible on
+> the PC before 2026-08-09 because the old PC INI enabled a phantom title (v2
+> never ran there); glaring after fpspatch `wipe5_opt` (G≥3) made tiles 128px.
+> Since v2 also never fixed the bars bug below, disabling loses nothing. If the
+> bars bug is ever resumed, a v3 must either leave EFB-copy wipes unstretched
+> (discriminate on wipe id at the CameraInit hook) or remap `Hx_GetFrBuffer`'s
+> copy/clear rects through the same ×4/3 transform.
+
 **Bug:** in the beloved config (gecko `$Widescreen` + Dolphin Widescreen Hack ON + Aspect Auto,
 patched build `dolphin-src` 2606-184), the level-transition "bands collapse/reveal" animation
 doesn't reach the left/right screen edges. Everything else about widescreen is great.

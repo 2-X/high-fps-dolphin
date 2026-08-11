@@ -1,5 +1,5 @@
 [Core]
-EmulationSpeed = 4.0
+EmulationSpeed = 2.0
 EnableCheats = True
 AudioPreservePitch = True
 AudioBufferSize = 136
@@ -2603,5 +2603,5 @@ $SaveBox: Continue on top (blue coins)
 $Camera look-up extension v10 (sky-gaze on flat ground, +60deg)
 $FOV 60
 $Widescreen
-$SMS 240fps bundle (fpspatch, no-ForceOpen)
+$SMS 120fps bundle (fpspatch, no-ForceOpen)
 $FLUDD Aim Invert v2 (up aims up, squat + first-person)

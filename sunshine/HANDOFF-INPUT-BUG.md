@@ -158,17 +158,22 @@ Two Dolphin builds. **Use the patched one** (`dolphin-src`) — it has the audio
 
 | | path |
 |---|---|
-| **Patched build (use this)** | `C:\Users\krisb\code\dolphin-src\Binary\x64\Dolphin.exe` |
-| Stock portable build | `C:\Users\krisb\code\high-fps-dolphin\dolphin-bin\Dolphin-x64\Dolphin.exe` |
+| **Patched build (use this)** | `C:\code\high-fps-dolphin\dolphin-src\Binary\x64\Dolphin.exe` |
+| ~~Stock portable build~~ (GONE — do not use) | ~~`C:\code\high-fps-dolphin\dolphin-bin\Dolphin-x64\Dolphin.exe`~~ |
 | ROM | `C:\Users\krisb\kris-documents\games\dolphin\Super Mario Sunshine (USA).rvz` |
 | DOL for disasm | `sunshine\research\main.dol` |
 
-Both are portable (`portable.txt`), so the user folder is `<build>\User\`.
+**The ONLY build is the patched `dolphin-src` one (window title `Dolphin b6d8bc2`).** It is
+NOT portable (no `portable.txt`, no `<build>\User\` dir), so the live user folder is
+`%APPDATA%\Dolphin Emulator\` and the live game INI is
+`C:\Users\krisb\AppData\Roaming\Dolphin Emulator\GameSettings\GMSE01.ini`.
+Do NOT write to `dolphin-bin\...\User\`, `dolphin-src\Binary\x64\User\`, or a repo-root
+`GameSettings\` — none of those are read by the running emulator.
 
 Launch:
 
 ```bash
-& "C:\Users\krisb\code\dolphin-src\Binary\x64\Dolphin.exe" -e "C:\Users\krisb\kris-documents\games\dolphin\Super Mario Sunshine (USA).rvz"
+& "C:\code\high-fps-dolphin\dolphin-src\Binary\x64\Dolphin.exe" -e "C:\Users\krisb\kris-documents\games\dolphin\Super Mario Sunshine (USA).rvz"
 ```
 
 **Enabled Gecko code: `$180fps v8 (v7 + substep granularity x3: 1800/15 = exact 119.88Hz)`**
@@ -257,7 +262,7 @@ The user is the fastest oracle — they can tell in ten seconds of play whether 
 hang, not a wrong number):
 
 ```powershell
-$p = Start-Process -FilePath "C:\Users\krisb\code\dolphin-src\Binary\x64\Dolphin.exe" `
+$p = Start-Process -FilePath "C:\code\high-fps-dolphin\dolphin-src\Binary\x64\Dolphin.exe" `
      -ArgumentList @("-e","`"<ROM>`"","-b") -PassThru
 Start-Sleep -Seconds 40
 (Get-Process -Id $p.Id -ErrorAction SilentlyContinue) -ne $null   # must be True
@@ -625,3 +630,94 @@ Verified: only two real consumers of +0x128 exist (movement_game, changeState
 tail; the 0x128(r1) hit at 0x802BCB80 is a stack slot). 120/180/360 bundles
 regenerated `--check`-clean and reinstalled into the live INI
 (`%APPDATA%\Dolphin Emulator\GameSettings\GMSE01.ini`).
+
+---
+
+# ★ SESSION 8 (2026-08-10): shine-select screen cadence fix (unusable at 360fps)
+
+Symptom: the in-stage episode/shine select screen is completely unbounded by
+the framerate — at 360fps one tap of left/right skips from episode 8 to 1
+(repeat delay ~0.11s at ~30 steps/sec vs stock 0.33s at 10/sec).
+
+Root cause (all USA addresses disasm-verified this session):
+- The select screen runs under **TSelectDir** (vtable **0x803C0EF0**, ctor
+  0x80177538) — a separate director. Its `direct()` (**0x80175EC4**) calls
+  plain `JDrama::TDirector::direct()` (**0x802F7D28**, the `bl` at
+  **0x80175FE8**), which fires CUE_MOVE|CUE_CALC_ANIM on the menu once per
+  RENDERED frame. None of the TMarDirector gating (substep scheduler, v9 pad
+  latch) applies: menu logic runs 30 Hz stock → 60G Hz under the bundle.
+- Twice broken on top of that: `TSelectMenu::initData` (**0x8017449C**) caches
+  `+0x14C = 1.0/SMSGetAnmFrameRate()` (**0x801744D0** — one of the §8-backlog
+  "reciprocal" sites) and times its stick-repeat as `N * (+0x14C)` ticks; the
+  v11 stub pins the rate at 0.5, so the cache reads 2.0 at every G instead of
+  the 1/G the formula needs. Same for the pad's own repeat
+  (`TMarioGamePad::reset`: delay 20/rate=40, interval 6/rate=12 ticks) with
+  `read()` free-running at render rate on this director.
+- Key addresses: TSelectMenu::perform = **0x80172C90** (MOVE body is a
+  10-state jump table @0x803C0E7C), TSelectMenu ctor 0x801753D0, vtable
+  0x803C0E58, rsetup 0x801761B0. String-pool trick for this TU: perform/ctor
+  addrs were found via "<TSelectMenu>" @0x803884B8 referenced as pool base
+  0x80388458 + 0x60 from rsetup (lis/addi pairs, NOT r13/r2-relative).
+
+Fix (fpspatch `select_gate` + extended `input_latch`, emitted with the substep
+retune, both enforced by `--check`): hold the whole select-screen tick to
+**1 frame in ceil(G/2) = a 120 Hz cadence** — exactly what every 0.5-stub
+constant is calibrated for, so the 40-tick repeat delay is 0.33s at 10
+steps/sec, bit-exact stock timing, at every even G (G=3 rounds to 90 Hz, mild).
+- **C2 @0x802F7DBC** (v2): inside the SHARED `JDrama::TDirector::direct`, at
+  the MOVE-pass `bl TViewObj::testPerform` (0x802FCC94; `this` in r30, args
+  r3=unk10/r4=3/r5=&graphics already set). Vptr-compares against TSelectDir
+  (inert for logo/menu/movie directors), increments a low-arena frame counter
+  (**0x800016E8**; 0x16E0/16E4 are Noki's, 0x16F0 camera) and skips ONLY the
+  MOVE|CALC_ANIM testPerform on gated frames — the CUE_DRAW pass at 0x802F7DD0
+  still runs every frame.
+  On gated frames the call is NOT skipped — it goes out with **r4 = 2
+  (CUE_CALC_ANIM only)**, and only CUE_MOVE is withheld.
+  **Two traps, both shipped and user-sighted 2026-08-10, do not repeat:**
+  1. v1 hooked TSelectDir::direct's own `bl TDirector::direct` (0x80175FE8)
+     and skipped the WHOLE call, draw included. "Skipped frames re-present
+     the old XFB" was WRONG: 2-in-3 presented frames carried no fresh render,
+     which PWM-dimmed the 360 Hz panel to ~1/3 brightness ("reduced gamma?")
+     and beat against XFB presentation as a black blink every 1–2 s.
+  2. v2 skipped the whole MOVE|CALC_ANIM testPerform: the 3D shines flickered
+     light/translucent at 2-in-3 duty. TSelectShineManager::perform
+     (USA 0x80178158, vtable 0x803C0F98) enters its J3D shine models into the
+     draw buffers on **CUE_CALC_ANIM** (sets model frame from shine+0x3C then
+     calls two virtuals = calc + entry) while its CUE_DRAW branch draws the
+     two J3DDrawBuffers (+0x50/+0x54) and then CLEARS them (frameInit x2 at
+     the tail, `bl 0x802ef66c`). A draw with no same-frame entry draws no
+     shines. CALC_ANIM passthrough is safe: the shine path re-applies the
+     same +0x3C frame (idempotent), and TSelectMenu's non-MOVE path handles
+     only CUE_DRAW — it ignores CALC_ANIM entirely.
+  3. v3's CALC_ANIM passthrough surfaced a THIRD regression (user-sighted as
+     "micro-flickering"): **TSelectGrad::perform** (USA 0x80175560, vtable
+     0x803C0EC8) advances its background color-cycle ON CUE_CALC_ANIM — a RAW
+     +/-2 per call on channel bytes +0x20/21/22 (state machine +0x10/14/18),
+     family-B raw-rate class. At 240fps the gradient strobed 8x stock behind
+     the shine panels. Fix: **select_grad_gate** (C2 @0x80175584, the beq
+     after perform's cue&2 test) holds the ramp body to 1-in-2G frames
+     (native 30 Hz) on the same select counter, read-only; both exits jump to
+     the function's own join 0x80175728 so its draw branch is untouched.
+     Emitted only alongside select_gate (at G=2 the counter never ticks and a
+     frozen gate would freeze the ramp).
+  Rule distilled: gate ONLY CUE_MOVE globally; draw AND draw-buffer entry
+  (CALC_ANIM) must run every rendered frame — and any RAW-rate advancer that
+  rides CALC_ANIM (grad ramp) then needs its own native-cadence gate. Audit
+  every CALC_ANIM consumer of a director before passthrough: the select
+  screen's full set is TSelectMenu (ignores it), TSelectShineManager
+  (idempotent frame-pin + entry), TSelectGrad (RAW advancer — the trap),
+  TEmitterViewObj (MOVE-only).
+- **input_latch TSelectDir case**: second vtable compare in the v9 block; pad
+  reads gated to the SAME frames via the predicate `(ctr+1) % N` — predicted,
+  not stored, because read() runs BEFORE direct() in gameLoop, and only the
+  direct-gate increments. Trigger edges are therefore consumed by exactly one
+  menu tick (same pending-edge mechanism as gameplay v9).
+- At G=2 neither block is emitted (cadence already 120 Hz — and indeed the
+  select screen was always fine at 120fps); bare120.txt is byte-identical.
+
+Follow-ups NOT done: title-screen/file-select (TMenuDir) and any other
+TDirector-direct directors have the same class of bug — the counter +
+per-vtable-case architecture extends to them if they ever annoy. The other
+§8 reciprocal sites (0x8000AB4C, 0x800F4B78, 0x80205F24, 0x802A8994/A8)
+remain unaudited; 0x801744D0 is RESOLVED for the select screen by cadence
+(not patched — under a 120 Hz tick, 1/0.5 = 2.0 is the correct value again).

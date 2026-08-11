@@ -1,0 +1,27 @@
+FLUDD Aim Invert v2 (up aims up: squat spray + first-person view)
+GMSE01 (US). Supersedes v1 (remove v1 when enabling).
+
+Adds the Y-button first-person/zoom view to v1's squat-spray flip (user
+report: first-person look was still inverted; FLUDD in that mode follows
+camera pitch, so flipping the camera flips the aim with it).
+
+Word 1 (from v1): TNozzleBase::calcGunAngle @8026D0E8 squat branch,
+  add r4,r4,r0 -> subf r4,r0,r4 @8026D17C. See v1 file for full disasm.
+
+Word 2: CPolarSubCamera::ctrlLButtonCamera_ @800291D0 (found by unique
+DOL pattern: lfs 0xB8/0xBC pad->mCompSPos[4]/[5] + fneg pair; matches
+CameraNotice.cpp:209). Entry does
+
+  800291F8  lfs  f1, 0xb8(r3)   ; stickX = mCompSPos[4]
+  800291FC  lfs  f0, 0xbc(r3)   ; stickY = mCompSPos[5]
+  80029204  fneg f31, f1        ; stickX = -stickX
+  80029208  fneg f30, f0        ; stickY = -stickY   <-- patched to fmr
+
+fneg f30,f0 -> fmr f30,f0 kills only the vertical negate; horizontal
+look (f31) and rotateX_ByStickY_ clamps untouched. The normal orbit
+camera reads the C-stick via mCompSPos[6]/[7] in CameraNormal.cpp and
+shares none of this code path, so regular camera binds are unaffected.
+
+Gecko:
+0426D17C 7C802050
+04029208 FFC00090

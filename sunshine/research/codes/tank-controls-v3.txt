@@ -1,0 +1,53 @@
+Tank Controls v3 (latched turnaround + grace window)
+GMSE01 (US). Supersedes v2 (remove v2 when enabling v3).
+
+v2 problem (user-confirmed): the rear-cone flip re-targeted EVERY frame
+(target = face+theta from the CURRENT face), so holding back spun Mario
+at full IConverge rate and side-jump direction was effectively random.
+
+v3 semantics (C2 @ 80251ddc, same hook as v2):
+  theta = stick angle - 0x8000 (signed s16; 0 = dead ahead of Mario)
+  |theta| < 0x6000 (front 270deg): proportional steering as v2
+      offset = clamp(theta>>6, +/-0xC0); latch timer cleared.
+  |theta| >= 0x6000 (rear cone):
+      timer==0 (fresh press): flip ONCE -> intendedYaw = face + theta,
+          latch timer = 0x168 (360 frames = 1.0s @ 360fps).
+      timer>0 (held / within window): intendedYaw = PREVIOUS
+          mIntendedYaw (the latched flip target), timer--.
+  So: tap back = one clean 180 (skid/side-jump direction is
+  deterministic); holding back keeps running the new heading ("forward,
+  directly behind you"); pressing forward inside the window resumes
+  normal steering off the new facing. Worst case, holding back a full
+  second re-flips once per second instead of spinning.
+
+State storage: TMario+0x92 (halfword). Decomp header names it unk92;
+written once in MarioInit (=0x11), never read anywhere in game code —
+vestigial. Nonzero init only delays the first-ever rear flip by ~17
+frames; any normal-steering frame zeroes it. (If future decomp work
+finds a real reader of unk92, relocate the latch.)
+
+TUNING KNOBS:
+  window 0x168 (word 38600168) -> grace length; per-frame, scale with G
+  steer shift 6 / cap 0xC0 / cone 0x6000 -> as v2
+
+Block (31 instr + terminal; verified w/ capstone, single zero word):
+see words in the Gecko lines; labels: REAR=w20, HELD=w28, END=w31(nop).
+
+Gecko:
+C2251DDC 00000010
+38838000 7C840734
+2C046000 40800040
+2C04A000 40810038
+38600000 B07F0092
+7C803670 2C0000C0
+40810008 380000C0
+2C00FF40 40800008
+3800FF40 A89F0096
+7C002214 7C00F214
+48000030 A87F0092
+2C030000 40820018
+A81F0096 7C002214
+38600168 B07F0092
+48000010 3863FFFF
+B07F0092 A81F0090
+60000000 00000000

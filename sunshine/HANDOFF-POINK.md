@@ -231,12 +231,15 @@ bottom section):
 | ★★★ | **0x802670C8** (fn 0x80267050, splash droplet system, `/mario/timg/splash.bti`) | droplet gravity = `−0.5 × AnmFrameRate²` → stock −2.0, v12 −0.125 (**16× weak**, droplets float). Consumer integrates `v+=g; p+=v` at 0x80266F20. | C2 at 0x802670D8 forcing the product to −2.0 (quadratic — getter patching can never fix both this and linear consumers). Value is baked at scene-construct time — verify per-scene construction before trusting a boot test. |
 | ★★ | **0x80177DB4** | `(int)(counter × rate)` with rate 0.5 truncates to 0 → increment stalls; compared vs 360 (wait loop) | C2 rounding like the EmitterViewObj fix (+0.5 before fctiwz won't suffice at rate 0.5 with counter 1 → use max(x,1) shape) |
 | ★★ | **0x80008064 / 0x80008098** (fn 0x80008024/0x80008F70) | two more `rate²` products feeding a per-tick approach step; sibling 0x800080C4/D8/0x800090B0 store `param × rate` to +0x144 consumed vs a hard 100.0 distance gate → follow behavior 4× slow | same shape as splash fix; identify the TU's owner first (single caller 0x8000A754) |
-| ★ | 0x8000AB4C, 0x800F4B78, 0x80205F24, 0x801744D0, 0x802A8994/A8 | `1.0/rate` reciprocals → 4× too big under v12 | audit each consumer before patching — some may be anim-frame conversions that are already correct |
+| ★ | 0x8000AB4C, 0x800F4B78, 0x80205F24, ~~0x801744D0~~, 0x802A8994/A8 | `1.0/rate` reciprocals → 4× too big under v12 | audit each consumer before patching — some may be anim-frame conversions that are already correct. 0x801744D0 (TSelectMenu stick-repeat cache) RESOLVED 2026-08-10 by the shine-select cadence gate (HANDOFF-INPUT-BUG session 8) — under the 120 Hz select tick the stubbed 0.5 rate is correct again |
 | ★ | 0x801D690C/0x801D6998 | `rate × 0.25` threshold vs an unscaled 0.015/tick decay → gate trips at wrong time | site-local constant fix |
 | ★ | 0x801727E4 (`getWipeCloseTime` = 30/vsync) | screen-wipe close time 6× short at 180 | only fix if wipes visibly misbehave; VSync-consumer class is otherwise cosmetic |
+| ★★ | **TBossEelTooth** (Noki, Eely-Mouth) — USER-SIGHTED at 180 (2026-08-09, PC): pulled gold tooth floats + wiggles up/down ~30s (stock ~1/3 of that) while **vibrating** | duration = frame-counted release timer running G× long; vibration = per-render-frame bob against 2-of-3 sim stagger | JP `perform` @0x802E8B84 (`bosseel.cpp` is an unmatched stub — raw disasm needed; fingerprint USA, do NOT assume the popo −0x211F84 delta transfers). **First check whether this is the ★★ 0x80177DB4 truncation-stalled wait-vs-360 site above** — a barely-advancing wait counter is exactly a 30s wiggle |
 
 Also known-broken (different subsystem, do not conflate): Bianco windmills EXTRA LOUD —
-positional-SFX staleness class, see HANDOFF-INPUT-BUG §13.3.
+positional-SFX staleness class, see HANDOFF-INPUT-BUG §13.3. At 180 on the PC this class
+is now general (2026-08-09): boat + Noki glow SFX persist with a sine-wave amplitude
+wobble. Fix design: gate `MSound::mainLoop`'s `frameLoopDyna()` walk to sim cadence.
 
 ---
 
