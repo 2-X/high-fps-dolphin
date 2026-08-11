@@ -235,3 +235,18 @@ counting readbacks only; drain runs every frame; dedupe retired. Full table in
 HANDOFF-NOKI-PERF.md v3 section. Lesson (now thrice-learned): NEVER hold a
 whole perform to a cadence — gate the expensive LEAF calls; everything else in
 the function is someone's data flow.
+
+---
+
+# ⚠️ CORRECTION (2026-08-11 late): the user's "decompose/recompose" was MARIO'S ATOM EFFECT
+
+The whole complaint chain ("recomp 2x slow", "Mario faster than it", "ripples
+later than dot impacts") was about the JPA warp atoms, not the screen wipe.
+TRUE ROOT CAUSE: EmitterViewObj calcs on CUE_CALC_ANIM (~120 Hz substep-pinned
+at every G); the particle parity gate's 1-in-G "generalization" ran ALL JPA at
+120/G Hz (30 Hz at 240 = 2x slow atoms; 20 Hz at 360). Fixed: constant 1-in-2
+restored in fpspatch particles(); enforced by --check. The wipe work above
+remains valid for what it actually fixed (the Test5 EFB-copy fps tank + wipe
+pacing), and the Noki v3 call-site redesign remains better engineering than the
+whole-perform blr — but neither was the reported bug. See the fpspatch
+particle-gate docstring for the full cadence evidence.

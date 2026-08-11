@@ -71,24 +71,38 @@ C20066EC 00000002
 C2C28028 EC2105B2
 FEC00890 00000000"""
 
-# ---- generic 1-in-G substep gate --------------------------------------------
-# EmitterViewObj.cpp: for(i=SMSGetAnmFrameRate(); i>0; --i) emitter->calc().
-# SMSGetAnmFrameRate() returns 1/G, so fctiwz truncates it to 0 substeps of work;
-# injecting +1.0 on a chosen substep is what actually advances the emitter. The
-# substep clock ticks at 60*G Hz, so to hold the emitter at its native 60 Hz the
-# +1.0 must land on exactly 1 substep in G.
+# ---- particle calc parity gate (CONSTANT 1-in-2 — substep-pinned) -----------
+# EmitterViewObj.cpp: perform() runs `for(i=SMSGetAnmFrameRate(); i>0; --i)
+# emitter->calc()` on CUE_CALC_ANIM. SMSGetAnmFrameRate() is stubbed to 0.5, so
+# fctiwz truncates to 0 calcs; injecting +1.0 on gated ticks is what advances
+# the whole JPA world.
 #
-# The shipping 120fps block hardcoded `andi. r0,r3,1` — a fixed 1-in-2 gate that
-# yields 60*G/2 = 30*G Hz. That is 60 Hz ONLY at G=2; it runs emitters 1.5x too
-# fast at 180fps and 2x too fast at 240fps. (The previous docstring's claim that
-# parity was "correct at 120 AND 180 (parity, not a const)" was wrong — a fixed
-# /2 is just as rate-specific as the "+0.5" constant it replaced.)
+# THE CADENCE (three doc reversals — this one carries the evidence, do not
+# flip it again without NEW evidence):
+#   CUE_CALC_ANIM fires on the LAST SUBSTEP of each rendered frame — 30 Hz
+#   stock, ~120 Hz under the substep retune AT EVERY G (HANDOFF-POINK §1,
+#   EmitterViewObj.cpp decomp). It is NOT render-rate. The gate counts
+#   gpMarDirector+0x5C, which increments once per substep — 1:1 with
+#   CALC_ANIM ticks at G>=2. Native JPA rate is 60 Hz (stock: 30 Hz perform
+#   x AnmFrameRate 2.0). Therefore the divisor is the CONSTANT 2:
+#   120/2 = 60 Hz at every G — same substep-pinned-constant class as the
+#   cogwheel 1-in-4 and the Poink 40.
 #
-# _rate_gate emits a true 1-in-G test, leaving CR0 set so `bne` == "skip":
-#   * G a power of two -> `andi. r0,r3,G-1` (byte-identical to the old block at
-#     G=2, so the proven 120fps bundle is unchanged)
-#   * otherwise        -> ctr - (ctr/G)*G, an exact modulo. Required for G=3
-#     (180fps): no AND mask can express mod 3.
+# History: the original hand-written 120fps block hardcoded `andi. r0,r3,1`
+# (1-in-2) — CORRECT. A later docstring "generalized" it to 1-in-G on the
+# theory that the hook runs at render rate (60G Hz); it does not, and the
+# result ran ALL JPA effects at 120/G Hz: fine at 120, 1.5x slow at 180,
+# 2x slow at 240, 3x slow at 360 — user-sighted as Mario's M-portal
+# atom-decompose/recompose playing at half speed at 240 (2026-08-11), and
+# as the 360 recompose outliving Mario's spawn (2026-08-10). The 1-in-G
+# masks ALSO explain the dots-vs-ripples desync: JPA (slowed) drifted
+# against the substep-clocked warp status machine (never slowed).
+#
+# _rate_gate is retained as the general helper for gates whose hook cadence
+# REALLY scales with G (render-rate classes like the Noki counting or the
+# wipe clock):
+#   * N a power of two -> `andi. r0,ctr,N-1`
+#   * otherwise        -> ctr - (ctr/N)*N, an exact modulo (no mask does mod 3)
 
 def _li(rD, imm):        return (14 << 26) | (rD << 21) | (imm & 0xFFFF)
 def _andi_(rA, rS, imm): return (28 << 26) | (rS << 21) | (rA << 16) | (imm & 0xFFFF)
@@ -134,7 +148,9 @@ def _parity_block(hook, g):
     return "\n".join(out)
 
 def particles(g):
-    return "\n".join(_parity_block(h, g) for h in ("C22887A8", "C2288D30", "C2288DEC"))
+    # g is IGNORED by design: CALC_ANIM ticks at ~120 Hz at every G, so the
+    # 60 Hz JPA parity is the CONSTANT 2 (see the cadence block above).
+    return "\n".join(_parity_block(h, 2) for h in ("C22887A8", "C2288D30", "C2288DEC"))
 
 FORCEOPEN = """C21EB034 00000007
 88030070 700B0001
@@ -980,12 +996,25 @@ WIPE_TIMER_HOOK = 0x80181E70    # Hx_TimerCountDown: addi r0,r3,-1
 WIPE_MOTION_HOOK = 0x80181D74   # Hx_MotionUpdate entry: lfs f0,0(r3)
 WIPE_MOTION_TAIL = 0x80181DD8   # its tail: lfs f1,0x20(r3); blr
 
+WIPE5_SUBSTEP_LATCH = 0x16EC    # low arena: last director substep ctr seen by
+                                # the Test5 sim-clock (see slot map above)
+
 def wipe_pace(fps, smooth56=False):
     """Hold the Hx wipe clock at native 30 Hz. None when FPS/30 is not integral.
-    smooth56: exempt wipe ids 5/6 (Test5) from the timer gate — REQUIRED (and
-    only valid) when wipe5_smooth() rescales Test5's own frame constants by
-    FPS/30, which needs the timer to decrement every rendered frame. Emitting
-    either half without the other runs Test5 2Gx fast or 2Gx slow."""
+    smooth56: wipe ids 5/6 (Test5) leave the frame gate entirely and decrement
+    by the DIRECTOR SUBSTEP DELTA instead (gpMarDirector+0x5C, pinned 120 Hz) —
+    REQUIRED (and only valid) with wipe5_smooth()'s 80-substep constants.
+    Frame-counted pacing (both the v1 30Hz gate and the first smooth attempt's
+    20*(FPS/30) frames) is only correct when the host actually delivers the
+    target fps; during the recompose the renderer sags (load stutter + effect
+    cost) and a frame-counted wipe stretched ~2x while substep-clocked Mario
+    barely slowed — the user's "recomp is 2x slow / Mario is faster than it"
+    (240fps, 2026-08-11). Tying the wipe to the SAME clock as Mario makes the
+    ratio exact by construction at every delivered framerate: 80 substeps
+    = 0.667s of SIM time, stepping at 120 Hz (the sim's own granularity).
+    Delta clamp: >2 (stale latch from the previous wipe, pause, reset) -> 1;
+    result clamped >= 0 so the u32 timer can never wrap past the ==0 test.
+    Null-director frames fall back to the stock -1."""
     if fps % 30 or fps < 60:
         return None
     n = int(fps // 30)
@@ -999,20 +1028,17 @@ def wipe_pace(fps, smooth56=False):
     L = len(gate)
     def beq(at, to):  return 0x41820000 | (((to - at) * 4) & 0xFFFC)
     def ble(at, to):  return 0x40810000 | (((to - at) * 4) & 0xFFFC)
+    def bge(at, to):  return 0x40800000 | (((to - at) * 4) & 0xFFFC)
     def b(at, to):    return 0x48000000 | (((to - at) * 4) & 0x03FFFFFC)
     pre = []
     if smooth56:
         pre = [0x3D80803F,                             # lis    r12,0x803F
                0x896C43D1,                             # lbz    r11,0x43D1(r12) wipe id
                0x380BFFFB,                             # addi   r0,r11,-5  (5->0, 6->1)
-               0x28000001]                             # cmplwi r0,1
-    P = len(pre)                                       # ble slot appended below
-    if smooth56:
-        pre.append(0)                                  # patched to ble -> PASS
-        P = len(pre)
-    i_pass, i_skip = P + 5 + L, P + 6 + L
-    if smooth56:
-        pre[P - 1] = ble(P - 1, i_pass)                # ids 5/6: decrement every frame
+               0x28000001,                             # cmplwi r0,1
+               0]                                      # ble -> DELTA (patched below)
+    P = len(pre)
+    i_pass, i_skip = P + 5 + L, P + 6 + L              # skip = END when not smooth
     timer = (pre
              + [0x3D808000,                            # lis  r12,0x8000
                 0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]  # lwz r11,ctr
@@ -1021,6 +1047,32 @@ def wipe_pace(fps, smooth56=False):
                 0x38030000,                            # gated: r0 = r3 (hold timer)
                 b(P + 4 + L, i_skip),
                 0x3803FFFF])                           # PASS: addi r0,r3,-1 (orig)
+    if smooth56:
+        i_delta = len(timer) + 1                       # after the b END below
+        i_dfall = i_delta + 16
+        i_end = i_delta + 17
+        timer[P - 1] = ble(P - 1, i_delta)             # ids 5/6 -> sim clock
+        timer += [
+            b(len(timer), i_end),                      # NORMAL path exits over DELTA
+            0x818D9FB8,                                # DELTA: lwz r12,gpMarDirector
+            0x280C0000,                                # cmplwi r12,0
+            beq(i_delta + 2, i_dfall),                 # null -> stock -1
+            0x818C005C,                                # lwz  r12,0x5C(r12)  substeps
+            0x3D608000,                                # lis  r11,0x8000
+            0x80000000 | (0 << 21) | (11 << 16) | WIPE5_SUBSTEP_LATCH,   # lwz r0,latch
+            0x90000000 | (12 << 21) | (11 << 16) | WIPE5_SUBSTEP_LATCH,  # stw r12,latch
+            0x7C006050,                                # subf r0,r0,r12   delta
+            0x28000002,                                # cmplwi r0,2
+            ble(i_delta + 9, i_delta + 11),            # sane -> use it
+            0x38000001,                                # stale/garbage -> delta = 1
+            0x7C001850,                                # subf r0,r0,r3    timer - delta
+            0x2C000000,                                # cmpwi r0,0
+            bge(i_delta + 13, i_end),
+            0x38000000,                                # underflow -> 0 (end this frame)
+            b(i_delta + 15, i_end),
+            0x3803FFFF,                                # DFALL: stock decrement
+        ]
+        assert len(timer) == i_end
     motion = ([0x3D808000,                             # lis  r12,0x8000
                0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]  # lwz r11,ctr
               + gate                                   # cr0 <- ctr % n
@@ -1056,16 +1108,17 @@ WIPE5_DIV_SITE = 0x8017E14C     # lfs f1,-0x4614(r2) (pooled 20.0)
 LFS_F1_20 = 0xC022B9EC          # the overwritten original
 
 def wipe5_smooth(fps):
-    """Per-frame Test5 progress at stock duration. None when FPS/30 not integral."""
+    """Test5 progress on the SIM clock: 80 substeps (= stock 20 frames x 4
+    substeps = 0.667s of sim time) at every fps. The matching decrement lives
+    in wipe_pace(smooth56=True)'s substep-delta path. None when FPS/30 is not
+    integral (no wipe_pace -> no delta path to pair with)."""
     if fps % 30 or fps < 60:
         return None
-    n = int(fps // 30)
-    count = f"04{WIPE5_COUNT_SITE & 0x01FFFFFF:06X} {0x38000000 | (20 * n):08X}"
+    count = f"04{WIPE5_COUNT_SITE & 0x01FFFFFF:06X} {0x38000000 | 80:08X}"
     div = _c2(WIPE5_DIV_SITE, [
         LFS_F1_20,                          # lfs   f1,-0x4614(r2) = 20.0 (orig)
-        _lfs(0, 2, ANMRATE_GLOBAL_DISP),    # lfs   f0,framerate global = G
-        _fadds(0, 0, 0),                    # f0 = 2G
-        (59 << 26) | (1 << 21) | (1 << 16) | (0 << 6) | (25 << 1)])  # fmuls f1,f1,f0
+        _fadds(1, 1, 1),                    # 40
+        _fadds(1, 1, 1)])                   # 80: progress = timer/80
     return "\n".join([count, div])
 
 
@@ -1665,9 +1718,11 @@ def check(bundle, fps=None):
         if body is None:
             continue
         n = _implied_divisor(body, ctr=3)
-        if n != gate_g:
-            errs.append(f"particle gate @{hook:08X}: encodes 1-in-{n}, expected 1-in-{gate_g} "
-                        f"(emitters would run at {60*gate_g/(n or 1):g} Hz, not 60)")
+        if n != 2:
+            errs.append(f"particle gate @{hook:08X}: encodes 1-in-{n}, expected the "
+                        f"CONSTANT 1-in-2 — CALC_ANIM is substep-pinned at ~120 Hz "
+                        f"at every G, so 1-in-{n} runs ALL JPA at {120/(n or 1):g} Hz "
+                        f"instead of 60 (the 2x-slow atom decompose at 240fps)")
 
     if ("04", 0x8029985C) in codes:
         for addr, want, what in ((0x8029985C, 0x38600000 | 600 * gate_g, "li r3,600G"),
@@ -1750,25 +1805,31 @@ def check(bundle, fps=None):
     if (w5count is not None) != (w5div is not None):
         errs.append("wipe5 smooth: count word and divisor C2 must ship together")
     if w5count is not None:
-        want_n = int(fps // 30) if (fps % 30 == 0 and fps >= 60) else None
-        if want_n is None:
+        if fps % 30 or fps < 60:
             errs.append("wipe5 smooth emitted at a non-multiple-of-30 fps")
-        elif w5count != (0x38000000 | 20 * want_n):
-            errs.append(f"wipe5 smooth count: {w5count:08X} != li r0,{20 * want_n} "
-                        f"(20 x FPS/30)")
+        if w5count != (0x38000000 | 80):
+            errs.append(f"wipe5 smooth count: {w5count:08X} != li r0,80 — the sim-"
+                        f"clock design uses a CONSTANT 80 substeps at every fps "
+                        f"(frame-scaled counts stretch when the renderer sags)")
         if not has_bypass:
             errs.append("wipe5 smooth emitted but wipe_pace timer gate has no "
-                        "id-5/6 bypass — Test5 would run 2Gx SLOW")
+                        "id-5/6 sim-clock path — Test5 would run at the 30Hz gate "
+                        "against 80-substep constants (4x slow)")
+        else:
+            for word, what in ((0x818C005C, "substep counter load (0x5C)"),
+                               (0x80000000 | (11 << 16) | WIPE5_SUBSTEP_LATCH,
+                                "substep latch read"),
+                               (0x28000002, "delta clamp")):
+                if word not in wp_timer_body:
+                    errs.append(f"wipe5 sim-clock: timer cave missing the {what}")
         if w5div is not None:
-            if w5div[0] != LFS_F1_20:
-                errs.append("wipe5 smooth divisor C2 must re-exec lfs f1,-0x4614(r2)")
-            g_lfs = _lfs(0, 2, ANMRATE_GLOBAL_DISP)
-            if g_lfs not in w5div:
-                errs.append("wipe5 smooth divisor must read the framerate global "
-                            "through r2 (the -0x3C8 slip class)")
+            if w5div[0] != LFS_F1_20 or w5div[:3] != [LFS_F1_20, _fadds(1, 1, 1),
+                                                      _fadds(1, 1, 1)]:
+                errs.append("wipe5 smooth divisor C2 must be lfs f1,20.0 doubled "
+                            "twice (progress = timer/80)")
     elif has_bypass:
-        errs.append("wipe_pace timer gate carries the id-5/6 bypass but wipe5 "
-                    "smooth is absent — Test5 would run 2Gx FAST")
+        errs.append("wipe_pace timer gate carries the id-5/6 sim-clock path but "
+                    "wipe5 smooth constants are absent — Test5 would end 4x FAST")
 
     # Test5 morph-wipe optimization: all four pieces must ship together. The
     # dangerous partial is "strides doubled but grab cave absent/mangled" only
