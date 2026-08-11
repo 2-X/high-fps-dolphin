@@ -16,12 +16,15 @@ desktop 240fps setup. Everything you need is in this repo.
    | `saves/SRAM.raw` | `GC\` |
    | `dolphin-config/Profiles/GCPad/*.ini` | `Config\Profiles\GCPad\` |
    | `dolphin-config/GCPadNew.ini`, `GCKeyNew.ini`, `Hotkeys.ini` | `Config\` (Windows dialect, from the desktop) |
+   | `textures/GMSE01-pruned/` (whole folder) | `Load\Textures\GMSE01\` — the HD pack (portal previews + HUD/text) |
 
    Save + SRAM refreshed **2026-08-11 00:54** (tonight's desktop session).
-3. Graphics: Vulkan backend if available. Don't copy the desktop `GFX.ini` blindly —
-   set `HiresTextures`/`CacheHiresTextures` only if you also copy the texture pack
-   (the 4K pack is probably too heavy for a laptop; the 1080p zip in `textures/` is safer,
-   or skip HD textures entirely).
+3. Graphics: Vulkan backend if available. In Graphics → Advanced tick **Load Custom
+   Textures** and **Prefetch Custom Textures** (= GFX.ini `HiresTextures = True`,
+   `CacheHiresTextures = True`) so the pruned HD pack loads. This is the same pack the
+   desktop runs — it's pruned to just M-portal previews + HUD/digits/select-screen text,
+   so it costs almost nothing on a laptop GPU (~228MB VRAM prefetched). It is NOT the
+   full 4K world pack (that one stays out of git and isn't wanted anyway).
 4. Controller: load the GCPad profile, then re-pick the Device (name differs per machine)
    — bindings carry over.
 
