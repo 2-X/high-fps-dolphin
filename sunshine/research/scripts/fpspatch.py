@@ -27,6 +27,10 @@ that assumption is exactly how the fixed 1-in-2 particle gate shipped at 180fps:
      (riccohook_se_gate) — keyed on the audio pump's frame counter, because
      the pump gate alone measurably does not tame this per-tick SE flood (the
      240fps "womp womp womp" near the gondola)
+  10. the SE frame-process gate (hover/creak/tentacle cadence) → 1 frame in
+      FPS/30 rendered frames (se_frame_gate), exactly like the Noki gate —
+      supersedes the old per-site cogwheel request gate, which starved the
+      keep-alive window and chopped every repeating SE at 2x native rate
 
 Rate-INDEPENDENT, and correct as-is at every G:
   * hooks that READ the framerate global and self-scale — the raw anim-rate
@@ -39,9 +43,6 @@ Rate-INDEPENDENT, and correct as-is at every G:
   * BGM DSP voice-limiter kill + tempo guard; the HUD stars fix
   * the Poink gate — its bare `cmpwi 40` looks rate-tied but flyTimer runs on
     substep-invariant spine ticks, so 40 keeps its stock meaning at every G
-  * the cogwheel rope-creak SE gate — its bare 1-in-4 looks rate-tied but the
-    substep clock it divides is pinned at 120 Hz at every G, so 1-in-4 is the
-    native 30/sec everywhere (same reasoning as the Poink 40)
   * the skid-turn freshness fix — its bare 4-tick face delay is the stock 30 Hz
     pad staleness expressed in 120 Hz sim ticks, constant at every G (same
     reasoning again); it self-gates on the framerate global != 0.5f
@@ -772,52 +773,74 @@ def noki_dedupe():
     ])
 
 
-# ---- Noki cogwheel-lift rope-creak cadence (the urn pulley SE) ---------------
-# TCogwheel::control (USA 0x801da084) requests MSD_SE_OBJ_MR_TSUBO_PULL (0x3060,
-# JAL registration name "the rope supporting the Mare urn") on EVERY control()
-# tick while the wheel turns (|speed at +0x138| > 0.01), and TCogwheelScale::
-# control (0x801da818) requests MSD_SE_OBJ_MR_TSUBO_WATER (0x3061) every tick
-# while the pot drains. control() runs once per SUBSTEP (movement() in
-# TMarDirector::direct()), i.e. 120 Hz at every G, so the REQUEST rate is
-# rate-invariant — but JAudio collapses the request flood into one audible
-# (re)trigger per PROCESSED FRAME, so the creak fires at the render rate:
-# 30/sec stock, 120/sec at 120fps. That is the "bizarre fast rope ratchet" on
-# the Noki Ep.1 urn lifts.
+# ---- SE frame-process 30Hz gate (hover / rope creak / tentacle / ALL of them)
+# Actors request repeating SEs on EVERY move tick: TWaterGun::emit (PO_HOVER,
+# PO_WATER_HI, PO_NORMAL_NOZZLE_IMI), TCogwheel::control (OBJ_MR_TSUBO_PULL,
+# USA 0x801da1ec), TBGTentacle (BS_GESO_TAKEN_HAND, bgtentacle.cpp:1404), and
+# dozens more. The request flood is rate-invariant; the AUDIBLE cadence comes
+# from JAudio's per-rendered-frame SE processing pair (JAIGFrameSe.cpp):
+#   JAIBasic::checkNextFrameSe     — releases continuous SEs still in state 5
+#       (unrefreshed), starts pending ones, ticks one-shot lifetimes (--unk2)
+#   JAIBasic::sendPlayingSeCommand — resets refreshed (4) sounds back to 5,
+#       advances per-sound frame counters (unk14++, drives pitch evolution),
+#       resends distance/volume params
+# A request while the sound is in state 5 refreshes it (5->4, keep-alive); a
+# SECOND request before the next process stop+restarts it (JAISeEntry::
+# storeBuffer). So every repeating SE audibly retriggers once per PROCESSED
+# frame: 30/sec stock, FPS/sec hacked — hover putter, rope ratchet and
+# tentacle squeak all run FPS/30 x too fast. Gating the PROCESS to 1 rendered
+# frame in FPS/30 restores the native cadence for every SE in the game at
+# once, and also returns one-shot lifetimes and pitch counters to native.
 #
-# Gate both call sites to 1 substep in 4 on the director's substep counter
-# (gpMarDirector+0x5C, the same counter the particle parity gate reads): at
-# most one request per 4 substeps = 30/sec at EVERY G. The divisor is the
-# CONSTANT 120/30 = 4, not a function of G, because the substep retune pins
-# substeps at 120 Hz regardless of framerate (same reasoning as the Poink 40).
-# A shared per-object-blind counter would break with two lifts moving at once;
-# the global substep counter gives every instance the same 1-in-4 phase.
-# Gated ticks jump to the branch target the game itself uses when its own SE
-# category check fails (pure epilogue 0x801da22c / merge point 0x801da89c).
-# Clobbers only r12/ctr/cr0 — all dead at both hook points (cr0 was consumed
-# by the preceding ble, ctr is unused in both functions, r12 is volatile with
-# no local use between prologue and the SE bl).
-COGWHEEL_HOOKS = (
-    # (hook,      game's SE-skip target, overwritten original instruction)
-    (0x801DA1E8, 0x801DA22C, 0xC002DA10),   # TCogwheel:      TSUBO_PULL  (lfs f0,-0x25f0(r2))
-    (0x801DA860, 0x801DA89C, 0x806D9FBC),   # TCogwheelScale: TSUBO_WATER (lwz r3,-0x6044(r13))
-)
+# Both hooks early-blr before the prologue executes (first insn is mflr r0;
+# LR still holds the caller — blr is a clean skip; r0/r11/r12/cr0 are all
+# volatile at a function boundary). checkNextFrameSe is called only when the
+# init state allows (unk38->unk1 >= 4) but sendPlayingSeCommand runs
+# unconditionally and FIRST... no: processFrameWork calls checkNextFrameSe
+# BEFORE sendPlayingSeCommand, so the send hook OWNS the counter (increment +
+# store) and the check hook tests counter+1 WITHOUT storing — both then pass
+# on exactly the same rendered frames, in their natural order.
+#
+# Both USA entries are vtable-verified (slots 0x803ac4dc/f0 and 0x803e2500/14
+# point at them; no derived override exists — the 0xC00-mask state tests
+# appear nowhere else in the dol), so the hook covers all dispatch.
+#
+# Scratch counter 0x800016E8 (16E0/16E4 = Noki gates, 16F0 = camera scratch).
+#
+# This SUPERSEDES the same-day per-site cogwheel gate v1 (C2 @0x801DA1E8/860):
+# request-side gating starves the keep-alive window — at 120fps the sound is
+# released between gated requests and restarts every other frame, 60/sec
+# chop instead of the native 30. Never re-add per-site SE request gates.
+SE30_CHECK_HOOK = 0x80305204   # JAIBasic::checkNextFrameSe      (JP 0x8004FACC)
+SE30_SEND_HOOK  = 0x80305958   # JAIBasic::sendPlayingSeCommand  (JP 0x80050220)
+SE30_ORIG       = 0x7C0802A6   # mflr r0 — first insn of BOTH functions
+SE30_CTR        = 0x16E8       # low-arena scratch, offset from 0x80000000
 
-def cogwheel_se_gate():
-    def block(hook, skip, orig):
-        return _c2(hook, [
-            0x818D9FB8,                      # lwz    r12,-0x6048(r13)  gpMarDirector
-            0x280C0000,                      # cmplwi r12,0             null: fail-open
-            0x41820020,                      # beq    CONT
-            0x818C005C,                      # lwz    r12,0x5C(r12)     substep counter
-            0x718C0003,                      # andi.  r12,r12,3
-            0x41820014,                      # beq    CONT              1-in-4: request the SE
-            0x3D800000 | (skip >> 16),       # lis    r12,hi(skip)
-            0x618C0000 | (skip & 0xFFFF),    # ori    r12,r12,lo(skip)
-            0x7D8903A6,                      # mtctr  r12
-            0x4E800420,                      # bctr   -> game's own SE-skip path
-            orig,                            # CONT: the overwritten original
-        ])
-    return "\n".join(block(*h) for h in COGWHEEL_HOOKS)
+def se_frame_gate(fps):
+    """Gate the JAudio SE frame-process pair to 1 rendered frame in FPS/30.
+    None when FPS/30 is not integral (no exact native cadence exists)."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    def block(hook, store):
+        w = [0x3D608000,                             # lis   r11,0x8000
+             0x80000000 | (12 << 21) | (11 << 16) | SE30_CTR,   # lwz r12,ctr(r11)
+             0x398C0001]                             # addi  r12,r12,1
+        if store:
+            w.append(0x90000000 | (12 << 21) | (11 << 16) | SE30_CTR)  # stw
+        if n & (n - 1) == 0:
+            w.append(_andi_(12, 12, n - 1))          # andi. r12,r12,N-1
+        else:                                        # exact mod for N=6 etc.
+            w += [_li(11, n),                        # li    r11,N
+                  _divwu(0, 12, 11),                 # divwu r0,r12,r11
+                  _mullw(0, 0, 11),                  # mullw r0,r0,r11
+                  _subf_(0, 0, 12)]                  # subf. r0,r0,r12
+        w += [0x41820008,                            # beq   +8 -> CONT (run)
+              0x4E800020,                            # blr   — gated: skip whole fn
+              SE30_ORIG]                             # CONT: mflr r0 (original)
+        return _c2(hook, w)
+    return "\n".join([block(SE30_CHECK_HOOK, store=False),
+                      block(SE30_SEND_HOOK,  store=True)])
 
 
 # ---- Ricco hook/gondola slide-clank cadence (the 240fps "womp womp" wall) ----
@@ -1328,6 +1351,28 @@ C2324EB8 00000009
 907E011C 7FC3F378
 60000000 00000000"""
 
+# ---- Heat-haze shimmer pace (catalog item 28) -------------------------------
+# TShimmer::perform (USA 0x8019F83C) advances its indirect-warp BTK on every
+# CUE_MOVE via a private J3DFrameCtrl pinned at rate 1.0 by init — it never
+# passes through SMSGetAnmFrameRate(), so the substep retune's 120 Hz MOVE
+# cadence runs the mirage 4x fast at EVERY G. Not reachable via ANMRATE_SITES
+# (init's 1.0 is the only writer), hence this dedicated store hook.
+# SELF-GATED: re-execs the original lwz r3,0x58(r29), then compares the
+# framerate global (-0x3E8(r2)) against native 0.5f (-0x7FD8(r2)); equal ->
+# stock/off -> skip. Else store 0.25f into ctrl->mRate(+0xC): 120 Hz x 0.25 =
+# stock 30 anim-units/s. Under BSE the global is 2.0f != 0.5f so it activates
+# there too — correct at 120 in both engines. Clobbers f0/f13/r12/cr0, all
+# dead at the hook (f0 last read at 0x8019F898, cr0 redefined by the rlwinm.
+# at 0x8019F8A4, r12/f13 volatile across the following bl). Emitted VERBATIM
+# from research/codes/shimmer-pace-v1.txt. Default-on in the stock bundle
+# (--no-shimmer to opt out) and in the --bse companion.
+SHIMMER = """C219F89C 00000005
+807D0058 C002FC18
+C1A28028 FC006800
+41820014 3D803E80
+9181FFF8 C001FFF8
+D003000C 00000000"""
+
 PROXIMITY_GLOW = """C21EBA60 0000000C
 816D9F4C C04B0000
 C01F0010 EC420028
@@ -1522,7 +1567,7 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
           cogwheel=True, input_latch_fix=True, select_fix=True, wipe_opt=True,
           turnfix=True, wipe_pace_fix=True, audio_pump=True, thp_pace_fix=True,
-          riccohook=True, wipe_swap=True):
+          riccohook=True, wipe_swap=True, shimmer=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -1572,7 +1617,9 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
     if poink:
         parts.append(POINK)
     if cogwheel:
-        parts.append(cogwheel_se_gate())       # constant 1-in-4; see COGWHEEL_HOOKS
+        sg = se_frame_gate(fps)                # global SE 30Hz gate; supersedes cogwheel_se_gate
+        if sg:
+            parts.append(sg)
     if riccohook:
         rh = riccohook_se_gate(fps)            # render-rate class: FPS/30 divisor
         if rh:
@@ -1604,9 +1651,370 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         parts.append(wipe5_smooth(fps))
     if bluecoin and g == 2:                    # calibrated at G=2 only — see BLUECOIN
         parts.append(BLUECOIN)
+    if shimmer:                                # catalog item 28: self-gated on 0.5f
+        parts.append(SHIMMER)
     if sun_probe:
         parts.append(SUN_PROBE)
     return "\n".join(parts)
+
+
+# ============================================================================
+# BSE-120 companion bundle
+# ----------------------------------------------------------------------------
+# Under the "Better Sunshine Engine" online mod (BSMSO), BSE re-writes the
+# framerate global 0x804167B8 EVERY frame; at BSE FPS_120 (mFPSValue=2) it
+# writes float 2.0f (0x40000000). The stock fpspatch bundle is NOT usable
+# there: its 04 write to 0x804167B8 is a one-shot, immediately clobbered, and
+# its EmulationSpeed regime differs. Instead each fix is re-authored so its C2
+# body runs ONLY when the global holds exactly 2.0f — a guard prologue reads
+# 0x804167B8 and, if != 2.0f, falls straight through to the block's original
+# instruction + branch-back (i.e. STOCK behavior: the gate never fires).
+#
+# The guard is the production-proven pattern (byte-verified in the live INI's
+# particle-parity BSE code): read 0x804167B8, cmpw against 0x40000000, bne to
+# the block's run-stock convergence point. Scratch here is r0 (the loaded
+# value) + r11 (the 2.0f literal) + cr0 — chosen because they are dead at
+# EVERY hook this companion touches: the noki call sites keep their live args
+# in r3/r4 (never r0/r11 until the cave itself reloads them), the wipe timer's
+# r0 is a WRITE target re-materialised by the re-executed addi, and the SE
+# entries have volatile r0/r11 at a function boundary. r12 is left free for the
+# block bodies that already use it as their counter base.
+BSE_FPS120_WORD = 0x40000000            # float 2.0f = *0x804167B8 at BSE FPS_120
+
+GUARD_BNE_WORD = 4                       # the bne is always the 5th guard word
+
+def _bse_guard(target_word, base=12, val=0, lit=11):
+    """Guard prologue (5 words). `target_word` = the block-start word index of
+    the run-stock convergence point (the block's re-executed original
+    instruction, or the 'run the gated body' path). The bne at word 4 branches
+    there; on 2.0f-equal the guard falls through into the block body at word 5.
+
+    Register choice defaults to the proven r12(base)/r0(val)/r11(lit) triple. The
+    animal_duration hook (0x8000AB60) spills a LIVE r0 one instruction later
+    (the int->double 0x43300000 magic word set at 0x8000AB5C), so that block
+    passes base=12, val=11, lit=12 to keep r0 untouched — both r11 and r12 are
+    reloaded by the block body on the guard-pass path and are dead after the
+    hook on the guard-fail path."""
+    disp = ((target_word - GUARD_BNE_WORD) * 4) & 0xFFFC
+    return [(15 << 26) | (base << 21) | 0x8041,       # lis   rBase,0x8041
+            (32 << 26) | (val << 21) | (base << 16) | 0x67B8,  # lwz rVal,0x67B8(rBase)
+            (15 << 26) | (lit << 21) | 0x4000,        # lis   rLit,0x4000  (2.0f)
+            (31 << 26) | (val << 16) | (lit << 11),   # cmpw  rVal,rLit
+            0x40820000 | disp]                        # bne   -> run-stock
+
+# The BSE particle-parity code is emitted VERBATIM (byte-identical to the live
+# INI): three 8-pair guarded blocks, the guard folded into the proven cadence
+# body. Do NOT regenerate from particles()/_parity_block — those are the
+# UNGUARDED stock caves. Block bodies are identical apart from the hook addr.
+def _bse_parity_block(hook):
+    return "\n".join([
+        f"{hook} 00000008",
+        "3C608041 800367B8",
+        "3C804000 7C002000",
+        "40820024 806D9FB8",
+        "28030000 41820010",
+        "8063005C 70600001",
+        "4082000C C002DD68",
+        "EC21002A FC00081E",
+        "60000000 00000000",
+    ])
+
+BSE_PARITY = "\n".join(_bse_parity_block(h) for h in
+                       ("C22887A8", "C2288D30", "C2288DEC"))
+
+BSE_FORCE_120 = "0451E528 00000002"     # BSE mFPSValue = 2 (FPS_120)
+
+
+def bse_noki_gate(fps=120):
+    """noki_gate with a BSE guard on every block. Guard-fail => the gated call
+    RUNS (stock: pollution counting every frame)."""
+    n = int(fps // 30)                                  # 4 at 120
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    L = len(gate)
+    def gated_call(hook, target, pre):
+        # [guard -> CALL][pre][gate][bne CALL][call x4 = CALL][branch-back]
+        body = pre + gate
+        body.append(0x40820000 | ((5 * 4) & 0xFFFC))    # bne +20 -> _call (run)
+        call = _call(target)
+        # CALL index (from guard word 0): guard(5) + body + this bne is the last
+        # of `body`; _call begins right after.
+        i_call = 5 + len(body)                          # start of _call = run path
+        w = _bse_guard(i_call) + body + call
+        return _c2(hook, w)
+    def plain_call(hook, target, pre):
+        # drain: no divisor. guard-fail -> the call (which is stock behavior).
+        call = _call(target)
+        i_call = 5 + len(pre)
+        w = _bse_guard(i_call) + pre + call
+        return _c2(hook, w)
+    return "\n".join([
+        gated_call(*NOKI_OBJ_CALL, pre=_tick(NOKI_OBJ_CTR)),
+        plain_call(*NOKI_DRAIN_CALL, pre=_tick(NOKI_TEX_CTR)),
+        gated_call(*NOKI_TEX_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+        gated_call(*NOKI_FIN_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+    ])
+
+
+def bse_noki_copy_gate(fps=120):
+    """noki_copy_gate with a BSE guard. Guard-fail => the original
+    lwz r0,0x2c(r29) runs (stock: EFB copy every frame)."""
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    L = len(gate)
+    G = 5                                                # guard words
+    i_bne = G + 2
+    i_beq = G + 5 + L
+    i_b = G + 7 + L
+    i_load = G + 8 + L                                   # original lwz (run-stock)
+    i_out = G + 9 + L                                    # branch-back slot
+    w = _bse_guard(i_load)                               # guard-fail -> orig lwz
+    w += [0x819D0030,                                    # lwz    r12,0x30(r29) mTexFmt
+          0x280C0028,                                    # cmplwi r12,0x28
+          0x40820000 | (((i_load - i_bne) * 4) & 0xFFFC),
+          0x3D808000,                                    # lis    r12,0x8000
+          0x80000000 | (11 << 21) | (12 << 16) | NOKI_TEX_CTR]  # lwz r11,texCtr
+    w += gate
+    w += [0x41820000 | (((i_load - i_beq) * 4) & 0xFFFC),        # beq -> allow copy
+          0x38000000,                                   # li r0,0: pretend no image
+          0x48000000 | (((i_out - i_b) * 4) & 0x03FFFFFC),
+          0x801D002C]                                    # lwz r0,0x2c(r29) (orig)
+    return _c2(0x802F8CF8, w)
+
+
+def bse_se_frame_gate(fps=120):
+    """se_frame_gate with a BSE guard. Guard-fail => the original mflr r0 runs
+    and execution falls through into the function (stock: SE process every
+    rendered frame)."""
+    n = int(fps // 30)
+    def block(hook, store):
+        w0 = [0x3D608000,                                # lis   r11,0x8000
+              0x80000000 | (12 << 21) | (11 << 16) | SE30_CTR,   # lwz r12,ctr(r11)
+              0x398C0001]                                # addi  r12,r12,1
+        if store:
+            w0.append(0x90000000 | (12 << 21) | (11 << 16) | SE30_CTR)
+        if n & (n - 1) == 0:
+            w0.append(_andi_(12, 12, n - 1))
+        else:
+            w0 += [_li(11, n), _divwu(0, 12, 11),
+                   _mullw(0, 0, 11), _subf_(0, 0, 12)]
+        # [guard -> ORIG][body][beq CONT][blr][CONT: mflr r0 = ORIG]
+        i_orig = 5 + len(w0) + 2                         # index of SE30_ORIG (mflr)
+        w = _bse_guard(i_orig) + w0 + [
+            0x41820008,                                  # beq +8 -> CONT (run)
+            0x4E800020,                                  # blr — gated: skip fn
+            SE30_ORIG]                                   # CONT: mflr r0 (orig)
+        return _c2(hook, w)
+    return "\n".join([block(SE30_CHECK_HOOK, store=False),
+                      block(SE30_SEND_HOOK, store=True)])
+
+
+def bse_wipe_pace(fps=120):
+    """wipe_pace (smooth56=False) with a BSE guard on all three blocks.
+    Guard-fail => wipes run STOCK (ungated): the original insn executes and the
+    counter machinery is bypassed."""
+    n = int(fps // 30)
+    G = 5
+    # tick: guard-pass -> increment the shared counter THEN the original stfs;
+    # guard-fail -> straight to the original stfs (counter frozen, harmless: the
+    # timer/motion gates run stock when the guard fails). The orig stfs is the
+    # convergence word so both paths execute it exactly once.
+    tick = _c2(WIPE_TICK_HOOK, _bse_guard(G + 4) + [   # guard-fail -> orig stfs
+        0x3D808000,                                     # lis  r12,0x8000
+        0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR,   # lwz r11,ctr
+        0x396B0001,                                     # addi r11,r11,1
+        0x90000000 | (11 << 21) | (12 << 16) | WIPE_CTR,   # stw r11,ctr
+        0xD3FF0018])                                    # stfs f31,0x18(r31) (orig)
+    # timer: guard-fail -> the original addi r0,r3,-1 (PASS word).
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    L = len(gate)
+    i_pass = G + 5 + L                                   # addi r0,r3,-1 (orig)
+    i_skip = G + 6 + L                                   # branch-back slot
+    timer_body = [0x3D808000,                            # lis  r12,0x8000
+                  0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]  # lwz r11,ctr
+    timer_body += gate
+    timer_body += [0x41820000 | (((i_pass - (G + 2 + L)) * 4) & 0xFFFC),  # beq PASS
+                   0x38030000,                          # gated: r0 = r3 (hold)
+                   0x48000000 | (((i_skip - (G + 4 + L)) * 4) & 0x03FFFFFC),  # b SKIP
+                   0x3803FFFF]                           # PASS: addi r0,r3,-1 (orig)
+    timer = _c2(WIPE_TIMER_HOOK, _bse_guard(i_pass) + timer_body)
+    # motion: guard-fail -> the original lfs f0,0(r3), then branch-back.
+    i_orig = G + 7 + L                                   # lfs f0,0(r3) (orig)
+    motion_body = [0x3D808000,
+                   0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR]
+    motion_body += gate
+    motion_body += [0x41820000 | (((i_orig - (G + 2 + L)) * 4) & 0xFFFC),  # beq -> advance
+                    0x3D800000 | (WIPE_MOTION_TAIL >> 16),      # gated: return current
+                    0x618C0000 | (WIPE_MOTION_TAIL & 0xFFFF),   # via the fn's own tail
+                    0x7D8903A6, 0x4E800420,             # mtctr r12 ; bctr
+                    0xC0030000]                          # lfs f0,0(r3) (orig)
+    motion = _c2(WIPE_MOTION_HOOK, _bse_guard(i_orig) + motion_body)
+    return "\n".join([tick, timer, motion])
+
+
+# StarFix v4's three blocks, each re-executing its overwritten original as the
+# LAST real word before the branch-back (all internal control paths already
+# converge there): block1 lwz r4,0x144(r29) @word12, block2 lwz r3,-0x5FDC(r13)
+# @word6, block3 mr r3,r30 @word15. Prepending the 5-word guard shifts every
+# body word by +5 but leaves the bodies' OWN relative branches intact (they are
+# position-relative); the guard's bne is aimed at the shifted original word so
+# guard-fail lands exactly on the re-executed original. STARFIX uses r3-r7/r0/
+# cr0; the guard's r0/r11/r12 are all reloaded or unused before use, cr0 is
+# recomputed by each block's own compare.
+BSE_STARFIX_ORIG_WORD = {0x8014A850: 12, 0x80155D8C: 6, 0x80324EB8: 15}
+
+def bse_starfix():
+    out = []
+    for kind, addr, body in _iter_codes(STARFIX):
+        body = body[:-1]                        # drop the handler-clobbered 0 pad
+        i_orig = BSE_STARFIX_ORIG_WORD[addr]
+        w = _bse_guard(5 + i_orig) + body       # guard-fail -> shifted original
+        out.append(_c2(addr, w))
+    return "\n".join(out)
+
+
+# ---- Game-clock fix v15 under BSE — SELF-GATED, emitted VERBATIM ------------
+# timerfix(120) already compares 0x804167B8 against float(2.0) and blr's (no-op)
+# on mismatch. BSE writes exactly 2.0f every frame at FPS_120, so the self-gate
+# passes there and fails at stock — no BSE guard needed. (Verified: the emitted
+# body opens lis r5,0x8041 / lwz r5,0x67B8(r5) / lis r6,0x4000 / cmpw / bne blr.)
+def bse_timerfix(fps=120):
+    return timerfix(fps)
+
+
+# ---- Raw anim-rate fixes under BSE — SELF-GATED, emitted VERBATIM -----------
+# Each anmrate block reads the framerate global via lfs f_,-0x3E8(r2)
+# (0x804167B8) and compares it against native 0.5f; beq -> skip (stock no-op).
+# Under BSE the global is 2.0f != 0.5f, so the R*0.5*0.5 = R/4 scale fires —
+# correct at 120 in both engines (calc_anim is substep-pinned at ~120 Hz). No
+# BSE guard needed: the != 0.5f self-gate already activates the fix under BSE
+# and disables it at stock. (Verified: disp is -0x3E8, not the -0x3C8 60.0f slip.)
+def bse_anmrate(fps=120):
+    return anmrate()
+
+
+# ---- Animal ×4 movement/duration under BSE — UNGATED, NEWLY GUARDED ---------
+# animal_speed()'s blocks are unconditional [fadds f1,f1,f1; fadds; orig] and
+# animal_duration()'s scale is gated only on the caller-LR range (Animal TU vs
+# calc_anim callers), NOT on the framerate global. Both ship unconditionally
+# with the substep retune in the stock bundle. Under BSE the retune is not
+# present, so an unconditional ×4 would quadruple animal speeds at stock cadence
+# — every block needs the BSE guard so it is inert unless the global holds 2.0f.
+#
+# Guard-fail = the block's original instruction runs exactly once, stock.
+#   speed:    orig is the LAST body word; guard-fail -> that word (index 5+2).
+#   duration: orig fdivs f0,f0,f1 is the FIRST body word AND r0 is LIVE across
+#             the hook (0x8000AB5C sets r0=0x43300000, spilled at 0x8000AB64), so
+#             the guard MUST NOT clobber r0 -> base=12,val=11,lit=12 keeps r0.
+#             Layout: [guard][fdivs (orig)][b END on guard-pass? no] — the scale
+#             is LR-gated, so guard-pass runs fdivs + LR test + scale, guard-fail
+#             runs fdivs then jumps past the scale. fdivs executes exactly once
+#             on both paths, converging on the final zero word.
+def bse_animal_speed(fps=120):
+    blocks = []
+    for hook, orig in ANIMAL_SPEED_SITES:
+        body = [_fadds(1, 1, 1), _fadds(1, 1, 1), orig]   # scale then original
+        i_orig = 5 + 2                                     # guard-fail -> orig word
+        blocks.append(_c2(hook, _bse_guard(i_orig) + body))
+    return "\n".join(blocks)
+
+
+def bse_animal_duration(fps=120):
+    # Two run-once copies of the original fdivs so guard-pass and guard-fail
+    # never share a word after diverging:
+    #   guard-PASS  falls to G+0: fdivs, LR test, (scale | bge->END)
+    #   guard-FAIL  bne -> TAIL: a second fdivs, then the branch-back
+    # The bge (non-Animal caller on the PASS path) targets END = the zero pad,
+    # skipping the TAIL fdivs so it is never double-run. r0 stays intact
+    # (guard uses base=12,val=11,lit=12).
+    G = 5
+    body = [0xEC000824,                          # G+0: fdivs f0,f0,f1 (original, PASS)
+            0x7D8802A6,                          # G+1: mflr  r12
+            0x3D608001,                          # G+2: lis   r11,0x8001
+            0x396B3000,                          # G+3: addi  r11,r11,0x3000
+            0x7C0C5840,                          # G+4: cmplw r12,r11
+            0,                                   # G+5: bge -> PAD (patched)
+            _lfs(13, 2, HALF_DISP),              # G+6: f13 = 0.5f
+            _fmuls(0, 0, 13),                    # G+7: f0 *= 0.5
+            _fmuls(0, 0, 13),                    # G+8: f0 *= 0.25
+            0,                                   # G+9: b PAD (patched, over the TAIL)
+            0xEC000824]                          # G+10: TAIL fdivs (guard-FAIL copy),
+                                                 #        falls onto PAD (zero word)
+    i_tail = G + 10                              # guard-fail lands on the TAIL fdivs
+    i_pad = G + len(body)                        # zero pad / branch-back
+    body[5] = 0x40800000 | (((i_pad - (G + 5)) * 4) & 0xFFFC)          # bge  -> PAD
+    body[9] = 0x48000000 | (((i_pad - (G + 9)) * 4) & 0x03FFFFFC)      # b    -> PAD
+    guard = _bse_guard(i_tail, base=12, val=11, lit=12)  # keep r0 intact
+    return _c2(ANIMAL_DURATION_HOOK, guard + body)
+
+
+# ---- Poink v14 gate under BSE — UNGATED, NEWLY GUARDED ----------------------
+# The POINK literal is unconditional: the first-tick block reverts to the Fly
+# nerve when mid-flight and flyTimer<40, else falls to the original lfs. Its
+# logic is rate-independent (flyTimer is spine-tick paced), but there is no
+# reason to run it at stock cadence under BSE, so it takes the guard. Guard-fail
+# -> the original lfs f1,-0x5ba0(r2) runs (stock: no early-explosion cancel).
+# The mid-flight skip path uses bctr to 0x800E6000 (the fn epilogue) and never
+# reaches the branch-back; guard-fail does NOT take that path — it lands on the
+# re-executed original lfs, which then converges on the final zero word exactly
+# as the non-flight / timer>=40 paths already do. r0/r11/r12 are dead across the
+# hook (0x800E5E48 rewrites r0/r3/r4 before any read; r11/r12 untouched by the
+# following code).
+def bse_poink():
+    # POINK body without the trailing handler-zero pad.
+    body = next(b for k, a, b in _iter_codes(POINK))[:-1]
+    i_orig = len(body) - 1                        # the original lfs f1,-0x5ba0(r2)
+    return _c2(0x800E5E44, _bse_guard(5 + i_orig) + body)
+
+
+def bse_bluecoin():
+    """BLUECOIN recalibrated for BSE-120. Under BSE there is no substep
+    machinery: TCoin::perform ticks at the full 120Hz render rate, so the
+    correct gate is keep 1-of-4 decrements (30/s -> native 20s lifetime),
+    the INVERSE of the stock kit's keep 3-of-4 (which was calibrated to its
+    measured ~40 ticks/s). One-word change: the %4 branch flips beq->bne
+    (%4==0 -> decrement, else hold). Confirmed direction by live symptom
+    2026-08-13: spray coins vanished ~4x fast under BSE with the fix off.
+    Self-gates on *0x804167B8 == 2.0f like the stock block."""
+    assert BLUECOIN.count("4182000C") == 1, "BLUECOIN layout changed — re-derive"
+    return BLUECOIN.replace("4182000C", "4082000C")
+
+
+def bse_build(fps):
+    """The BSE-120 companion bundle. Every guarded block runs only when the
+    framerate global holds exactly 2.0f (BSE FPS_120); otherwise it falls
+    through to stock behavior. BLUECOIN and SHIMMER self-gate and are emitted
+    as-is. Error if fps != 120 (BSE has no FPS_240; mFPSValue=3 is uninit)."""
+    if int(fps) != 120:
+        raise SystemExit(f"--bse only supports 120fps (BSE FPS_120 = mFPSValue=2); "
+                         f"{fps:g} has no defined framerate global write")
+    sections = [
+        ("$BSE Force 120 FPS", BSE_FORCE_120),
+        ("$Particle parity BSE-120 (JPA 60Hz gate, guarded)", BSE_PARITY),
+        ("$Noki pollution 30Hz gate BSE-120 (CRASHES Bianco Ep.1 under BSE — "
+         "DISABLED pending root-cause, do not enable)",
+         bse_noki_gate(120) + "\n" + bse_noki_copy_gate(120)),
+        ("$HUD StarFix v4 BSE-120 (guarded)", bse_starfix()),
+        ("$Blue-coin lifetime v6-BSE (keep 1-of-4; self-gated 2.0f; "
+         "NEEDS-TEST ~20s)", bse_bluecoin()),
+        ("$Wipe pace 30Hz gate BSE-120 (guarded)", bse_wipe_pace(120)),
+        ("$SE frame-process 30Hz gate BSE-120 (guarded)", bse_se_frame_gate(120)),
+        ("$Game-clock fix v15 BSE-120 (self-gated on 2.0f; NEEDS-TEST)",
+         bse_timerfix(120)),
+        ("$Raw anim-rate x0.25 fixes BSE-120 (self-gated on !=0.5f; NEEDS-TEST)",
+         bse_anmrate(120)),
+        ("$Animal x4 movement speed BSE-120 (guarded; NEEDS-TEST)",
+         bse_animal_speed(120)),
+        ("$Animal x4 nerve duration BSE-120 (guarded; NEEDS-TEST)",
+         bse_animal_duration(120)),
+        ("$Poink premature-explosion gate v14 BSE-120 (guarded; NEEDS-TEST)",
+         bse_poink()),
+        ("$Heat-haze shimmer pace (self-gated; active under BSE 2.0f)", SHIMMER),
+    ]
+    out = []
+    for title, body in sections:
+        out.append(title)
+        out.append(body)
+    return "\n".join(out)
 
 
 def emit_ini(fps, title, bundle):
@@ -1666,10 +2074,251 @@ PARTICLE_HOOKS = (0x802887A8, 0x80288D30, 0x80288DEC)
 SDA2 = 0x80416BA0              # r2, from __init_registers @0x8000536C
 FRAMERATE_GLOBAL = 0x804167B8  # = -0x3E8(r2)
 
-def check(bundle, fps=None):
+def _has_bse_guard(body):
+    """True iff `body` opens with the proven guard prologue: lwz of 0x67B8 off
+    a lis 0x8041 base, then a cmpw against a lis 0x4000 (2.0f). Tolerant of the
+    two register conventions used (r3 base in the parity blocks, r12 elsewhere)."""
+    for j in range(len(body) - 4):
+        w0, w1, w2, w3, w4 = body[j:j + 5]
+        base = (w0 >> 21) & 31
+        if (w0 >> 26) != 15 or (w0 & 0xFFFF) != 0x8041:          # lis rB,0x8041
+            continue
+        if (w1 >> 26) != 32 or ((w1 >> 16) & 31) != base or (w1 & 0xFFFF) != 0x67B8:
+            continue                                             # lwz rV,0x67B8(rB)
+        val = (w1 >> 21) & 31
+        # w2 = lis rL,0x4000 ; w3 = cmpw rV,rL ; w4 = bne
+        if (w2 >> 26) != 15 or (w2 & 0xFFFF) != 0x4000:
+            continue
+        lit = (w2 >> 21) & 31
+        if (w3 >> 26) != 31 or ((w3 >> 1) & 0x3FF) != 0:         # cmp
+            continue
+        if ((w3 >> 16) & 31) != val or ((w3 >> 11) & 31) != lit:
+            continue
+        if (w4 >> 26) != 16 or (w4 & 0x03FF0000) != 0x00820000:  # bne (BO/BI = 4,2)
+            continue
+        return True
+    return False
+
+
+def _check_bse(codes, n_c2, errs):
+    """BSE-120 companion validation: guard prologue per guarded block, divisor 4
+    for noki/wipe/se, parity + shimmer byte-identical, force-120 present, and no
+    stock 04 write to 0x804167B8 (which the guard cannot save from a C2 collision)."""
+    # a. Force 120 FPS
+    if codes.get(("04", 0x8051E528)) != 0x00000002:
+        errs.append("$BSE Force 120 FPS: 0451E528 00000002 missing/wrong "
+                    "(mFPSValue must be 2 = FPS_120)")
+    # The stock framerate-global 04 write must NOT appear — BSE owns 0x804167B8.
+    if ("04", 0x804167B8) in codes:
+        errs.append("stock 04 write to 0x804167B8 present in the BSE bundle — BSE "
+                    "rewrites it every frame; drop it")
+
+    # b. Particle parity — byte-identical to the proven live-INI blocks.
+    for hook in PARTICLE_HOOKS:
+        body = codes.get(("C2", hook))
+        want = next(b for k, a, b in _iter_codes(
+            _bse_parity_block(f"C2{hook & 0x01FFFFFF:06X}")))
+        if body != want:
+            errs.append(f"BSE parity @{hook:08X}: not byte-identical to the proven "
+                        f"guarded parity block")
+        elif not _has_bse_guard(body):
+            errs.append(f"BSE parity @{hook:08X}: guard prologue absent")
+
+    # c. Noki gate + copy gate — guard on every block, divisor 4 on the gated ones.
+    noki_hooks = [NOKI_OBJ_CALL[0], NOKI_DRAIN_CALL[0], NOKI_TEX_CALL[0],
+                  NOKI_FIN_CALL[0]]
+    for hook in noki_hooks:
+        body = codes.get(("C2", hook))
+        if body is None:
+            errs.append(f"BSE noki block @{hook:08X} missing"); continue
+        if not _has_bse_guard(body):
+            errs.append(f"BSE noki @{hook:08X}: guard prologue absent")
+        n = _implied_divisor(body, ctr=11)
+        if hook == NOKI_DRAIN_CALL[0]:
+            if n is not None:
+                errs.append(f"BSE noki drain @{hook:08X}: carries a divisor (must "
+                            f"run every frame)")
+        elif n != 4:
+            errs.append(f"BSE noki @{hook:08X}: encodes 1-in-{n}, expected 1-in-4")
+    copy = codes.get(("C2", 0x802F8CF8))
+    if copy is None:
+        errs.append("BSE noki copy gate @0x802F8CF8 missing")
+    else:
+        if not _has_bse_guard(copy):
+            errs.append("BSE noki copy gate @0x802F8CF8: guard prologue absent")
+        if _implied_divisor(copy, ctr=11) != 4:
+            errs.append("BSE noki copy gate @0x802F8CF8: divisor != 4")
+        if copy[-2] != 0x801D002C:
+            errs.append("BSE noki copy gate: last real word != orig lwz r0,0x2c(r29)")
+
+    # d. StarFix v4 — guard on all three blocks; original re-executed as the last
+    #    real word.
+    for addr, i_orig in BSE_STARFIX_ORIG_WORD.items():
+        body = codes.get(("C2", addr))
+        if body is None:
+            errs.append(f"BSE StarFix @{addr:08X} missing"); continue
+        if not _has_bse_guard(body):
+            errs.append(f"BSE StarFix @{addr:08X}: guard prologue absent")
+
+    # e. Blue-coin — self-gated; BSE variant must carry the INVERTED %4 branch
+    # (keep 1-of-4: bne 0x4082000C), never the stock keep-3-of-4 beq.
+    bc = codes.get(("C2", 0x801BE880))
+    if bc is None:
+        errs.append("BSE bundle: blue-coin block @0x801BE880 missing")
+    else:
+        if 0x4082000C not in bc:
+            errs.append("BSE blue-coin: keep-1-of-4 bne (4082000C) absent")
+        if 0x4182000C in bc:
+            errs.append("BSE blue-coin: stock keep-3-of-4 beq (4182000C) present — "
+                        "wrong calibration for BSE")
+
+    # f. Wipe pace — guard on all three, divisor 4 on timer + motion.
+    for hook, ctr, want_n in ((WIPE_TICK_HOOK, None, None),
+                              (WIPE_TIMER_HOOK, 11, 4),
+                              (WIPE_MOTION_HOOK, 11, 4)):
+        body = codes.get(("C2", hook))
+        if body is None:
+            errs.append(f"BSE wipe block @{hook:08X} missing"); continue
+        if not _has_bse_guard(body):
+            errs.append(f"BSE wipe @{hook:08X}: guard prologue absent")
+        if want_n is not None and _implied_divisor(body, ctr=ctr) != want_n:
+            errs.append(f"BSE wipe @{hook:08X}: divisor "
+                        f"{_implied_divisor(body, ctr=ctr)} != {want_n}")
+    tick = codes.get(("C2", WIPE_TICK_HOOK))
+    if tick is not None and 0xD3FF0018 not in tick:
+        errs.append("BSE wipe tick: re-executed original stfs f31,0x18(r31) absent")
+
+    # g. SE frame-process gate — guard on both, divisor 4, only send stores.
+    for hook, may_store in ((SE30_CHECK_HOOK, False), (SE30_SEND_HOOK, True)):
+        body = codes.get(("C2", hook))
+        if body is None:
+            errs.append(f"BSE SE gate @{hook:08X} missing"); continue
+        if not _has_bse_guard(body):
+            errs.append(f"BSE SE gate @{hook:08X}: guard prologue absent")
+        if _implied_divisor(body, ctr=12) != 4:
+            errs.append(f"BSE SE gate @{hook:08X}: divisor != 4")
+        real = [w for w in body if w not in (0, NOP)]
+        if not real or real[-1] != SE30_ORIG:
+            errs.append(f"BSE SE gate @{hook:08X}: last real word != mflr r0")
+        stores = any((w >> 26) == 36 and ((w >> 21) & 31) == 12 for w in body)
+        if stores != may_store:
+            errs.append(f"BSE SE gate @{hook:08X}: counter store "
+                        f"{'missing' if may_store else 'present'} (send owns it)")
+
+    # h. Game-clock fix v15 — SELF-GATED (no BSE guard). Assert the block reads
+    #    the framerate global 0x804167B8 and compares against 2.0f, then blr's.
+    tfx = codes.get(("C2", 0x80348180))
+    if tfx is None:
+        errs.append("BSE bundle: game-clock fix v15 @0x80348180 missing")
+    else:
+        # lis r5,0x8041 ; lwz r5,0x67B8(r5)
+        if tfx[0] != 0x3CA08041 or tfx[1] != 0x80A567B8:
+            errs.append("BSE timerfix @0x80348180: does not read the framerate "
+                        "global via lis r5,0x8041 / lwz r5,0x67B8(r5)")
+        if 0x3CC04000 not in tfx:            # lis r6,0x4000 = float 2.0f
+            errs.append("BSE timerfix @0x80348180: missing the 2.0f self-gate "
+                        "literal (lis r6,0x4000) — would fire at stock too")
+        if 0x4E800020 not in tfx:            # blr (replaces the original)
+            errs.append("BSE timerfix @0x80348180: missing the blr")
+
+    # i. Raw anim-rate x0.25 — SELF-GATED. Every block must reach the framerate
+    #    global through r2 at disp -0x3E8 (NOT the -0x3C8 60.0f slip) and compare
+    #    against native 0.5f.
+    for site, _, _ in ANMRATE_SITES:
+        body = codes.get(("C2", site))
+        if body is None:
+            errs.append(f"BSE anmrate @{site:08X} missing"); continue
+        found = False
+        for w in body:
+            if (w >> 26) == 48 and ((w >> 16) & 31) == 2:        # lfs frX,d(r2)
+                va = SDA2 + struct.unpack(">h", struct.pack(">H", w & 0xFFFF))[0]
+                found = True
+                if va != FRAMERATE_GLOBAL:
+                    errs.append(f"BSE anmrate @{site:08X}: lfs reads 0x{va:08X}, not "
+                                f"the framerate global 0x{FRAMERATE_GLOBAL:08X} "
+                                f"(the -0x3C8/-0x3E8 SDA slip)")
+                break
+        if not found:
+            errs.append(f"BSE anmrate @{site:08X}: no framerate-global read — the "
+                        f"self-gate is absent, would fire at stock")
+        if not any((w >> 26) == 48 and ((w >> 16) & 31) == 2
+                   and (w & 0xFFFF) == (HALF_DISP & 0xFFFF) for w in body):
+            errs.append(f"BSE anmrate @{site:08X}: missing the 0.5f compare "
+                        f"constant (lfs f,-0x7FD8(r2)) — self-gate incomplete")
+
+    # j. Animal x4 speed — GUARDED. Guard on every block; guard-fail must land
+    #    on the re-executed original (the last real word).
+    for hook, orig in ANIMAL_SPEED_SITES:
+        body = codes.get(("C2", hook))
+        if body is None:
+            errs.append(f"BSE animal-speed @{hook:08X} missing"); continue
+        if not _has_bse_guard(body):
+            errs.append(f"BSE animal-speed @{hook:08X}: guard prologue absent")
+        real = [w for w in body if w not in (0, NOP)]
+        if not real or real[-1] != orig:
+            errs.append(f"BSE animal-speed @{hook:08X}: last real word "
+                        f"{real[-1] if real else 0:08X} != re-executed original "
+                        f"{orig:08X}")
+        # exactly two fadds f1,f1,f1 (the x4 scale)
+        if sum(1 for w in body if w == _fadds(1, 1, 1)) != 2:
+            errs.append(f"BSE animal-speed @{hook:08X}: x4 scale is not two "
+                        f"fadds f1,f1,f1")
+
+    # k. Animal x4 duration — GUARDED, r0-preserving guard (val=r11,lit=r12).
+    #    fdivs f0,f0,f1 must appear (once per path = twice total), and the guard
+    #    must NOT clobber r0 (its lwz target must be r11, not r0).
+    dur = codes.get(("C2", ANIMAL_DURATION_HOOK))
+    if dur is None:
+        errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X} missing")
+    else:
+        if not _has_bse_guard(dur):
+            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: guard absent")
+        # guard word 1 is lwz rVal,0x67B8(rBase): rVal must not be r0 (live spill)
+        if dur[1] == 0x800C67B8:                 # lwz r0,0x67B8(r12)
+            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: guard "
+                        f"clobbers r0, which is LIVE across the hook (0x43300000 "
+                        f"magic spilled at 0x8000AB64) — use the r11/r12 guard")
+        if sum(1 for w in dur if w == 0xEC000824) != 2:   # fdivs f0,f0,f1
+            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: fdivs "
+                        f"f0,f0,f1 must appear twice (one per guard path, run once each)")
+
+    # l. Poink v14 — GUARDED. Guard-fail lands on the re-executed original lfs
+    #    f1,-0x5ba0(r2); the mid-flight bctr epilogue path must survive intact.
+    pk = codes.get(("C2", 0x800E5E44))
+    if pk is None:
+        errs.append("BSE bundle: Poink gate @0x800E5E44 missing")
+    else:
+        if not _has_bse_guard(pk):
+            errs.append("BSE Poink @0x800E5E44: guard prologue absent")
+        real = [w for w in pk if w not in (0, NOP)]
+        if not real or real[-1] != 0xC022A460:   # lfs f1,-0x5ba0(r2)
+            errs.append(f"BSE Poink @0x800E5E44: last real word "
+                        f"{real[-1] if real else 0:08X} != re-executed original "
+                        f"lfs f1,-0x5ba0(r2) (C022A460)")
+        if 0x4E800420 not in pk:                  # bctr to the epilogue
+            errs.append("BSE Poink @0x800E5E44: missing the bctr to the fn epilogue "
+                        "(the mid-flight explosion-cancel skip path)")
+        if 0x2C000028 not in pk:                  # cmpwi r0,40 (flyTimer<40)
+            errs.append("BSE Poink @0x800E5E44: missing the flyTimer<40 compare "
+                        "(cmpwi r0,0x28)")
+
+    # 2. Shimmer — byte-identical to research/codes/shimmer-pace-v1.txt.
+    shim = codes.get(("C2", 0x8019F89C))
+    want_shim = next(b for k, a, b in _iter_codes(SHIMMER))
+    if shim is None:
+        errs.append("BSE bundle: shimmer block @0x8019F89C missing")
+    elif shim != want_shim:
+        errs.append("BSE shimmer @0x8019F89C: not byte-identical to shimmer-pace-v1")
+
+    return n_c2, errs
+
+
+def check(bundle, fps=None, bse=False):
     """Validate a bundle three ways: C2 block structure, capstone-decodability of
     every cave word, and — when fps is given — that each rate-derived constant
-    matches the framerate actually requested."""
+    matches the framerate actually requested. bse=True switches to the BSE-120
+    companion checks (guard prologue present per block, divisors 4, parity and
+    shimmer byte-identical) and suppresses the stock 'missing X' assertions."""
     errs, n_c2 = [], 0
     try:
         from capstone import Cs, CS_ARCH_PPC, CS_MODE_32, CS_MODE_BIG_ENDIAN
@@ -1705,6 +2354,9 @@ def check(bundle, fps=None):
 
     if fps is None:
         return n_c2, errs
+
+    if bse:
+        return _check_bse(codes, n_c2, errs)
 
     g = integer_g(fps)
     gate_g = g or 2
@@ -2030,29 +2682,32 @@ def check(bundle, fps=None):
                     f"retune present — the episode-select screen runs {2 * gate_g}x "
                     f"stock cadence with ~3x-fast repeat (unusable at 360fps)")
 
-    # Cogwheel SE gate: the divisor is a CONSTANT 4 at every fps (substeps are
-    # pinned at 120 Hz; 120/30 native = 4), and each gated path must exit through
-    # the game's own SE-skip target, encoded as lis/ori of that exact address.
-    for hook, skip, orig in COGWHEEL_HOOKS:
+    # SE frame-process gate: divisor must be FPS/30 (rendered frames, like the
+    # Noki gate), the overwritten original must be the mflr both functions
+    # start with, and ONLY the send hook may store the shared counter — a
+    # store in the check hook would double-count and shift the two gates onto
+    # different frames.
+    for hook, may_store in ((SE30_CHECK_HOOK, False), (SE30_SEND_HOOK, True)):
         body = codes.get(("C2", hook))
         if body is None:
             continue
-        n = _implied_divisor(body, ctr=12)
-        if n != 4:
-            errs.append(f"cogwheel gate @{hook:08X}: encodes 1-in-{n}, expected the "
-                        f"constant 1-in-4 (substeps are 120 Hz at every G)")
-        target = None
-        for j, w in enumerate(body[:-1]):
-            if (w >> 26) == 15 and ((w >> 21) & 31) == 12 and j + 1 < len(body):
-                nxt = body[j + 1]                     # lis r12,hi ; ori r12,r12,lo
-                if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
-                    target = ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
-        if target != skip:
-            errs.append(f"cogwheel gate @{hook:08X}: skip target {target and f'{target:08X}'}"
-                        f" != the game's own SE-skip path {skip:08X}")
-        if body[-2] != orig:
-            errs.append(f"cogwheel gate @{hook:08X}: overwritten-original slot holds "
-                        f"{body[-2]:08X}, expected {orig:08X}")
+        n, want_n = _implied_divisor(body, ctr=12), int(fps // 30)
+        if n != want_n:
+            errs.append(f"SE30 gate @{hook:08X}: encodes 1-in-{n}, expected 1-in-{want_n} (FPS/30)")
+        real = [w for w in body if w not in (0, NOP)]
+        if not real or real[-1] != SE30_ORIG:
+            errs.append(f"SE30 gate @{hook:08X}: last real instruction "
+                        f"{real[-1] if real else 0:08X} != mflr {SE30_ORIG:08X}")
+        stores = any((w >> 26) == 36 and ((w >> 21) & 31) == 12 for w in body)
+        if stores != may_store:
+            errs.append(f"SE30 gate @{hook:08X}: counter store {'missing' if may_store else 'present'} "
+                        f"— check reads, send owns the increment")
+    # Never re-ship the superseded per-site cogwheel request gates alongside.
+    for dead in (0x801DA1E8, 0x801DA860):
+        if ("C2", dead) in codes:
+            errs.append(f"superseded cogwheel request gate @{dead:08X} present — "
+                        f"it starves the keep-alive window (60/sec chop); the SE30 "
+                        f"frame gate replaces it")
 
     # Ricco hook slide-clank gate: keys the audio pump's frame counter with the
     # FPS/30 render-rate divisor, exits gated ticks through the function's own
@@ -2170,7 +2825,7 @@ def main():
     ap.add_argument("--no-noki", action="store_true", help="omit the Noki pollution-counting gate (native 30Hz, divisor FPS/30)")
     ap.add_argument("--no-poink", action="store_true", help="omit the Poink premature-explosion gate (v14)")
     ap.add_argument("--no-bluecoin", action="store_true", help="omit the blue-coin lifetime fix (only ever emitted at 120fps)")
-    ap.add_argument("--no-cogwheel", action="store_true", help="omit the Noki urn-lift rope-creak SE cadence gate (constant 1-in-4 substeps)")
+    ap.add_argument("--no-cogwheel", action="store_true", help="omit the SE frame-process 30Hz gate (hover/creak/tentacle repeating-SE cadence; supersedes the old per-site cogwheel gate)")
     ap.add_argument("--no-input-latch", action="store_true", help="omit the v9 pad-latch gate (pad reads locked to sim frames; confirmed in-game at 180fps 2026-08-09 — omitting it drops ~1 in 3 edge inputs at G>=3; also disables the shine-select fix, which needs the latch block)")
     ap.add_argument("--no-select", action="store_true", help="omit the shine-select screen cadence gate (episode select runs at render rate: ~3x-fast cursor repeat at 360fps)")
     ap.add_argument("--no-wipe-swap", action="store_true", help="do NOT redirect wipe ids 5/6 to Hx_Test4 at G>=3; restores the wipe5_opt+smooth 128px tile morph, which the 2026-08-11 playtest rejected (wrong-scale chunks + black slabs on the boot->plaza reveal)")
@@ -2180,6 +2835,8 @@ def main():
     ap.add_argument("--no-audio-pump", action="store_true", help="omit the MSound::mainLoop 30Hz gate (SE processing at render rate flicker-restarts continuous SEs, thrashes the 64-voice pool and steal-kills every BGM note at birth — total music silence at 240fps)")
     ap.add_argument("--no-thp-pace", action="store_true", help="omit the THP movie repace (movies are VI-retrace-paced, so the M-portal previews play G x fast: fast shimmer/mirage churn plus G x JPEG decode load; audio movies are untouched either way)")
     ap.add_argument("--no-riccohook", action="store_true", help="omit the Ricco hook/gondola slide-clank SE cadence gate (the harbor clank retriggers at render rate: 'womp womp womp, staticy' near the cable hooks at 240fps)")
+    ap.add_argument("--no-shimmer", action="store_true", help="omit the heat-haze shimmer pace fix (catalog item 28; self-gated on the framerate global != native 0.5f, safe to leave on)")
+    ap.add_argument("--bse", action="store_true", help="emit the BSE-120 companion bundle (guarded blocks for the Better Sunshine Engine online mod; requires fps=120)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -2187,20 +2844,25 @@ def main():
     a = ap.parse_args()
 
     m = a.fps / 60.0
-    title = f"$SMS {a.fps:g}fps bundle (fpspatch{'' if not a.no_forceopen else ', no-ForceOpen'})"
-    bundle = build(a.fps, forceopen=not a.no_forceopen, anmrate_fix=not a.no_anmrate,
-                   substep=not a.no_substep, audio=not a.no_audio,
-                   stars=not a.no_stars, sun_probe=a.sun_probe,
-                   noki=not a.no_noki, poink=not a.no_poink,
-                   bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
-                   input_latch_fix=not a.no_input_latch,
-                   select_fix=not a.no_select, wipe_opt=not a.no_wipeopt,
-                   turnfix=not a.no_turnfix, wipe_pace_fix=not a.no_wipepace,
-                   audio_pump=not a.no_audio_pump, thp_pace_fix=not a.no_thp_pace,
-                   riccohook=not a.no_riccohook, wipe_swap=not a.no_wipe_swap)
+    if a.bse:
+        title = "$SMS BSE-120 companion bundle (fpspatch --bse)"
+        bundle = bse_build(a.fps)
+    else:
+        title = f"$SMS {a.fps:g}fps bundle (fpspatch{'' if not a.no_forceopen else ', no-ForceOpen'})"
+        bundle = build(a.fps, forceopen=not a.no_forceopen, anmrate_fix=not a.no_anmrate,
+                       substep=not a.no_substep, audio=not a.no_audio,
+                       stars=not a.no_stars, sun_probe=a.sun_probe,
+                       noki=not a.no_noki, poink=not a.no_poink,
+                       bluecoin=not a.no_bluecoin, cogwheel=not a.no_cogwheel,
+                       input_latch_fix=not a.no_input_latch,
+                       select_fix=not a.no_select, wipe_opt=not a.no_wipeopt,
+                       turnfix=not a.no_turnfix, wipe_pace_fix=not a.no_wipepace,
+                       audio_pump=not a.no_audio_pump, thp_pace_fix=not a.no_thp_pace,
+                       riccohook=not a.no_riccohook, wipe_swap=not a.no_wipe_swap,
+                       shimmer=not a.no_shimmer)
 
     if a.check:
-        nblocks, errs = check(bundle, a.fps)
+        nblocks, errs = check(bundle, a.fps, bse=a.bse)
         cave = sum(len(p) for k, _, p in _iter_codes(bundle) if k == "C2")
         print(f"{a.fps:g}fps bundle: {nblocks} C2 blocks checked "
               f"(structure + decode + rate constants)")

@@ -1,0 +1,84 @@
+diff --git a/src/globals.cpp b/src/globals.cpp
+index 3129534..10fa6d6 100644
+--- a/src/globals.cpp
++++ b/src/globals.cpp
+@@ -82,7 +82,14 @@ f32 BetterSMS::getScreenToFullScreenRatio() {
+ f32 BetterSMS::getScreenRatioAdjustX() { return (getScreenToFullScreenRatio() - 1.0f) * 300.0f; }
+ 
+ f32 BetterSMS::getFrameRate() {
+-    const f32 FPS = static_cast<f32>(30 << gFPSSetting.getInt());
++    // 240/280/320 break the old `30 << value` pattern, so use a lookup table.
++    static const f32 sFrameRateTable[6] = {30.0f, 60.0f, 120.0f, 240.0f, 280.0f, 320.0f};
++
++    int value = gFPSSetting.getInt();
++    if (value < 0 || value > 5)
++        value = 0;
++
++    const f32 FPS = sFrameRateTable[value];
+ 
+     return SMS_PORT_REGION(FPS, FPS / 1.2, FPS, FPS);
+ }
+diff --git a/src/p_settings.hxx b/src/p_settings.hxx
+index ac7bb95..ea44f44 100644
+--- a/src/p_settings.hxx
++++ b/src/p_settings.hxx
+@@ -1209,10 +1209,10 @@ private:
+ 
+ class FPSSetting final : public Settings::IntSetting {
+ public:
+-    enum Kind { FPS_30, FPS_60, FPS_120 };
++    enum Kind { FPS_30, FPS_60, FPS_120, FPS_240, FPS_280, FPS_320 };
+ 
+     FPSSetting(const char *name) : IntSetting(name, &mFPSValue), mFPSValue(FPS_30) {
+-        mValueRange = {0, 1, 1};
++        mValueRange = {0, 5, 1};
+     }
+     ~FPSSetting() override {}
+ 
+@@ -1228,6 +1228,15 @@ public:
+         case Kind::FPS_120:
+             strncpy(dst, SMS_PORT_REGION("120 FPS", "100 FPS", "120 FPS", "120 FPS"), 8);
+             break;
++        case Kind::FPS_240:
++            strncpy(dst, SMS_PORT_REGION("240 FPS", "200 FPS", "240 FPS", "240 FPS"), 8);
++            break;
++        case Kind::FPS_280:
++            strncpy(dst, SMS_PORT_REGION("280 FPS", "233 FPS", "280 FPS", "280 FPS"), 8);
++            break;
++        case Kind::FPS_320:
++            strncpy(dst, SMS_PORT_REGION("320 FPS", "266 FPS", "320 FPS", "320 FPS"), 8);
++            break;
+         }
+     }
+ 
+diff --git a/src/patches/fps.cpp b/src/patches/fps.cpp
+index e0a2e4a..d05ca1e 100644
+--- a/src/patches/fps.cpp
++++ b/src/patches/fps.cpp
+@@ -27,6 +27,26 @@ BETTER_SMS_FOR_CALLBACK void updateFPS(TMarDirector *director) {
+         *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x804167B8, 0x8040DD10, 0, 0)) = 2.0f;
+         *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x80414904, 0x8040BE54, 0, 0)) = 0.04f;
+         break;
++    case FPSSetting::FPS_240:
++        // Timestep globals follow the established pattern:
++        //   0x804167B8 = FPS / 60   (0.5, 1.0, 2.0, ...)
++        //   0x80414904 = FPS / 3000 (0.01, 0.02, 0.04, ...)
++        // Pacing above 60 comes from the host (Dolphin EmulationSpeed = FPS/60),
++        // so mRetraceCount stays 0 like FPS_120.
++        gpApplication.mDisplay->mRetraceCount                                   = 0;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x804167B8, 0x8040DD10, 0, 0)) = 4.0f;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x80414904, 0x8040BE54, 0, 0)) = 0.08f;
++        break;
++    case FPSSetting::FPS_280:
++        gpApplication.mDisplay->mRetraceCount                                   = 0;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x804167B8, 0x8040DD10, 0, 0)) = 4.6666667f;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x80414904, 0x8040BE54, 0, 0)) = 0.09333333f;
++        break;
++    case FPSSetting::FPS_320:
++        gpApplication.mDisplay->mRetraceCount                                   = 0;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x804167B8, 0x8040DD10, 0, 0)) = 5.3333335f;
++        *reinterpret_cast<f32 *>(SMS_PORT_REGION(0x80414904, 0x8040BE54, 0, 0)) = 0.10666667f;
++        break;
+     }
+ }
+ 

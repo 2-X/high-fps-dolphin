@@ -40,3 +40,39 @@ storeBuffer's stop+restart path instead).
 **How found:** SE-id immediate scan of main.dol (`li rX,0x3060`) → only one
 gameplay emitter pair; JAL registration table in decomp `MSoundSE.cpp:240`
 names the rope. See [[sunshine-fpspatch-generator]], [[sunshine-highfps-bug-surface]].
+
+## v2 (2026-08-10) — SUPERSEDED by the global SE frame-process gate
+
+The user then reported the SAME too-fast behavior on FLUDD hover and Gooper
+Blooper sounds. Tracing those (TWaterGun::emit → PO_HOVER/PO_WATER_HI/
+PO_NORMAL_NOZZLE_IMI; bgtentacle.cpp:1404 → BS_GESO_TAKEN_HAND, requested
+every CUE_MOVE tick while Mario holds the tentacle) forced reading the actual
+JAudio state machine (decomp JAIGFrameSe.cpp / JAIEntrySe.cpp):
+
+- `JAISeEntry::storeBuffer`: request while sound in state 5 → refresh (5→4,
+  keep-alive, NO restart); a SECOND request before the next frame process
+  (state already 4) → `it->stop(0)` + restart.
+- `JAIBasic::sendPlayingSeCommand` (per rendered frame): resets 4→5, advances
+  per-sound `unk14` counters (pitch evolution, e.g. HINO_SEED_LQ_LEV).
+- `JAIBasic::checkNextFrameSe` (per rendered frame): releases continuous SEs
+  still in state 5 (unrefreshed), starts pending sounds, `--unk2` one-shot
+  lifetime countdown.
+
+So the audible retrigger cadence for EVERY repeating SE = the frame-process
+rate (30/sec stock, FPS/sec hacked) — not the request rate. Two consequences:
+
+1. The v1 per-site request gate was WRONG: 1 request per 4 substeps starves
+   the keep-alive window (released between requests) → fresh restart every
+   other frame = 60/sec chop at 120fps. Removed before any ear test.
+2. The correct fix is ONE pair of hooks gating the processor itself to
+   1 rendered frame in FPS/30: `checkNextFrameSe` USA **0x80305204** and
+   `sendPlayingSeCommand` USA **0x80305958** (both entries vtable-verified at
+   0x803ac4dc/f0 + 0x803e2500/14; first insn mflr r0; early-blr skip; send
+   hook owns scratch counter 0x800016E8, check hook tests counter+1 without
+   storing since it runs first and is init-conditional). This normalizes the
+   whole class — hover, spray, creak, tentacle — plus one-shot lifetimes and
+   pitch counters, in 2 C2 blocks.
+
+fpspatch: `se_frame_gate()` replaces `cogwheel_se_gate()`; --check enforces
+divisor FPS/30, counter-store ownership, and REJECTS any resurrected per-site
+gate at 0x801DA1E8/0x801DA860. Code: codes/se-frameprocess-30hz-gate-v1.txt.

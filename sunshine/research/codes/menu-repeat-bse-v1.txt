@@ -1,0 +1,82 @@
+$Menu key-repeat BSE-120 fix v1 [kris]
+* Fixes the "holding up/down scrolls MANY options" bug under the BSMSO/BSE
+* online kit at 120fps (BSE writes float 2.0f to 0x804167B8 every frame).
+* Confirmed in: (a) boot save-file select, (b) in-level pause menu.
+* NOT visible in the Delfino Plaza pause menu -- see MECHANISM below; the bug
+* is present there too, it is just masked by that menu's 2-item layout.
+*
+* ============================ MECHANISM ============================
+* TMarioGamePad::reset (USA 0x802A897C) sets the pad button-repeat via
+* JUTGamePad::setButtonRepeat (USA 0x802C9A4C, the ONLY caller):
+*     setButtonRepeat(0xf00000f, 20.0f/SMSGetAnmFrameRate(),   // delay
+*                                 6.0f/SMSGetAnmFrameRate());   // interval
+* SMSGetAnmFrameRate (USA 0x802A7BD8) natively returns 60/VSyncTimesPerSec =
+* 60/(60/2) = 2.0f on NTSC. So delay=20/2=10 ticks, interval=6/2=3 ticks.
+* These are TICK COUNTS, and the countdown (JUTGamePad::CButton::update,
+* mRepeatCount++ once per pad read) advances once per CALL to read().
+*
+* STOCK-30fps native: read() ticks at 30Hz  -> 10 ticks = 0.33s delay,
+*                                               3 ticks = 0.10s interval. Correct.
+* STOCK fpspatch-120: the ANMRATE_STUB pins SMSGetAnmFrameRate=0.5f, so the
+*   constants come out 40/12 ticks, AND fpspatch gates read() (input_latch /
+*   select_gate) so the menu ticks at the intended 30Hz-equivalent cadence.
+*   -> no complaint. This is why the stock 120 kit was fine.
+* BSE-120: SMSGetAnmFrameRate is NOT stubbed (BSE only writes 0x804167B8; the
+*   getter does not read that global) so it returns native 2.0f -> delay=10,
+*   interval=3. BUT BSE sets mDisplay->mRetraceCount=0 and runs the host at 2x,
+*   so read()/CButton::update tick at the full 120Hz RENDER rate with NO gate.
+*   Net: the countdown burns 4x too fast -> 0.083s delay, 0.025s interval
+*   (40 repeats/sec). That is the "far too fast" scroll. (FPS/30 = 4.)
+*
+* The constants are CORRECT tick counts; the only fault is the ticker running
+* 4x too fast under BSE. Fix = multiply delay and interval by FPS/30 (=4) so the
+* wall-clock timing matches stock-30 again. 10*4=40, 3*4=12 -- byte-identical to
+* the stock fpspatch stub values, confirming the target.
+*
+* ===================== DELFINO-PAUSE EXCEPTION =====================
+* NOT a different repeat mechanism -- identical timing on every menu (repeat
+* config is process-global, stored in mPadButton[port] by the single reset()).
+* The discriminator is item count in TPauseMenu2 (GC2D/PauseMenu2.cpp:364-406):
+*   mNumItems > 2 (in-level, 3 items): Down does curSelectedItem+1 with wrap,
+*     so each fast repeat firing advances the selection -> visibly races.
+*   mNumItems <= 2 (Delfino Plaza; "Exit Area" hidden, 2 items): Down always
+*     sets mSelectedItem = mNumItems-1 (fixed 1), Up always sets 0. Every
+*     repeated firing re-selects the SAME item; the `if (mSelectedItem !=
+*     curSelectedItem)` guard is false on repeats -> no sound, no visible move.
+* So the bug fires in the plaza too, but its effect is idempotent. This
+* CONFIRMS the root cause is the shared repeat timing, not a per-menu gate.
+*
+* ============================ THE FIX ============================
+* Single C2 at 0x802A89C8 -- the `addi r4,r4,0xf` that finishes the 0xf00000f
+* mask, the last instruction before `bl setButtonRepeat`. At this point r5=delay
+* and r6=interval are both final; r0/r11/r12 are dead. Guarded on BSE FPS_120
+* (*0x804167B8 == 2.0f): on pass, slwi r5,r5,2 / slwi r6,r6,2 (x4) then
+* re-execute the original addi; on guard-fail, jump straight to the original
+* addi (stock delay/interval of 10/3, correct for native 30fps / non-BSE).
+*
+* Blast radius: menus only. mButton.mRepeat (the 0xf00000f d-pad/stick repeat
+* bits) is consumed ONLY in TMarioGamePad::updateMeaning's two menu-navigation
+* branches (System/MarioGamePad.cpp:36-45 PAD_FLAG_0x1, :59-62 PAD_FLAG_0x8).
+* Gameplay movement uses raw analog stick (mCompSPos / mMainStick), never the
+* repeat bits, and trigger/release edges (mTrigger/mRelease) are untouched. So
+* this does NOT disturb gameplay pad reads (input_latch / catalog item 22).
+* Runs once per pad reset; zero per-frame cost; NO scratch slot claimed.
+*
+* Verified with capstone against main.dol: hook word 0x3884000F confirmed;
+* guard reads 0x804167B8 vs 2.0f; slwi encodings 54A5103A/54C6103A; bne disp
+* +12 -> original addi (word 7); last word 0; no interior zeros; single
+* re-executed original insn. setButtonRepeat (0x802C9A4C) has exactly ONE
+* caller (0x802A89CC), so this one hook covers every menu.
+*
+* Divisor note: x4 is FPS/30 at 120. For other rates use slwi by log2(FPS/30)
+* (180=x6 needs mulli, 240=x8 slwi 3). This code is 120-only (guard == 2.0f).
+* Do NOT enable alongside the stock fpspatch 120 bundle (that path stubs
+* SMSGetAnmFrameRate=0.5 and gates read(); this guard would be inert there
+* anyway since 0x804167B8 != 2.0f under the stock one-shot regime, but keep the
+* bundles separate per the BSE-companion collision rule).
+C22A89C8 00000005
+3D808041 800C67B8
+3D604000 7C005800
+4082000C 54A5103A
+54C6103A 3884000F
+60000000 00000000

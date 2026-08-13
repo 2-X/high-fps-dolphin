@@ -1,5 +1,5 @@
 diff --git a/Source/Core/Core/Config/GraphicsSettings.cpp b/Source/Core/Core/Config/GraphicsSettings.cpp
-index f91b87e..a5beac8 100644
+index f91b87e490..a5beac8638 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.cpp
 +++ b/Source/Core/Core/Config/GraphicsSettings.cpp
 @@ -57,6 +57,8 @@ const Info<bool> GFX_SHOW_NETPLAY_MESSAGES{{System::GFX, "Settings", "ShowNetPla
@@ -12,7 +12,7 @@ index f91b87e..a5beac8 100644
  const Info<bool> GFX_OVERLAY_SCISSOR_STATS{{System::GFX, "Settings", "OverlayScissorStats"}, false};
  const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION{{System::GFX, "Settings", "ShowInternalResolution"},
 diff --git a/Source/Core/Core/Config/GraphicsSettings.h b/Source/Core/Core/Config/GraphicsSettings.h
-index 502d2f0..324064c 100644
+index 502d2f0764..324064c3b6 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.h
 +++ b/Source/Core/Core/Config/GraphicsSettings.h
 @@ -59,6 +59,7 @@ extern const Info<bool> GFX_SHOW_NETPLAY_PING;
@@ -24,7 +24,7 @@ index 502d2f0..324064c 100644
  extern const Info<bool> GFX_OVERLAY_SCISSOR_STATS;
  extern const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION;
 diff --git a/Source/Core/Core/CoreTiming.cpp b/Source/Core/Core/CoreTiming.cpp
-index 1fa39d7..e918246 100644
+index 1fa39d7448..e918246dc6 100644
 --- a/Source/Core/Core/CoreTiming.cpp
 +++ b/Source/Core/Core/CoreTiming.cpp
 @@ -456,12 +456,40 @@ void CoreTimingManager::Throttle(const s64 target_cycle)
@@ -83,7 +83,7 @@ index 1fa39d7..e918246 100644
    const bool was_limited = m_throttle_adj_clock_per_sec != 0;
    if (was_limited)
 diff --git a/Source/Core/Core/CoreTiming.h b/Source/Core/Core/CoreTiming.h
-index 29d636e..3e41792 100644
+index 29d636e433..3e4179269a 100644
 --- a/Source/Core/Core/CoreTiming.h
 +++ b/Source/Core/Core/CoreTiming.h
 @@ -215,6 +215,7 @@ private:
@@ -95,7 +95,7 @@ index 29d636e..3e41792 100644
    DT m_max_fallback = {};
    DT m_max_variance = {};
 diff --git a/Source/Core/Core/GeckoCode.cpp b/Source/Core/Core/GeckoCode.cpp
-index 79b8449..1dcf203 100644
+index 79b8449e92..debddb0636 100644
 --- a/Source/Core/Core/GeckoCode.cpp
 +++ b/Source/Core/Core/GeckoCode.cpp
 @@ -17,6 +17,7 @@
@@ -106,7 +106,7 @@ index 79b8449..1dcf203 100644
  #include "Core/Host.h"
  #include "Core/PowerPC/MMU.h"
  #include "Core/PowerPC/PowerPC.h"
-@@ -152,9 +153,77 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+@@ -152,9 +153,84 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
      }
    }
  
@@ -125,9 +125,16 @@ index 79b8449..1dcf203 100644
 +  const u32 mem1_size = guard.GetSystem().GetMemory().GetRamSizeReal();
 +  if (mem1_size > Memory::MEM1_SIZE_RETAIL)
 +  {
++    // [hifps] Anchor the relocated code list at the first over-provisioned page
++    // (0x81800000, just past retail's 24MB). It MUST stay within ±32MB of the game
++    // code so the handler's relative branches into it don't overflow (a farther base
++    // like 0x83800000 wraps the 26-bit branch field and crashes). BSMSO's online
++    // puppet arena starts at 0x81810000, deliberately leaving a 64KB gap at
++    // 0x81800000; the real list is only a few KB, so cap the reserved window at
++    // that 64KB so it never runs into (and gets stomped by) the arena.
 +    const u32 extended_base = 0x80000000 + Memory::MEM1_SIZE_RETAIL;
 +    const u32 extended_end =
-+        std::min(0x80000000 + mem1_size, extended_base + 0x40000);  // cap the list at 256KB
++        std::min(0x80000000 + mem1_size, extended_base + 0x10000);  // cap the list at 64KB (pre-arena)
 +    bool patched = false;
 +    for (u32 h = 0; h + 4 < data.length(); h += 4)
 +    {
@@ -157,7 +164,7 @@ index 79b8449..1dcf203 100644
 +      // translation and drop silently. Map it (data + instruction — C2 caves execute
 +      // from the list) through the spare BAT pair 4, which GC games never program.
 +      auto& ppc = guard.GetSystem().GetPPCState();
-+      const u32 ext_size = 0x00800000;  // 8MB block covers the whole extended region
++      const u32 ext_size = 0x00800000;  // 8MB block covers the relocated list region
 +      const u32 bl = (ext_size >> 17) - 1;
 +      const u32 batu = (extended_base & 0xFFFE0000) | (bl << 2) | 0x3;            // Vs|Vp
 +      const u32 batl = ((extended_base - 0x80000000) & 0xFFFE0000) | 0x2;         // PP=RW
@@ -186,7 +193,7 @@ index 79b8449..1dcf203 100644
  
    // Write a magic value to 'gameid' (codehandleronly does not actually read this).
    // This value will be read back and modified over time by HLE_Misc::GeckoCodeHandlerICacheFlush.
-@@ -210,6 +279,15 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+@@ -210,6 +286,15 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
    {
      ppc_state.iCache.Invalidate(memory, jit_interface, INSTALLER_BASE_ADDRESS + j);
    }
@@ -203,7 +210,7 @@ index 79b8449..1dcf203 100644
    return Installation::Installed;
  }
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
-index 5db3c55..1694ce8 100644
+index 5db3c55aa8..1694ce8432 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 @@ -250,6 +250,17 @@ void ZeldaUCode::HandleMailDefault(u32 mail)
@@ -278,7 +285,7 @@ index 5db3c55..1694ce8 100644
  
    if (!(m_flags & LIGHT_PROTOCOL))
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
-index ce71251..0cea573 100644
+index ce712519d5..0cea573793 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 @@ -293,6 +293,14 @@ private:
@@ -297,7 +304,7 @@ index ce71251..0cea573 100644
    ZeldaAudioRenderer m_renderer;
  };
 diff --git a/Source/Core/Core/HW/SystemTimers.cpp b/Source/Core/Core/HW/SystemTimers.cpp
-index 1790a97..2426c5a 100644
+index 1790a97f05..2426c5a81d 100644
 --- a/Source/Core/Core/HW/SystemTimers.cpp
 +++ b/Source/Core/Core/HW/SystemTimers.cpp
 @@ -44,6 +44,8 @@ IPC_HLE_PERIOD: For the Wii Remote this is the call schedule:
@@ -331,7 +338,7 @@ index 1790a97..2426c5a 100644
  
  void SystemTimersManager::AudioDMACallback(Core::System& system, u64 userdata, s64 cycles_late)
 diff --git a/Source/Core/Core/PowerPC/MMU.cpp b/Source/Core/Core/PowerPC/MMU.cpp
-index 940e93c..91582c0 100644
+index 940e93c7ea..91582c0b50 100644
 --- a/Source/Core/Core/PowerPC/MMU.cpp
 +++ b/Source/Core/Core/PowerPC/MMU.cpp
 @@ -2002,7 +2002,10 @@ void MMU::DBATUpdated()
@@ -356,8 +363,79 @@ index 940e93c..91582c0 100644
    if (extended_bats)
      UpdateBATs(m_ibat_table, SPR_IBAT4U);
    if (m_memory.GetFakeVMEM())
+diff --git a/Source/Core/VideoBackends/Metal/MTLStateTracker.mm b/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
+index a9fb4e63fb..67cbd864ec 100644
+--- a/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
++++ b/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
+@@ -9,6 +9,7 @@
+ 
+ #include "Common/Align.h"
+ #include "Common/Assert.h"
++#include "Common/Logging/Log.h"
+ 
+ #include "Core/System.h"
+ 
+@@ -193,6 +194,15 @@ explicit Backref(StateTracker* tracker) : state_tracker(tracker) {}
+     size_t newsize = std::max<size_t>(buffer.usage.Size() * 2, 4096);
+     while (newsize < amt)
+       newsize *= 2;
++    // [hifps] catch runaway upload-buffer growth before the OOM assert fires
++    if (newsize >= 64 * 1024 * 1024)
++    {
++      NOTICE_LOG_FMT(VIDEO,
++                     "[hifps] Preallocate growth: buffer={} amt={:#x} old={:#x} new={:#x} "
++                     "cur_draw={} last_finished={}",
++                     static_cast<int>(buffer_idx), amt, buffer.usage.Size(), newsize,
++                     m_current_draw, last_draw);
++    }
+     MTLResourceOptions options =
+         MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined;
+     buffer.cpubuffer = MRCTransfer([g_device newBufferWithLength:newsize options:options]);
+diff --git a/Source/Core/VideoCommon/CommandProcessor.cpp b/Source/Core/VideoCommon/CommandProcessor.cpp
+index 1dbf466f1c..1d5515ad1c 100644
+--- a/Source/Core/VideoCommon/CommandProcessor.cpp
++++ b/Source/Core/VideoCommon/CommandProcessor.cpp
+@@ -450,8 +450,8 @@ void CommandProcessorManager::SetCPStatusFromGPU()
+     {
+       if (!breakpoint)
+       {
+-        DEBUG_LOG_FMT(COMMANDPROCESSOR, "Hit breakpoint at {}",
+-                      m_fifo.CPReadPointer.load(std::memory_order_relaxed));
++        NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP HIT at {:08x}",
++                       m_fifo.CPReadPointer.load(std::memory_order_relaxed));
+         m_fifo.bFF_Breakpoint.store(1, std::memory_order_relaxed);
+       }
+     }
+@@ -459,8 +459,8 @@ void CommandProcessorManager::SetCPStatusFromGPU()
+     {
+       if (breakpoint)
+       {
+-        DEBUG_LOG_FMT(COMMANDPROCESSOR, "Cleared breakpoint at {}",
+-                      m_fifo.CPReadPointer.load(std::memory_order_relaxed));
++        NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP CLEARED at {:08x}",
++                       m_fifo.CPReadPointer.load(std::memory_order_relaxed));
+         m_fifo.bFF_Breakpoint.store(0, std::memory_order_relaxed);
+       }
+     }
+@@ -580,6 +580,16 @@ void CommandProcessorManager::SetCpControlRegister()
+   }
+   m_fifo.bFF_GPReadEnable.store(m_cp_ctrl_reg.GPReadEnable, std::memory_order_relaxed);
+   m_fifo.bFF_BPInt.store(m_cp_ctrl_reg.BPInt, std::memory_order_relaxed);
++  // [hifps] log BP arm/disarm transitions with the armed FIFO address
++  if (m_cp_ctrl_reg.BPEnable != m_fifo.bFF_BPEnable.load(std::memory_order_relaxed))
++  {
++    NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP {} addr={:08x} rd={:08x} wr={:08x} dist={:08x}",
++                   m_cp_ctrl_reg.BPEnable ? "ARM" : "DISARM",
++                   m_fifo.CPBreakpoint.load(std::memory_order_relaxed),
++                   m_fifo.CPReadPointer.load(std::memory_order_relaxed),
++                   m_fifo.CPWritePointer.load(std::memory_order_relaxed),
++                   m_fifo.CPReadWriteDistance.load(std::memory_order_relaxed));
++  }
+   m_fifo.bFF_BPEnable.store(m_cp_ctrl_reg.BPEnable, std::memory_order_relaxed);
+   m_fifo.bFF_HiWatermarkInt.store(m_cp_ctrl_reg.FifoOverflowIntEnable, std::memory_order_relaxed);
+   m_fifo.bFF_LoWatermarkInt.store(m_cp_ctrl_reg.FifoUnderflowIntEnable, std::memory_order_relaxed);
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.cpp b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
-index 248146e..c52b5d7 100644
+index 248146e2b6..c52b5d7a8e 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 @@ -691,4 +691,41 @@ std::string GenerateImGuiPixelShader(bool linear_space_output)
@@ -403,7 +481,7 @@ index 248146e..c52b5d7 100644
 +
  }  // namespace FramebufferShaderGen
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.h b/Source/Core/VideoCommon/FramebufferShaderGen.h
-index c97fec8..ff505af 100644
+index c97fec8991..ff505af8d9 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.h
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.h
 @@ -26,4 +26,9 @@ std::string GenerateEFBRestorePixelShader();
@@ -416,8 +494,27 @@ index c97fec8..ff505af 100644
 +std::string GenerateFrameBlendPixelShader();
 +
  }  // namespace FramebufferShaderGen
+diff --git a/Source/Core/VideoCommon/PixelEngine.cpp b/Source/Core/VideoCommon/PixelEngine.cpp
+index 63642d017d..feb466914a 100644
+--- a/Source/Core/VideoCommon/PixelEngine.cpp
++++ b/Source/Core/VideoCommon/PixelEngine.cpp
+@@ -232,6 +232,14 @@ void PixelEngineManager::SetToken(const u16 token, const bool interrupt, int cyc
+ 
+   std::lock_guard lk(m_token_finish_mutex);
+ 
++  // [hifps] SMS DrawSyncManager diagnosis: an interrupt-token still pending when the next
++  // one arrives is overwritten before the CPU-thread event consumed it -> LOST to the game.
++  if (m_event_raised && m_token_interrupt_pending && interrupt && m_token_pending != token)
++  {
++    NOTICE_LOG_FMT(PIXELENGINE, "[hifps] TOKEN COALESCED: pending {:04x} overwritten by {:04x}",
++                   m_token_pending, token);
++  }
++
+   m_token_pending = token;
+   m_token_interrupt_pending |= interrupt;
+ 
 diff --git a/Source/Core/VideoCommon/Present.cpp b/Source/Core/VideoCommon/Present.cpp
-index 41d05f3..27c5d48 100644
+index 41d05f3652..27c5d485d0 100644
 --- a/Source/Core/VideoCommon/Present.cpp
 +++ b/Source/Core/VideoCommon/Present.cpp
 @@ -14,16 +14,27 @@
@@ -683,7 +780,7 @@ index 41d05f3..27c5d48 100644
  
  void Presenter::ImmediateSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height)
 diff --git a/Source/Core/VideoCommon/Present.h b/Source/Core/VideoCommon/Present.h
-index 91ba870..e4d4350 100644
+index 91ba870967..e4d435093c 100644
 --- a/Source/Core/VideoCommon/Present.h
 +++ b/Source/Core/VideoCommon/Present.h
 @@ -17,6 +17,9 @@
@@ -732,7 +829,7 @@ index 91ba870..e4d4350 100644
  
  }  // namespace VideoCommon
 diff --git a/Source/Core/VideoCommon/Statistics.cpp b/Source/Core/VideoCommon/Statistics.cpp
-index 642df56..a212dcf 100644
+index 642df5694a..a212dcf95c 100644
 --- a/Source/Core/VideoCommon/Statistics.cpp
 +++ b/Source/Core/VideoCommon/Statistics.cpp
 @@ -8,6 +8,8 @@
@@ -795,3 +892,45 @@ index 642df56..a212dcf 100644
    {
      ImGui::End();
      return;
+diff --git a/Source/Core/VideoCommon/TextureCacheBase.cpp b/Source/Core/VideoCommon/TextureCacheBase.cpp
+index bbcd1140b4..00cd9b59a0 100644
+--- a/Source/Core/VideoCommon/TextureCacheBase.cpp
++++ b/Source/Core/VideoCommon/TextureCacheBase.cpp
+@@ -2387,6 +2387,13 @@ void TextureCacheBase::CopyRenderTargetToTexture(
+ 
+   if (copy_to_ram)
+   {
++    // [hifps] SMS pollution-map forensics: log small (non-XFB) EFB->RAM copies with a
++    // payload checksum after flush so map erosion vs zapping is visible in the log.
++    if (!is_xfb_copy && width <= 512 && height <= 512)
++    {
++      NOTICE_LOG_FMT(VIDEO, "[hifps] EFBcopy->RAM dst={:08x} {}x{} fmt={} stride={}", dstAddr,
++                     width, height, static_cast<int>(dstFormat), dstStride);
++    }
+     const std::array<u32, 3> coefficients = GetRAMCopyFilterCoefficients(filter_coefficients);
+     PixelFormat srcFormat = bpmem.zcontrol.pixel_format;
+     EFBCopyParams format(srcFormat, dstFormat, is_depth_copy, isIntensity,
+@@ -2538,6 +2545,23 @@ void TextureCacheBase::WriteEFBCopyToRAM(u8* dst_ptr, u32 width, u32 height, u32
+   MathUtil::Rectangle<int> copy_rect(0, 0, static_cast<int>(width), static_cast<int>(height));
+   staging_texture->ReadTexels(copy_rect, dst_ptr, stride);
+   ReleaseEFBCopyStagingTexture(std::move(staging_texture));
++
++  // [hifps] payload summary for small copies: sum + count of nonzero bytes over the
++  // first rows, so pollution-map content trends (fading vs zapped) show in the log.
++  const u32 total = height * stride;
++  if (total > 0 && total <= 512 * 512)
++  {
++    u64 sum = 0;
++    u32 nonzero = 0;
++    const u32 n = std::min<u32>(total, 0x4000);
++    for (u32 i = 0; i < n; i++)
++    {
++      sum += dst_ptr[i];
++      nonzero += dst_ptr[i] != 0;
++    }
++    NOTICE_LOG_FMT(VIDEO, "[hifps]   flushed {} bytes: sum={} nonzero={}/{}", total, sum, nonzero,
++                   n);
++  }
+ }
+ 
+ void TextureCacheBase::FlushEFBCopy(TCacheEntry* entry)

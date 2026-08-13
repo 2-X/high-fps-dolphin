@@ -1,0 +1,14 @@
+# Big / reproducible / machine-local — never commit these.
+venv/
+tools/
+upstream/
+bse-fork/
+bundle-server/
+bundle-launcher/
+launcher-extracted/
+decompiled/
+payloads/
+*.zip
+# The fork kxe artifact IS committed (BetterSunshineEngine-highfps-v400.kxe):
+# it is the deliverable the PC needs; rebuild recipe = bse-fork mac-build.sh
+# (vendored toolchain under tools/wine, see HANDOFF.md) + bse-highfps-240-280-320.diff.

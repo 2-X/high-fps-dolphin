@@ -1,3 +1,4 @@
+* SUPERSEDED same-day by se-frameprocess-30hz-gate-v1.txt — request-side gating starves the JAudio keep-alive window (sound released between gated requests -> 60/sec choppy restarts at 120fps instead of native 30). Never shipped to an ear test. Kept for the RE trail only.
 $Cogwheel rope-creak SE cadence gate v1 [kris]
 * Noki Bay urn-pulley lifts: the rope-pull creak (MSD_SE_OBJ_MR_TSUBO_PULL
 * 0x3060) and the pot-drain pour (MSD_SE_OBJ_MR_TSUBO_WATER 0x3061) are

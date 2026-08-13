@@ -1,0 +1,112 @@
+$FLUDD Aim Invert v3 (up aims up: squat + first-person + Mecha Bowser)
+GMSE01 (US). Supersedes v2 (remove v2 when enabling).
+
+Adds the Mecha Bowser fight (Pinna Park Ep.1) roller-coaster aiming mode to
+v2's squat-spray + first-person flips (user report: while riding the coaster
+and aiming/firing water rockets at Mecha Bowser, vertical aim was still stock
+-- pushing up aimed down).
+
+Carries forward v2's two words unchanged, adds one new word for the
+jetcoaster (Mecha Bowser) aim.
+
+--------------------------------------------------------------------------
+Word 1 (from v1/v2): TNozzleBase::calcGunAngle squat branch @8026D17C
+  add r4,r4,r0 -> subf r4,r0,r4      (0426D17C 7C802050)
+
+Word 2 (from v2): CPolarSubCamera::ctrlLButtonCamera_ @80029208
+  fneg f30,f0 -> fmr f30,f0          (04029208 FFC00090)
+  (kills the vertical negate on the Y-button first-person/zoom look; see v2)
+
+Word 3 (NEW): CPolarSubCamera::ctrlJetCoasterCamera_ @800310DC
+  fneg f29,f0 -> fmr f29,f0          (040310DC FFA00090)
+
+--------------------------------------------------------------------------
+ROOT CAUSE of the Mecha Bowser miss
+The coaster ride uses a dedicated camera mode, CAMERA_MODE_JET_COASTER,
+dispatched to CPolarSubCamera::ctrlJetCoasterCamera_ -- NOT the ordinary
+L-button aim camera (ctrlLButtonCamera_) that v2 patched. They are separate
+functions with separate stick-Y negates, so v2's fix never reached the fight.
+
+Internal names confirm this is the Mecha Bowser fight, not some unrelated
+coaster:
+  src/Camera/cameragc.cpp:
+    cJetCoasterCam1BckName  = "tinkoopa_camera";        // tinkoopa = Mecha Bowser
+    cJetCoasterDemoBckName  = "tinkoopa_killer_camera";
+  src/Camera/cameragc.cpp:926  case CAMERA_MODE_JET_COASTER: ctrlJetCoasterCamera_();
+
+Source (decomp, JP tree src/Camera/CameraJetCoaster.cpp:109-118):
+    if (unk2B8->isLButtonMode()) {              // aiming/firing mode
+        if (startedLButton) setUpToLButtonCamera_(CAMERA_MODE_JET_COASTER);
+        f32 stickY = -unk120->mCompSPos[5];     // <-- the vertical negate
+        if (mTargetFreezeFrames == 0) getNozzleTopPos_(&mCurrentTarget.mTarget);
+        if (mPosFreezeFrames == 0) {
+            rotateX_ByStickY_(stickY);          // applies pitch from stickY
+            ...
+The `-mCompSPos[5]` is the exact analogue of v2's ctrlLButtonCamera_
+`fneg f30,f0`; both negate the vertical stick before feeding the SHARED
+CPolarSubCamera::rotateX_ByStickY_ pitch accumulator. Flipping the negate
+in this caller un-inverts the fight aim while leaving rotateX_ByStickY_
+(shared) and everything else untouched.
+
+--------------------------------------------------------------------------
+USA disassembly at the site (main.dol, GMSE01)
+
+  ctrlJetCoasterCamera_ prologue @80030E7C (stwu r1,-0x2b0(r1))
+  ... balloon-message inline ... L-button toggle @80031040 ...
+  aim branch entered only when isLButtonMode (beq 0x80031564 skips it):
+
+  800310B0  rlwinm. r0, r0, 0,0x1f,0x1f   ; test isLButtonMode bit
+  800310B4  beq     0x80031564            ; not aiming -> skip whole block
+  ...
+  800310CC  lwz  r3, 0x120(r31)           ; r3 = unk120 (MarioGamePad)
+  800310D0  lwz  r0, 0x7c(r31)            ; mPosFreezeFrames guard
+  800310D4  lfs  f0, 0xac(r3)             ; f0 = mCompSPos[5]  (vertical stick)
+  800310DC  fneg f29, f0                  ; f29 = -stickY   <-- PATCH TO fmr
+  ...
+  80031100  fmr  f1, f29                  ; pass stickY
+  80031104  bl   0x800250D0              ; rotateX_ByStickY_(stickY)
+  80031108  bl   0x80025308             ; calcAngleXFromXRotRatio_()
+  80031110  sth  r3, 0xa4(r31)          ; mCurrentTarget.mPitch = ...
+
+(rotateX_ByStickY_ @0x800250D0 is the SAME shared leaf both v2 and v3 feed:
+ it does fnmsubs f0,f31,f1,f0 on the pitch ratio at 0xA8(r31). Do NOT patch
+ it -- patch the per-mode caller negate, as v2 did.)
+
+The mCompSPos vertical component is at 0xac here (this pad object) vs 0xbc
+in ctrlLButtonCamera_ -- different pad struct/index in each path; irrelevant
+to the flip, which acts on the value in f0 regardless of load offset.
+
+--------------------------------------------------------------------------
+Capstone verification (venv, main.dol)
+  @800310DC original word = FFA00050  ->  fneg f29, f0        (confirmed)
+  replacement       word  = FFA00090  ->  fmr  f29, f0        (confirmed)
+  method cross-check: fmr f30,f0 encodes FFC00090, matching v2's known-good
+  word 2 exactly, which validates the encoding.
+
+--------------------------------------------------------------------------
+Why a bare 04 write is safe (no C2 gate needed)
+ctrlJetCoasterCamera_ is reached ONLY from the CAMERA_MODE_JET_COASTER arm
+of the camera dispatch (cameragc.cpp:926). That mode is entered only for the
+tinkoopa/pinna2 coaster ride (Mecha Bowser fight). The patched instruction
+is additionally inside the isLButtonMode (aiming) sub-branch. It is a
+different function from ctrlLButtonCamera_, so it shares no code with the
+squat spray, the Y-button first-person look, or the normal orbit camera.
+The non-aim else-branch of this function reads mCompSPos[6]/[7] (manual
+camera-framing offsets) and is left untouched -- only the active-aim
+vertical is flipped, matching v2's philosophy.
+
+--------------------------------------------------------------------------
+Gecko:
+0426D17C 7C802050
+04029208 FFC00090
+040310DC FFA00090
+
+--------------------------------------------------------------------------
+Gotchas
+- Enabling v3 requires DISABLING v1 and v2 (all three overlap on words 1/2).
+- If a future DOL rebuild moves these functions, re-derive: word 3 is the
+  fneg of mCompSPos vertical inside ctrlJetCoasterCamera_'s isLButtonMode
+  branch, immediately before the fmr f1,f29 / bl rotateX_ByStickY_ pair.
+- Confidence: HIGH. Function identity, mode-exclusivity, the negate site, and
+  the fmr encoding are all statically confirmed from main.dol and the decomp.
+  Not yet in-game ear/eye tested (static analysis only).
