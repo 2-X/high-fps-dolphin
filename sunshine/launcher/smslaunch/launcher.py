@@ -1,0 +1,421 @@
+"""Turn a profile into a configured, running game.
+
+apply()  — generate any missing FPS/FOV codes, set the *exact* [Gecko_Enabled]
+           set for the chosen engine, and poke [Core]/[Video_Settings]/MEM1.
+           Never runs while Dolphin is alive (INI would be clobbered on quit).
+launch() — quit Dolphin, boot the right ISO, then drive FPS the engine's way
+           (stock: Gecko bundle already does it; bse: native RAM poke / bridge).
+
+Both take an optional `log` callback so the TUI can stream progress lines.
+"""
+from __future__ import annotations
+
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+from . import config as C
+from . import codegen
+from .inieditor import Ini, dolphin_running
+
+
+def _noop(_msg): pass
+
+
+# ---------------------------------------------------------------- inspection
+def _bundle_body(ini: Ini, title: str):
+    """The stored hex-pair lines of `title` in [Gecko], or None if absent."""
+    span = ini._span("Gecko")
+    if not span:
+        return None
+    cur, out = None, None
+    for ln in ini.text[span[0]:span[1]].splitlines():
+        if ln.startswith("$"):
+            cur = ln[1:].strip()
+            if cur == title:
+                out = []
+        elif cur == title and ln.strip() and not ln.startswith("*"):
+            out.append(ln.strip().upper())
+    return out
+
+
+
+def resolve_qol(ini: Ini, engine: str, qol: dict):
+    """-> list of (key, label, wanted, full_title|None, available) for the
+    user-facing QOL toggles, resolved for the active engine (offline=stock /
+    online=bse). A fix with no matching code for this engine is greyed out."""
+    rows = []
+    for key, label, _dflt, pats in C.QOL_CATALOG:
+        pat = pats.get(engine)
+        title = ini.resolve(pat) if pat else None
+        rows.append((key, label, bool(qol.get(key)), title, title is not None))
+    return rows
+
+
+def baseline_titles(ini: Ini, engine: str, log=_noop) -> list[str]:
+    """High-fps correctness codes auto-enabled for ONLINE/BSE. Offline gets its
+    equivalents from inside the fpspatch bundle, so returns [].
+
+    Only `verified` fixes are auto-enabled (unverified ports have burned us:
+    see the anmrate note in config.BASELINE_FIXES). A verified fix whose regex
+    no longer resolves is a LOUD warning, never a silent drop."""
+    if engine != "bse":
+        return []
+    out = []
+    for key, pat, verified in C.BASELINE_FIXES:
+        t = ini.resolve(pat)
+        if not verified:
+            if t:
+                log(f"  ! baseline '{key}' is UNVERIFIED — not auto-enabled "
+                    f"(${t})")
+            continue
+        if t:
+            out.append(t)
+        else:
+            log(f"  !! baseline fix '{key}' (/{pat}/) matched NO [Gecko] code "
+                "— the online kit is missing a correctness fix!")
+    return out
+
+
+def widescreen_titles(ini: Ini, engine: str, aspect: str) -> list[str]:
+    """Widescreen codes implied by the Aspect dropdown. Offline = the projection
+    Gecko for THIS aspect (16:9 `$Widescreen` / 16:10 `$Widescreen 16:10`) + the
+    level-entry curtain/wipe fix; online = BSE-native (none)."""
+    if engine != "stock" or aspect not in C.WIDESCREEN_ASPECTS:
+        return []                            # online = BSE native; 4:3 = no code
+    out = []
+    proj = codegen.WS_TITLE.get(aspect)      # exact title for this aspect
+    if proj and proj in ini.titles():
+        out.append(proj)
+    wipe = ini.resolve(C.WIDESCREEN_WIPE_FIX)
+    if wipe:
+        out.append(wipe)
+    return out
+
+
+def vfov_of(profile: dict):
+    """The vertical fovy the $FOV code sets for this profile's hFOV + aspect, or
+    None when FOV is left blank (no FOV code — keep the game's stock FOV)."""
+    if profile.get("fov") in (None, ""):
+        return None
+    return C.hfov_to_vfov(profile["fov"], profile["aspect"])
+
+
+def enabled_set_for(ini: Ini, profile: dict, log=_noop) -> list[str]:
+    """The full [Gecko_Enabled] title list this profile wants:
+      offline: FOV + fpspatch bundle + on QOL (timing fixes are IN the bundle)
+      online : FOV + always-on BSE baseline fixes + on QOL
+    """
+    engine = C.engine_for(profile["mode"])
+    titles: list[str] = []
+    vfov = vfov_of(profile)
+    if vfov is not None:                               # blank FOV = keep stock
+        # BSE gets the mProjectionFovy variant (the generic template's caller
+        # filter misses the shimmer pass under BSMSO -> mismatched FOV).
+        fov_tmpl = C.FOV_TITLE_BSE if engine == "bse" else C.FOV_TITLE
+        titles.append(fov_tmpl.format(fov=vfov))
+    if engine == "stock" and profile["fps"] >= 120:   # 60 = native, no bundle
+        titles.append(C.FPS_BUNDLE_TITLE.format(fps=profile["fps"]))
+    if engine == "bse" and profile["fps"] != 30:      # 30 = native tick counts
+        titles.append(C.MENU_REPEAT_TITLE_BSE.format(fps=profile["fps"]))
+    titles += baseline_titles(ini, engine, log)
+    titles += widescreen_titles(ini, engine, profile["aspect"])  # aspect dropdown
+    for _key, _label, wanted, title, avail in resolve_qol(ini, engine, profile["qol"]):
+        if wanted and avail:
+            titles.append(title)
+    seen, out = set(), []       # de-dupe, keep order
+    for t in titles:
+        if t not in seen:
+            seen.add(t); out.append(t)
+    return out
+
+
+def plan(profile: dict) -> dict:
+    """Read-only preview for the UI: what exists, what will be generated."""
+    ini = Ini(C.LIVE_INI)
+    engine = C.engine_for(profile["mode"])
+    vfov = vfov_of(profile)
+    have_fov = (codegen.existing_fov_bse_codes(ini) if engine == "bse"
+                else codegen.existing_fov_codes(ini))
+    have_fps = codegen.existing_fps_bundles(ini)
+    return {
+        "engine": engine,
+        "iso": C.iso_for(profile["mode"], profile["fps"]),
+        "emulation_speed": C.emulation_speed(profile["fps"]),
+        "vfov": vfov,
+        "have_fov": have_fov,
+        "fov_needed": vfov is not None and vfov not in have_fov,
+        "have_fps": have_fps,
+        "fps_needed": engine == "stock" and profile["fps"] >= 120
+                      and profile["fps"] not in have_fps,
+        "fps_native": engine == "stock" and profile["fps"] < 120,   # 60 = native
+        "fps_supported": engine == "stock" or profile["fps"] in C.BSE_FPS_VALUES,
+        "enabled": enabled_set_for(ini, profile),
+        "baseline": baseline_titles(ini, engine),
+        "widescreen": widescreen_titles(ini, engine, profile["aspect"]),
+        "qol_rows": resolve_qol(ini, engine, profile["qol"]),
+    }
+
+
+# ------------------------------------------------------------------- helpers
+def quit_dolphin(log=_noop):
+    if not dolphin_running():
+        return
+    log("Quitting Dolphin (so it can't clobber the INI on exit)…")
+    subprocess.run(["pkill", "-x", "Dolphin"])
+    for _ in range(20):
+        if not dolphin_running():
+            break
+        time.sleep(1)
+    if dolphin_running():
+        log("Dolphin still up — force killing.")
+        subprocess.run(["pkill", "-9", "-x", "Dolphin"])
+        time.sleep(2)
+
+
+def _set_dolphin_mem1(enable: bool, log=_noop):
+    """RAMOverride for the BSE puppet heap (needs 64MB MEM1). Edits global
+    Dolphin.ini [Core]; applies at boot, so do it while Dolphin is quit."""
+    if not C.DOLPHIN_INI.exists():
+        return
+    ini = Ini(C.DOLPHIN_INI)   # reuse the section plumbing
+    if enable:
+        ini.set_core("RAMOverrideEnable", "True")
+        ini.set_core("MEM1Size", "0x04000000")
+        ini.set_core("MEM2Size", "0x08000000")
+    else:
+        ini.set_core("RAMOverrideEnable", "False")
+    ini.save(force=True)   # Dolphin already quit by caller
+    log(f"MEM1 override {'ON (64MB)' if enable else 'off'}.")
+
+
+# --------------------------------------------------------------------- apply
+def apply(profile: dict, *, log=_noop, force=False):
+    """Configure the INI to satisfy `profile`. Returns nothing; raises on error."""
+    quit_dolphin(log)
+    ini = Ini(C.LIVE_INI)
+    engine = C.engine_for(profile["mode"])
+
+    # 1a. offline only: generate the fpspatch FPS bundle if it's never been built.
+    #     60fps is the console's native rate — no bundle, just EmulationSpeed 1.0.
+    if engine == "stock" and profile["fps"] >= 120:
+        # ALWAYS regenerate and compare: fpspatch is the source of truth, and a
+        # stale stored bundle bites silently (2026-08-14: a reused bundle still
+        # carried the superseded per-site SE gates and lacked the SE30/shimmer
+        # fixes). Regeneration is fast; replace on any difference.
+        title, code = codegen.gen_fps_bundle(profile["fps"])
+        stored = _bundle_body(ini, title)
+        fresh = [ln.upper() for ln in code.splitlines() if ln.strip()]
+        if stored is None:
+            log(f"Generating {profile['fps']}fps bundle (fpspatch)…")
+            ini.add_code(title, code)
+            log(f"  + ${title}")
+        elif stored != fresh:
+            log(f"{profile['fps']}fps bundle is STALE ({len(stored)} lines vs "
+                f"{len(fresh)} fresh) — regenerating from fpspatch.")
+            ini.add_code(title, code)          # replace=True swaps the body
+        else:
+            log(f"Reusing {profile['fps']}fps bundle (verified current).")
+    elif engine == "stock":
+        log(f"{profile['fps']}fps = native rate — no high-fps bundle needed.")
+
+    # 1a2. offline only: build the widescreen Gecko for this aspect if missing
+    #      (16:9 = the shipped $Widescreen; 16:10 = the generated variant).
+    if engine == "stock":
+        ws_title = codegen.WS_TITLE.get(profile["aspect"])
+        if ws_title and ws_title not in ini.titles():
+            title, code = codegen.gen_widescreen(profile["aspect"])
+            ini.add_code(title, code)
+            log(f"Generating ${title} (aspect widescreen)…  + ${title}")
+
+    # 1b. generate the FOV code (at the vertical fovy for this hFOV+aspect), or
+    #     skip entirely when FOV is left blank (keep the game's stock FOV) -------
+    vfov = vfov_of(profile)
+    if vfov is not None and abs(vfov - 45) <= 2:
+        import math
+        ratio = C.ASPECTS[profile["aspect"]]["ratio"]
+        classic = round(math.degrees(2 * math.atan(
+            math.tan(math.radians(69 / 2)) * ratio)))
+        log(f"  ! hFOV {profile['fov']}° → vertical {vfov}° ≈ the game's STOCK "
+            f"FOV (~45°) — you won't see a change. For the classic wide "
+            f"'$FOV 69' feel enter {classic}.")
+    if vfov is None:
+        log("FOV left blank — no FOV code (keeping the game's stock FOV).")
+    elif engine == "bse":
+        if vfov not in codegen.existing_fov_bse_codes(ini):
+            log(f"Generating BSE $FOV {vfov} (mProjectionFovy; "
+                f"hFOV {profile['fov']}° @ {profile['aspect']})…")
+            title, code = codegen.gen_fov_bse(vfov)
+            ini.add_code(title, code)
+            log(f"  + ${title}")
+        else:
+            log(f"Reusing existing BSE $FOV {vfov} (hFOV {profile['fov']}°).")
+    else:
+        have_fov = codegen.existing_fov_codes(ini)
+        if vfov not in have_fov:
+            log(f"Generating $FOV {vfov} (hFOV {profile['fov']}° @ {profile['aspect']})…")
+            title, code = codegen.gen_fov(vfov)
+            ini.add_code(title, code)
+            log(f"  + ${title}")
+        else:
+            log(f"Reusing existing $FOV {vfov} (hFOV {profile['fov']}°).")
+
+    # 1c. BSE only: static menu key-repeat counts for this FPS (see codegen) ----
+    if engine == "bse" and profile["fps"] != 30:
+        mr_title, mr_code = codegen.gen_menu_repeat_bse(profile["fps"])
+        if mr_title not in ini.titles():
+            ini.add_code(mr_title, mr_code)
+            log(f"Generating ${mr_title} (static menu d-pad repeat)…")
+
+    # 2. exact enabled set: FOV + always-on baseline fixes + QOL toggles --------
+    enabled = enabled_set_for(ini, profile, log)
+    # Only enable titles that actually exist (a QOL/FOV we just added does).
+    present = set(ini.titles())
+    missing = [t for t in enabled if t not in present]
+    enabled = [t for t in enabled if t in present]
+    from .inieditor import dolphin_name
+    prev = {dolphin_name(t) for t in ini.enabled()}
+    ini.set_enabled(enabled)
+    log(f"Enabled {len(enabled)} codes: " + ", ".join("$" + t.split(" (")[0]
+                                                       for t in enabled))
+    if missing:
+        log("  !! skipped, not in [Gecko]: " + ", ".join(missing))
+    # Surface enabled-set drift vs the previous launch — a silently-grown or
+    # shrunk kit is exactly how this launcher once shipped an untested fix.
+    now = {dolphin_name(t) for t in enabled}
+    for t in sorted(now - prev):
+        log(f"  + newly enabled vs last launch: ${t}")
+    for t in sorted(prev - now):
+        log(f"  - no longer enabled vs last launch: ${t}")
+
+    # 3. Core: cheats + emulation speed + audio ---------------------------------
+    ini.set_core("EnableCheats", "True")
+    ini.set_core("EmulationSpeed", C.emulation_speed(profile["fps"]))
+    ini.set_core("AudioPreservePitch", "True")
+
+    # 4. display aspect + HD-texture ("HD portals") toggle ----------------------
+    #    Both go in [Video_Settings] (one rewrite). The HD pack install (symlink)
+    #    happens here too when enabling; disabling just flips HiresTextures off.
+    from . import hdtextures
+    video = dict(C.ASPECTS[profile["aspect"]]["video"])
+    video.update(hdtextures.apply(bool(profile.get("hd_portals")), log=log))
+    ini.set_video(video)
+
+    ini.save(force=force)
+    log(f"Wrote {C.LIVE_INI.name} (backup .bak). "
+        f"EmulationSpeed={C.emulation_speed(profile['fps'])}.")
+
+    # 5. MEM1 = 64MB, ALWAYS. Two independent reasons need the expanded arena:
+    #    - online: BSE's remote-puppet heap lives in the extended MEM1 arena.
+    #    - both:  the custom build's Gecko code-cap lift relocates a large
+    #      codelist (>~406 lines) to 0x81800000 = 0x80000000 + MEM1_SIZE_RETAIL,
+    #      and caps it at min(0x80000000+mem1_size, 0x81810000). With retail 24MB
+    #      MEM1 that window is ZERO bytes, so every code past the base cap
+    #      silently drops — which killed the offline bundle's timestep blocks
+    #      (game ran 60fps at 2x). The offline codelist is ~442 lines, so it
+    #      MUST have the expanded arena. (Harmless for the stock disc: the game
+    #      only uses the retail 24MB; the extra RAM just backs the codelist.)
+    _set_dolphin_mem1(True, log)
+
+
+# -------------------------------------------------------------------- launch
+def _spawn(cmd, cwd, logpath):
+    lf = open(logpath, "ab")
+    return subprocess.Popen(cmd, cwd=str(cwd), stdout=lf, stderr=lf,
+                            start_new_session=True)
+
+
+def _spawn_verify(profile: dict, log=_noop):
+    """Detached post-launch verification (BSE modes): proves every enabled
+    Gecko code actually installed and the native FPS poke landed. Without
+    this, a silently-dead code list looks identical to a working one."""
+    _spawn([sys.executable, "-m", "smslaunch.verify",
+            "--fps", str(profile["fps"])], C.LAUNCHER_DIR, "/tmp/sms-verify.log")
+    log("Post-launch verify scheduled (~30s) — result: /tmp/sms-verify.log")
+
+
+def launch(profile: dict, *, log=_noop):
+    """Boot the game for `profile`. Assumes apply() already ran."""
+    iso = C.iso_for(profile["mode"], profile["fps"])
+    if not iso.exists():
+        raise FileNotFoundError(f"ISO not found: {iso}")
+    quit_dolphin(log)
+    # Always clear helpers from the PREVIOUS session. A lingering ghost_bot
+    # otherwise reconnects even when the ghost box is unticked (and a stale
+    # bridge would double-poke). They are respawned below only if wanted.
+    subprocess.run(["pkill", "-f", "ghost_bot.py"], capture_output=True)
+    subprocess.run(["pkill", "-f", "bridge.py"], capture_output=True)
+
+    log(f"Booting {iso.name} …")
+    subprocess.run(["open", "-a", str(C.DOLPHIN_APP), "--args", "-e", str(iso)])
+
+    # OFFLINE = the stock SMS disc: the fpspatch Gecko bundle + EmulationSpeed
+    # drive the framerate. Nothing to poke, no server.
+    if profile["mode"] == "offline":
+        log("Offline (stock disc): fpspatch bundle + EmulationSpeed drive the "
+            "framerate. Ready — pick your save and play.")
+        return
+
+    # Both BSE modes below need the native FPS/aspect poked into RAM.
+    bse_aspect = C.ASPECTS[profile["aspect"]]["bse"]
+
+    # SOLO = the BSE disc booted single-player: full BetterSunshineMoveset (Hover
+    # Burst, SMO Dive…) loads from its Kuribo module, but NO server/bridge/ghost.
+    # BSE boots at mFPSValue=0 (30fps) → 30×EmulationSpeed = 2x-speed 60fps until
+    # something writes the FPS enum, so poke it once via the no-stage one-shot.
+    if profile["mode"] == "solo":
+        log(f"Solo BSE moveset: poking native FPS={profile['fps']} / "
+            f"aspect={bse_aspect} (no server)…")
+        _spawn(["python3", str(C.SET_BSE_FPS), "--fps", str(profile["fps"]),
+                "--aspect", str(bse_aspect)], C.MAC_ONLINE, "/tmp/set_bse_fps.log")
+        log("Full moveset (Hover Burst, SMO Dive, Rocket/Side Dive…) loads from "
+            "BetterSunshineMoveset.kxe. FPS poke retries until BSE registers "
+            "(~seconds into boot) — log: /tmp/set_bse_fps.log. Play solo.")
+        _spawn_verify(profile, log)
+        return
+
+    # ONLINE = the BSE disc: framerate/aspect are native settings poked into RAM,
+    # plus the server + bridge (+ ghost). The bridge re-pokes FPS/aspect each loop.
+    # A long-lived server degrades (busy-wait spin accumulates with every
+    # connect/disconnect; 300-600% CPU seen after hours up) and its world-sync
+    # reheal then wedges the client GUEST-side on stage entry — the 2026-08-14
+    # "freeze in Delfino / at Wiggler" class. Reuse only a healthy server;
+    # restart a spun-up one at session start.
+    sp = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
+                        capture_output=True, text=True).stdout.split()
+    if sp:
+        cpu = subprocess.run(["ps", "-p", sp[0], "-o", "pcpu="],
+                             capture_output=True, text=True).stdout.strip()
+        if float(cpu or 0) > 150:
+            log(f"Server degraded ({cpu.strip()}% CPU) — restarting it fresh.")
+            subprocess.run(["pkill", "-f", "SMSO.ServerHost"])
+            time.sleep(2)
+            sp = []
+        else:
+            log(f"Server already running (healthy, {cpu.strip()}% CPU).")
+    if not sp:
+        log("Starting BSMSO server…")
+        _spawn(["/bin/zsh", str(C.RUN_SERVER)], C.MAC_ONLINE, "/tmp/smso-server.log")
+        time.sleep(3)
+    # The server busy-waits (600%+ CPU with clients attached) and starves
+    # Dolphin below the target FPS. Until the spin is fixed at source, pin it
+    # to lowest priority so the emulator always wins the CPU fight.
+    pids = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
+                          capture_output=True, text=True).stdout.split()
+    for pid in pids:
+        subprocess.run(["renice", "19", "-p", pid], capture_output=True)
+    if pids:
+        log("Server deprioritized (nice 19) so Dolphin keeps its FPS.")
+    time.sleep(1)
+    log(f"Starting bridge (name={profile['player_name']}, fps={profile['fps']})…")
+    _spawn(["python3", str(C.BRIDGE), "--server", "127.0.0.1",
+            "--name", profile["player_name"], "--fps", str(profile["fps"]),
+            "--aspect", str(bse_aspect)], C.MAC_ONLINE, "/tmp/bridge.log")
+    if profile["ghost"]:
+        log("Starting ghost bot…")
+        _spawn(["python3", str(C.GHOST), "--server", "127.0.0.1", "--name", "Ghost"],
+               C.MAC_ONLINE, "/tmp/ghost.log")
+    log("Online up. Enter a stage (Delfino) — bridge attaches once the session "
+        "is active. Logs: /tmp/bridge.log, /tmp/smso-server.log.")
+    _spawn_verify(profile, log)

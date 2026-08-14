@@ -1,0 +1,19 @@
+$Bird walk accel x2 BSE-120 (guarded)
+* PARKED — generated but unverified in-game (birds looked right without it).
+* Under BSE-120 SMSGetAnmFrameRate returns 0.5: linear Animal movement
+* self-compensates (1/4 per frame x 4x frames) but the SQUARED walk
+* accel/decel term comes out 1/4 overall. NEVER use the stock-kit
+* Animal x4 codes under BSE ("mach 10" birds — twice confirmed). This
+* scales f1 by exactly 2 at ONLY the two accel-save sites (fmr f30,f1)
+* so the squared term lands on stock. Guarded on *0x804167B8 == 2.0f.
+* Generator: fpspatch.py bse_bird_accel().
+C2008060 00000004
+3D808041 800C67B8
+3D604000 7C005800
+40820008 EC21082A
+FFC00890 00000000
+C2008094 00000004
+3D808041 800C67B8
+3D604000 7C005800
+40820008 EC21082A
+FFC00890 00000000

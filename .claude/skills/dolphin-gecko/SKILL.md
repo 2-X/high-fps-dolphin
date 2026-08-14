@@ -25,9 +25,13 @@ cause duplicate/confusing entries. Always target the user INI above.
 ## Workflow
 
 1. **Confirm Dolphin is quit.**
-   - macOS: `pgrep -if dolphin` → if it prints a PID, Dolphin is running. Quit it
+   - macOS: `pgrep -x Dolphin` → if it prints a PID, Dolphin is running. Quit it
      gracefully: `osascript -e 'quit app "Dolphin"'` then wait for the process to
-     disappear (poll `pgrep`).
+     disappear (poll `pgrep -x Dolphin`).
+     Use `-x` (exact process-name match), **not** `pgrep -if dolphin`: `-f`
+     matches the whole command line, so anything launched from this repo path
+     (`.../high-fps-dolphin/...` — e.g. the BSMSO `bridge.py`, `ghost_bot.py`,
+     `memhelper`) falsely reads as "Dolphin is running".
    - Windows: `tasklist /FI "IMAGENAME eq Dolphin.exe" /NH` → if it lists
      `Dolphin.exe`, Dolphin is running. Quit it gracefully with
      `taskkill /IM Dolphin.exe` (no `/F` — a forced kill skips the on-close INI
@@ -48,11 +52,16 @@ cause duplicate/confusing entries. Always target the user INI above.
    ```
    The script **refuses** to write while Dolphin is running (override: `--force`).
    `enable --title` accepts a substring: it is resolved against the `$` titles in
-   `[Gecko]` and the **full matched title** is written to `[Gecko_Enabled]`
-   (errors on zero or multiple matches; an exact match wins). Dolphin matches
-   enabled entries by exact title, so a partial title in `[Gecko_Enabled]`
-   silently never ticks the code — this bit us with "FLUDD Aim Invert v1" vs the
-   full title "FLUDD Aim Invert v1 (up aims up)".
+   `[Gecko]` and the matched title — **normalized to the name Dolphin matches
+   on** — is written to `[Gecko_Enabled]` (errors on zero or multiple matches;
+   an exact match wins). Two silent-mismatch traps, both of which bit us:
+   - a *partial* title in `[Gecko_Enabled]` never ticks the code ("FLUDD Aim
+     Invert v1" vs the full "FLUDD Aim Invert v1 (up aims up)");
+   - a *bracket suffix* never ticks either: Dolphin parses `$Name [creator]` by
+     splitting at the first `[` (bracket text becomes the creator field) but
+     compares enabled lines verbatim against the stripped name — so
+     `$Particle parity … [kris]` in `[Gecko_Enabled]` NEVER matches. Write the
+     stripped name, and prefer bracket-free titles for new codes.
 3. **Verify** the code is present and well-formed: `$PY $S list`.
 4. **Tell the user to relaunch Dolphin** and open Properties → Gecko Codes; the
    new code will be at the bottom of the list.

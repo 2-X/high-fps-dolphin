@@ -47,18 +47,24 @@ else:
 
 
 def dolphin_running():
+    """True only if the actual Dolphin emulator process is alive.
+
+    Match the *process name* exactly — never the command line. The old check
+    was `pgrep -if dolphin`, and -f matches the full argv: since this repo
+    lives at .../high-fps-dolphin/, every helper launched from it (the BSMSO
+    bridge.py / ghost_bot.py / memhelper, editors, this script itself) matched
+    and the guard refused to write even with Dolphin fully quit.
+    """
     try:
         if sys.platform == "win32":
             out = subprocess.run(
                 ["tasklist", "/FI", "IMAGENAME eq Dolphin.exe", "/NH"],
                 capture_output=True, text=True).stdout
             return "Dolphin.exe" in out
-        out = subprocess.run(["pgrep", "-if", "dolphin"],
-                             capture_output=True, text=True).stdout
-        # ignore this script / editors that merely mention "dolphin"
-        for line in out.split():
-            return True
-        return False
+        # -x = exact match on the process name (the app-bundle binary is
+        # Dolphin.app/Contents/MacOS/Dolphin). Case-sensitive on purpose.
+        return subprocess.run(["pgrep", "-x", "Dolphin"],
+                              capture_output=True, text=True).returncode == 0
     except Exception:
         return False
 
@@ -182,21 +188,36 @@ def cmd_add(text, args):
     text = text[:s] + seg + text[e:]
     if args.enable:
         text = _enable(text, args.title)
+    if "[" in args.title:
+        print(f"WARNING: title contains '[' — Dolphin treats the bracket part as a "
+              f"creator suffix and matches enable-lines against the stripped name "
+              f"{dolphin_name(args.title)!r}. Prefer bracket-free titles.")
     print(("replaced" if existed else "added") + f" ${args.title} ({len(good)} lines)")
     return text
 
 
+def dolphin_name(title):
+    """The name Dolphin matches [Gecko_Enabled] lines against: it parses
+    `$Name [creator]` by splitting at the first '[' and whitespace-stripping
+    (GeckoCodeConfig.cpp), but compares enabled lines VERBATIM against that
+    stripped name (CheatCodes.h). Writing a bracketed title into
+    [Gecko_Enabled] therefore silently never enables the code — this kept the
+    `... [kris]` BSE-120 particle-parity code uninstalled for days."""
+    return title.split("[", 1)[0].strip()
+
+
 def _enable(text, title):
-    """Append $title to [Gecko_Enabled]. `title` must be the FULL exact title
-    from [Gecko] — Dolphin matches enabled entries by exact title, so a partial
-    title here silently never ticks the code."""
+    """Append $title to [Gecko_Enabled], normalized to the exact name Dolphin
+    matches on (bracket/creator suffix stripped — see dolphin_name). A partial
+    or bracket-suffixed title here silently never ticks the code."""
+    name = dolphin_name(title)
     text = ensure_section(text, "Gecko_Enabled")
     s, e = get_section(text, "Gecko_Enabled")
     enabled = [ln[1:].strip() for ln in text[s:e].splitlines()
                if ln.startswith("$")]
-    if title in enabled:
+    if name in enabled:
         return text
-    seg = text[s:e].rstrip("\n") + f"\n${title}\n"
+    seg = text[s:e].rstrip("\n") + f"\n${name}\n"
     return text[:s] + seg + text[e:]
 
 

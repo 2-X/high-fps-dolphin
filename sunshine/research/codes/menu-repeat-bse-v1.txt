@@ -1,4 +1,14 @@
-$Menu key-repeat BSE-120 fix v1 [kris]
+$Menu key-repeat BSE-120 fix v1
+* (title de-bracketed 2026-08-14: Dolphin never enables bracket-suffixed
+* enabled-lines — see memory dolphin-gecko-bracket-title-bug. v1 had therefore
+* never actually been installed.)
+* 2026-08-14 IN-GAME RESULT: v1 INSTALLED BUT INEFFECTIVE. The guard reads
+* 0x804167B8 at reset() time, and reset() runs at BOOT — before the external
+* FPS poke lands (global still 0.5f) — so the scaling never applied; the
+* repeat config is set once, process-global. SUPERSEDED BY v2 (STATIC): the
+* launcher generates absolute counts for the launch FPS with no runtime
+* guard (smslaunch/codegen.py gen_menu_repeat_bse, li r5/r6 at the same
+* 0x802A89C8 hook). Do NOT enable v1 and v2 together (same hook address).
 * Fixes the "holding up/down scrolls MANY options" bug under the BSMSO/BSE
 * online kit at 120fps (BSE writes float 2.0f to 0x804167B8 every frame).
 * Confirmed in: (a) boot save-file select, (b) in-level pause menu.

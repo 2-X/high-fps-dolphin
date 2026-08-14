@@ -43,9 +43,14 @@ MAGIC   = 0x434D4558  # 'CMEX'
 K       = 9106.0      # default XAngleMax-XAngleMin range: ratio->s16-angle
 DRAIN   = 0.05        # max ratio-units of E drained per frame (smooth unwind)
 CAP_DEG = 60.0
+KMIN    = 0.15        # dolly: closest fraction of the boom the eye may pull in to
+NEGEPS  = -1.0        # dolly: denom (eyeY-lookatY) must be at least this negative
 for i, a in enumerate(sys.argv):
     if a == "--cap":
         CAP_DEG = float(sys.argv[i + 1])
+    if a == "--kmin":
+        KMIN = float(sys.argv[i + 1])
+DOLLY = "--dolly" in sys.argv   # spring-arm ground response instead of raise-bypass
 CAP = CAP_DEG / 180.0 * 32768.0  # s16 angle units
 
 def f32(x):
@@ -69,6 +74,8 @@ def stfd(s, off, a):    return 0xD8000000 | s << 21 | a << 16 | (off & 0xFFFF)
 def cmpw(a, b):         return 0x7C000000 | a << 16 | b << 11
 def subf(d, a, b):      return 0x7C000050 | d << 21 | a << 16 | b << 11
 def fsubs(d, a, b):     return 0xEC000028 | d << 21 | a << 16 | b << 11
+def fdivs(d, a, b):     return 0xEC000024 | d << 21 | a << 16 | b << 11
+def fmadds(d, a, c, b): return 0xEC00003A | d << 21 | a << 16 | b << 11 | c << 6  # frA*frC+frB
 def fnmsubs(d, a, c, b):return 0xEC00003C | d << 21 | a << 16 | b << 11 | c << 6
 def fmr(d, b):          return 0xFC000090 | d << 21 | b << 11
 def fcmpu(a, b):        return 0xFC000000 | a << 16 | b << 11
@@ -103,6 +110,7 @@ def branches(seq):
     return ins
 
 KW, DW, CW = f32(K), f32(DRAIN), f32(CAP)
+KMINW, ONEW, NEGEPSW = f32(KMIN), f32(1.0), f32(NEGEPS)
 
 GP_CAMERA = 0x8040D0A8   # CPolarSubCamera* — the MAIN camera. A second camera
 # object also runs these functions every frame (seen live: its calcSlopeAngleX_
@@ -148,6 +156,11 @@ hookB = branches([
     lis(6, hi(KW)),  ori(6, 6, lo(KW)),  stw(6, 0x08, 5),
     lis(6, hi(DW)),  ori(6, 6, lo(DW)),  stw(6, 0x0C, 5),
     lis(6, hi(CW)),  ori(6, 6, lo(CW)),  stw(6, 0x18, 5),
+    # dolly tunables (read by the ground-check spring-arm hook):
+    #   +0x40 k_min   +0x44 1.0   +0x48 -eps (near-horizontal denom guard)
+    *([lis(6, hi(KMINW)),   ori(6, 6, lo(KMINW)),   stw(6, 0x40, 5),
+       lis(6, hi(ONEW)),    ori(6, 6, lo(ONEW)),    stw(6, 0x44, 5),
+       lis(6, hi(NEGEPSW)), ori(6, 6, lo(NEGEPSW)), stw(6, 0x48, 5)] if DOLLY else []),
     stw(7, 0x04, 5),                           # magic last
     "ready",
     lfs(2, 0x00, 5),      # f2 = E
@@ -258,6 +271,56 @@ hookD = branches([
     "skip",
 ])
 
+# ---- Hook D-dolly: execGroundCheck_ revision store @ 0x80020408 (--dolly) ----
+# Spring-arm ground response. Instead of the stock y-only raise (or v11's
+# bypass), keep the requested up-pitch and satisfy the ground by pulling the
+# camera IN toward the look-at (Mario): scale the whole (eye - lookat) vector
+# so the eye rises to exactly groundY+groundOff. The eye slides closer and up
+# under Mario along the same view ray, bounded by k_min so it never punches
+# through the floor. Stateless, purely local — no accumulator, no deficit.
+#
+# At the store: f0 = intended eye.y, f1 = raised y (groundY+groundOff),
+#               r30 = this. eye = mCurrentTarget.mPosition @ 0x80/0x84/0x88,
+#               look = mCurrentTarget.mTarget @ 0x8C/0x90/0x94.
+# All of r3-r12, f2-f13 are free here (nothing after the store reads them; the
+# epilogue reloads r28-r31/f30-f31 from the stack). Runs only when E > 0 on the
+# main camera, so stock behavior (and the 2nd camera object) is untouched.
+hookD_dolly = branches([
+    *guard(30, 3, "orig"),
+    lis(3, 0x8000), ori(3, 3, SCRATCH & 0xFFFF),
+    lwz(4, 4, 3),
+    lis(5, hi(MAGIC)), ori(5, 5, lo(MAGIC)),
+    cmpw(4, 5), (bne, "orig"),
+    lfs(2, 0x00, 3),      # f2 = E
+    fsubs(3, 2, 2),       # f3 = 0.0  (FPR f3; GPR r3 stays the scratch base)
+    fcmpu(2, 3), (ble, "orig"),   # E <= 0: stock raise
+    lfs(2, 0x90, 30),     # f2 = lookatY
+    fsubs(3, 0, 2),       # f3 = denom = eyeY - lookatY  (< 0 while looking up)
+    lfs(4, 0x48, 3),      # f4 = -eps
+    fcmpu(3, 4), (bge, "orig"),   # denom >= -eps: too flat/unsafe -> stock raise
+    fsubs(4, 1, 2),       # f4 = num = raisedY - lookatY
+    fdivs(5, 4, 3),       # f5 = k = num / denom
+    lfs(6, 0x44, 3),      # 1.0
+    fcmpu(5, 6), (ble, "klo"),
+    fmr(5, 6),            # k = min(k, 1.0)
+    "klo",
+    lfs(7, 0x40, 3),      # k_min
+    fcmpu(5, 7), (bge, "xyz"),
+    fmr(5, 7),            # k = max(k, k_min)
+    "xyz",
+    # new_eye = lookat + k*(eye - lookat), component-wise; write back to eye.
+    lfs(8, 0x80, 30), lfs(9, 0x8C, 30), fsubs(10, 8, 9),
+    fmadds(11, 5, 10, 9), stfs(11, 0x80, 30),                 # X
+    fmadds(11, 5, 3, 2), stfs(11, 0x84, 30),                  # Y: f3=eyeY-lookatY
+    lfs(8, 0x88, 30), lfs(9, 0x94, 30), fsubs(10, 8, 9),
+    fmadds(11, 5, 10, 9), stfs(11, 0x88, 30),                 # Z
+    lwz(4, 0x28, 3), addi(4, 4, 1), stw(4, 0x28, 3),          # dbg dCnt = dolly count
+    (b, "skip"),          # skip the original y-only raise
+    "orig",
+    stfs(1, 0x84, 30),    # original instruction
+    "skip",
+])
+
 # ---- Hook C: calcPosAndAt_ bl execCameraInbetween @ 0x80024828 ----
 # live args: r3=mInbetween r4=&pos r5=&at-copy(r1+0x224) r6=&marioPos
 # free: r0, r7-r12, f2, f3; LR/CTR clobbered by the call anyway
@@ -319,19 +382,31 @@ def c2(addr, ins):
     return lines
 
 out = []
-out.append(f"$Camera look-up extension v11 (sky-gaze on flat ground, +{CAP_DEG:.0f}deg)")
-out += c2(0x8002510C, hookB)
-out += c2(0x80024D1C, hookA)
-out += c2(0x80020408, hookD)
-out += c2(0x80024828, hookC)
-out += c2(0x80024358, hookE)
+if DOLLY:
+    # Dolly variant: hooks B (angle bank) + A (apply pitch) + E (free-path) kept;
+    # ground response is the spring-arm pull-in; hook C (deficit consumer) dropped.
+    out.append(f"$Camera dolly-in v1 (look-up, ground spring-arm, +{CAP_DEG:.0f}deg, kmin{KMIN:g})")
+    out += c2(0x8002510C, hookB)
+    out += c2(0x80024D1C, hookA)
+    out += c2(0x80020408, hookD_dolly)
+    out += c2(0x80024358, hookE)
+    checks = (("hookB", hookB), ("hookA", hookA), ("hookD_dolly", hookD_dolly), ("hookE", hookE))
+else:
+    out.append(f"$Camera look-up extension v11 (sky-gaze on flat ground, +{CAP_DEG:.0f}deg)")
+    out += c2(0x8002510C, hookB)
+    out += c2(0x80024D1C, hookA)
+    out += c2(0x80020408, hookD)
+    out += c2(0x80024828, hookC)
+    out += c2(0x80024358, hookE)
+    checks = (("hookB", hookB), ("hookA", hookA), ("hookD", hookD), ("hookC", hookC), ("hookE", hookE))
 print("\n".join(out))
 
-# ---- self-check: capstone round-trip ----
+# ---- self-check: capstone round-trip + no interior 00000000 ----
 if "--check" in sys.argv:
     from capstone import Cs, CS_ARCH_PPC, CS_MODE_32, CS_MODE_BIG_ENDIAN
     md = Cs(CS_ARCH_PPC, CS_MODE_32 | CS_MODE_BIG_ENDIAN)
-    for name, ins, base_ in (("hookB", hookB, 0x8002510C), ("hookA", hookA, 0x80024D1C), ("hookD", hookD, 0x80020408), ("hookC", hookC, 0x80024828), ("hookE", hookE, 0x80024358)):
+    for name, ins in checks:
+        assert 0x00000000 not in ins, f"{name}: interior 00000000 word (would crash the C2 cave)"
         print(f"\n# {name}:", file=sys.stderr)
         blob = b"".join(struct.pack(">I", w) for w in ins)
         n = 0

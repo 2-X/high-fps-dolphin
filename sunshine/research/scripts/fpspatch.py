@@ -1959,6 +1959,28 @@ def bse_animal_duration(fps=120):
 # as the non-flight / timer>=40 paths already do. r0/r11/r12 are dead across the
 # hook (0x800E5E48 rewrites r0/r3/r4 before any read; r11/r12 untouched by the
 # following code).
+# ---- Bird walk accel under BSE — the ONLY animal term that needs help -------
+# Aug-12 verdict (re-confirmed 2026-08-14): the stock-kit Animal x4 codes are
+# WRONG under BSE — linear movement speeds self-compensate (SMSGetAnmFrameRate
+# returns 0.5 at BSE-120: 1/4 per-frame x 4x frames = stock), so x4 makes
+# birds "fly wayyyy too fast" / "mach 10". The one term that does NOT
+# self-compensate is the SQUARED accel/decel (rate^2: 1/16 per frame x 4 =
+# 1/4 overall) -> walking/marching birds accelerate visibly slow while flying
+# birds look perfect. Fix: scale f1 by exactly 2 at the two accel-save sites
+# only ((2*0.5)^2 = 1.0 per frame x 120 = stock 4.0 x 30). Guarded on 2.0f.
+BIRD_ACCEL_SITES = [
+    (0x80008060, 0xFFC00890),   # execWalk moving:   rate saved for accel (fmr f30,f1)
+    (0x80008094, 0xFFC00890),   # execWalk stopping: rate saved for decel (fmr f30,f1)
+]
+
+def bse_bird_accel():
+    blocks = []
+    for hook, orig in BIRD_ACCEL_SITES:
+        body = [_fadds(1, 1, 1), orig]          # f1 *= 2, then original fmr f30,f1
+        blocks.append(_c2(hook, _bse_guard(5 + 1) + body))   # guard-fail -> orig
+    return "\n".join(blocks)
+
+
 def bse_poink():
     # POINK body without the trailing handler-zero pad.
     body = next(b for k, a, b in _iter_codes(POINK))[:-1]

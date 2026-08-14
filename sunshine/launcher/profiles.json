@@ -1,0 +1,133 @@
+{
+  "last": "Moveset 120",
+  "profiles": [
+    {
+      "name": "Moveset 120",
+      "mode": "online",
+      "fps": 120,
+      "fov": 80,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": true,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Online 120",
+      "mode": "online",
+      "fps": 120,
+      "fov": 90,
+      "aspect": "mac",
+      "ghost": true,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Offline 240",
+      "mode": "offline",
+      "fps": 240,
+      "fov": 95,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Offline 120",
+      "mode": "offline",
+      "fps": 120,
+      "fov": 95,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Offline 30",
+      "mode": "offline",
+      "fps": 60,
+      "fov": 80,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Offline 30 Vanilla",
+      "mode": "offline",
+      "fps": 60,
+      "fov": 70,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": false,
+        "fludd": false,
+        "savebox": false,
+        "tank": false
+      }
+    },
+    {
+      "name": "Offline Custom 110fps",
+      "mode": "online",
+      "fps": 120,
+      "fov": 69,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false
+      }
+    },
+    {
+      "name": "Wiggler Test A (no fix codes)",
+      "mode": "online",
+      "fps": 120,
+      "fov": 90,
+      "aspect": "mac",
+      "ghost": false,
+      "hd_portals": false,
+      "player_name": "Kris",
+      "qol": {
+        "camera": false,
+        "fludd": false,
+        "savebox": false,
+        "tank": false
+      }
+    }
+  ]
+}
