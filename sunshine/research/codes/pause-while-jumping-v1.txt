@@ -1,0 +1,48 @@
+$Pause while jumping v1
+04297AD8 60000000
+
+# Lets you open the pause menu while Mario is airborne (jumping/falling).
+# Vanilla SMS refuses to pause mid-jump and plays the "nope" system buzzer
+# instead; this removes that one restriction. Works on BOTH discs (offline
+# stock GMSE01 and the online BSMSO/BSE disc) — the gate lives in base main.dol
+# code that BSE does not relocate, so the same single write serves both.
+#
+# Mechanism (USA main.dol, RE'd 2026-08-14 against the decomp + live disasm):
+# - The pause request is handled in TMarDirector::updateGameMode (0x802979B4),
+#   reached from direct()'s STATE_UNK4. In case 0, once a pause is requested
+#   (unk18[0]->mEnabledFrameMeaning & 0x1, @0x80297A70), the game gates the
+#   pause on Mario's state:
+#
+#       if (gpMarioOriginal->checkActionThing3())   // inlined, Mario.hpp:1212
+#           r29 = STATE_UNK5;                        // open the pause menu
+#       else
+#           startSoundSystemSE(MSD_SE_SY_NOT_COLLECT); // the "can't" buzzer
+#
+#   checkActionThing3() ==
+#       if (checkFlag(MARIO_FLAG_HELMET_FLW_CAMERA /*0x1000*/)) return true;
+#       if (checkStatusType(MARIO_STATUS_FLAG_JUMPING /*0x800*/)) return false;
+#       return true;
+#   i.e. it returns false *only* while the JUMPING status bit is set — that is
+#   the exact "can't pause in the air" restriction.
+#
+# - The inlined check compiles to (0x80297AA8..0x80297AE0):
+#       80297AA8  lwz     r0,0x7c(r3)          ; Mario status word
+#       80297AAC  rlwinm. r0,r0,0,0x14,0x14    ; test JUMPING (0x800)
+#       ...       (compute checkActionThing3 -> r0 = 0 when jumping)
+#       80297AD4  clrlwi. r0,r0,0x18
+#       80297AD8  beq     0x80297AE4  <4182000C> ; jumping -> buzzer path
+#       80297ADC  li      r29,5                  ; STATE_UNK5 = open pause menu
+#       80297AE0  b       0x80297FF4             ; break
+#       80297AE4  ... startSoundSystemSE(NOT_COLLECT) ...  ; the "nope" buzzer
+#
+#   The one branch at 0x80297AD8 is the whole restriction: it is taken only when
+#   checkActionThing3() returned false (Mario jumping). NOP it (60000000) and the
+#   jumping case now FALLS THROUGH to `li r29,5`, so the pause menu opens in the
+#   air just like on the ground. When Mario is NOT jumping the branch was never
+#   taken, so grounded behavior is byte-for-byte unchanged.
+#
+# - Byte at 0x80297AD8 verified == 4182000C in: pristine USA main.dol,
+#   work/disc/sys/main.dol, and the BSE engine main.dol (bse-release) — hence
+#   one code for both engines.
+# - Framerate-independent (no timing / no float constants): safe with or without
+#   the high-fps bundle, and safe under BSE's native FPS poke.

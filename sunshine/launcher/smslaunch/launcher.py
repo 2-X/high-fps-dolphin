@@ -229,6 +229,14 @@ def apply(profile: dict, *, log=_noop, force=False):
             ini.add_code(title, code)
             log(f"Generating ${title} (aspect widescreen)…  + ${title}")
 
+    # 1a3. QOL "Pause while jumping": a fixed one-line write shared by both discs
+    #      (the air-pause gate at 0x80297AD8 is base-DOL code, identical offline/
+    #      BSE). Ensure the body exists so the toggle can enable it — it is never
+    #      auto-enabled here, only when the profile's QOL flag is on (step 2).
+    if C.PAUSE_JUMP_TITLE not in ini.titles():
+        ini.add_code(C.PAUSE_JUMP_TITLE, C.PAUSE_JUMP_CODE)
+        log(f"Installing ${C.PAUSE_JUMP_TITLE} (pause mid-air)…")
+
     # 1b. generate the FOV code (at the vertical fovy for this hFOV+aspect), or
     #     skip entirely when FOV is left blank (keep the game's stock FOV) -------
     vfov = vfov_of(profile)

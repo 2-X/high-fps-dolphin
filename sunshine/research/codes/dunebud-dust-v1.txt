@@ -1,0 +1,84 @@
+$DuneBud dust re-register BSE v1
+* 2026-08-14. NEEDS IN-GAME TEST (Gelato Beach on the BSMSO disc, spray a
+* Dune Bud: dust should appear and no "Invalid write 0x154/0x158" panic).
+* Companion to (NOT a replacement for) "$DuneBud emitter null-guard BSE",
+* which stays enabled as the crash net.
+*
+* ======================= CORRECTED ROOT CAUSE =======================
+* The 2026-08-14 diagnosis ("the BSMSO repacked particle archive lacks
+* resource 0x55") is WRONG. Proven 2026-08-14 (late):
+*   - data/particle.szs is byte-identical pristine vs BSMSO root AND inside
+*     all three ISOs (md5 f4e70971...). NOTHING was pruned in the repack;
+*     the only files that differ on the whole disc are nintendo.szs,
+*     option.szs (BSE menu asset overlays, no JPA content), sys/boot.bin,
+*     sys/fst.bin, sys/main.dol (Kuribo loader stub) + the Kuribo! folder.
+*   - Resource 0x55 is not in particle.szs at all. It is the Dune Bud's OWN
+*     lazily-registered effect: TSandBombBase init (USA ~0x801d26b0)
+*     registers "/scene/mapObj/SandBomb.jpa" (present in mamma0-7.szs +
+*     mam_ex1.szs mapobj/, identical on both discs) via
+*     JPAResourceManager::load(name, 0x55) @0x80336708 — but ONLY if the
+*     global once-flag byte flag[0x55] (0x803FD068 + id, i.e. 0x803FD0BD)
+*     is still 0:
+*         801d27a4  lbz  r0, 0x55(r3)      # r3 = 0x803FD068
+*         801d27a8  cmplwi r0, 0
+*         801d27ac  bne  801d27c8          # flag set -> SKIP registration
+*         801d27b0  lwz  r3, -0x5fe0(r13)  # gpResourceManager (0x8040E1E0)
+*         801d27b4  addi r4, r31, 0x4e4    # "/scene/mapObj/SandBomb.jpa"
+*         801d27b8  li   r5, 0x55
+*         801d27bc  bl   0x80336708        # JPAResourceManager::load
+*         801d27c0  li   r0, 1
+*         801d27c4  stb  r0, 0(r30)        # flag[0x55] = 1
+*     The flag array is cleared only in the TMarDirector ctor (memclear at
+*     0x802b52cc, sole caller 0x80297130); gpResourceManager is recreated
+*     per scene in TMarDirector::loadParticle (0x802b494c, cap 0x201).
+*   - The spray emit at 0x801d2bb4 (TMarioParticleManager::emit(0x55,...))
+*     returns NULL only when getResource(0x55) misses the per-scene registry
+*     (or the emitter pool is dry). A genuine in-scene load() failure would
+*     panic at 0x80336794 ("Invalid write 0x6") — never observed — so in the
+*     broken scenes load() was never called: the once-flag was already 1
+*     while the CURRENT scene's manager never got the resource (stale flag /
+*     flag-vs-manager lifecycle desync somewhere in the BSE/BSMSO stage-
+*     transition path). Live probe (dunebud_watch.py) will pin the exact
+*     transition; this fix is correct under every variant of that desync.
+*
+* ============================ MECHANISM ============================
+* Replace the once-FLAG check with a REGISTRY check: at 0x801d27a4, instead
+* of reading flag[0x55], call JPAResourceManager::getResource(0x55)
+* (0x803365fc, leaf: walks registry entries comparing u16 id at entry+6)
+* on the CURRENT gpResourceManager and put the result in r0. The original
+* cmplwi/bne at 0x801d27a8 then means "skip registration iff 0x55 is
+* actually registered" — idempotent, immune to stale once-flags, and a
+* byte-for-byte no-op in healthy scenes (flag set <=> resource present).
+* If no manager exists yet, r0=1 (skip, same as vanilla's flag=1 path).
+* LR clobber by bctrl is safe (saved in prologue, restored at 0x801d27c8+).
+* r3 is restored to the flag base for paranoia; r4/r5/r12 are dead here.
+*
+*   lwz   r12, -0x5fe0(r13)   # gpResourceManager
+*   cmpwi r12, 0
+*   li    r0, 1               # default: skip (no manager)
+*   beq   done
+*   lwz   r3, 4(r12)          # registry {count, cap, entries[]}
+*   li    r4, 0x55
+*   lis   r12, 0x8033
+*   ori   r12, r12, 0x65fc    # JPAResourceManager registry getResource
+*   mtctr r12
+*   bctrl
+*   mr    r0, r3              # nonzero (found) -> skip; NULL -> register
+*   lis   r3, 0x8040
+*   addi  r3, r3, -0x2f98     # restore r3 = 0x803FD068
+* done:                       # codehandler branch back to 0x801d27a8
+*
+* Known residual risk (acceptable, panic-not-crash): if registration now
+* runs in the broken state and getGlbResource itself fails, load() does a
+* near-NULL sth -> one ignorable "Invalid write 0x6" panic per Dune Bud
+* and dust stays missing (diagnostic gold either way). Never enable v1 of
+* this and any other code hooking 0x801d27a4.
+$DuneBud dust re-register BSE v1
+C21D27A4 00000007
+818DA020 2C0C0000
+38000001 41820028
+806C0004 38800055
+3D808033 618C65FC
+7D8903A6 4E800421
+7C601B78 3C608040
+3863D068 00000000

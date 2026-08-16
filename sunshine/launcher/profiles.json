@@ -1,20 +1,21 @@
 {
-  "last": "Moveset 120",
+  "last": "Offline 120",
   "profiles": [
     {
       "name": "Moveset 120",
-      "mode": "online",
+      "mode": "offline",
       "fps": 120,
       "fov": 80,
       "aspect": "mac",
-      "ghost": false,
+      "ghost": true,
       "hd_portals": true,
       "player_name": "Kris",
       "qol": {
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": true
       }
     },
     {
@@ -30,7 +31,8 @@
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     },
     {
@@ -46,23 +48,25 @@
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     },
     {
       "name": "Offline 120",
       "mode": "offline",
       "fps": 120,
-      "fov": 95,
+      "fov": 55,
       "aspect": "mac",
       "ghost": false,
-      "hd_portals": false,
+      "hd_portals": true,
       "player_name": "Kris",
       "qol": {
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": true
       }
     },
     {
@@ -78,7 +82,8 @@
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     },
     {
@@ -94,7 +99,8 @@
         "camera": false,
         "fludd": false,
         "savebox": false,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     },
     {
@@ -110,7 +116,8 @@
         "camera": true,
         "fludd": true,
         "savebox": true,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     },
     {
@@ -126,7 +133,8 @@
         "camera": false,
         "fludd": false,
         "savebox": false,
-        "tank": false
+        "tank": false,
+        "pausejump": false
       }
     }
   ]

@@ -75,20 +75,22 @@ class Launcher(App):
                 with Horizontal(classes="row"):
                     yield Label("Aspect / widescreen", classes="lbl")
                     yield Select(ASPECTS, id="aspect", allow_blank=False)
-                with Horizontal(classes="row"):
+                # Online-only rows: hidden unless mode == "online" (see _sync).
+                with Horizontal(classes="row", id="row_player"):
                     yield Label("Player (online)", classes="lbl")
                     yield Input(id="player_name")
-                with Horizontal(classes="row"):
+                with Horizontal(classes="row", id="row_ghost"):
                     yield Label("Ghost bot", classes="lbl")
                     yield Checkbox("spawn ghost (online)", id="ghost")
-                with Horizontal(classes="row"):
-                    yield Label("HD portals", classes="lbl")
-                    yield Checkbox("HD texture pack — portals + HUD icons",
-                                   id="hd_portals")
                 yield Static("QOL fixes", classes="title")
                 with VerticalScroll(id="qol"):
                     for key, label, _d, _p in C.QOL_CATALOG:
                         yield Checkbox(label, id=f"qol_{key}")
+                    # HD textures live in this section too. It's a texture-pack
+                    # toggle (not a Gecko code), so it keeps its own hd_portals
+                    # field/wiring — only its checkbox moved in here.
+                    yield Checkbox("HD texture pack — portals + HUD icons",
+                                   id="hd_portals")
                 with Horizontal(classes="row"):
                     yield Button("Save", id="save", variant="success")
                     yield Button("Apply & Launch", id="launch", variant="warning")
@@ -176,6 +178,11 @@ class Launcher(App):
         for key, _label, _d, pats in C.QOL_CATALOG:
             cb = self.query_one(f"#qol_{key}", Checkbox)
             cb.disabled = pats.get(engine) is None
+        # Player name + ghost bot are only used by the online server/bridge;
+        # hide them entirely in solo/offline where they do nothing.
+        online = self.working["mode"] == "online"
+        self.query_one("#row_player").display = online
+        self.query_one("#row_ghost").display = online
 
     def _sync_form_quiet(self):
         """Push normalized non-text values back without triggering a preview

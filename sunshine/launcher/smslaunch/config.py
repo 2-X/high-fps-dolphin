@@ -127,6 +127,17 @@ FOV_BSE_RE = re.compile(r"^FOV (\d+) BSE \(mProjectionFovy\)$")
 MENU_REPEAT_TITLE_BSE = "Menu key-repeat BSE-{fps} v2 (static)"
 MENU_REPEAT_BSE_RE = re.compile(r"^Menu key-repeat BSE-(\d+) v2 \(static\)$")
 
+# ---- "Pause while jumping" — a fixed one-line write shared by both discs -----
+# Vanilla SMS refuses to open the pause menu mid-air (plays the "nope" buzzer).
+# TMarDirector::updateGameMode gates the pause on checkActionThing3(), which is
+# false only while the JUMPING status bit is set; NOPing the one gate branch at
+# 0x80297AD8 makes the jumping case fall through to STATE_UNK5 (open pause).
+# The gate is base main.dol code that BSE does NOT relocate, so this single 04
+# write serves offline (stock) AND online (BSE) alike. Framerate-independent.
+# Full RE: research/codes/pause-while-jumping-v1.txt.
+PAUSE_JUMP_TITLE = "Pause while jumping v1"
+PAUSE_JUMP_CODE = "04297AD8 60000000"
+
 # ---- QOL toggles (user-facing) ---------------------------------------------
 # ONLY genuine quality-of-life / preference codes live here — the things you'd
 # actually want to turn on or off (camera, controls, save box, aim). The
@@ -147,6 +158,11 @@ QOL_CATALOG = [
      {"stock": r"SaveBox: Continue on top", "bse": None}),
     ("tank",       "Tank controls",             False,
      {"stock": r"Tank Controls v8", "bse": r"Tank Controls v8"}),
+    # Pause the game mid-jump (vanilla blocks it + buzzes). Same code both discs.
+    # Default OFF so it never silently alters the deliberate "vanilla"/no-fix
+    # profiles on backfill; the body is auto-installed by launcher.apply().
+    ("pausejump",  "Pause while jumping (mid-air)", False,
+     {"stock": r"Pause while jumping v1", "bse": r"Pause while jumping v1"}),
 ]
 QOL_KEYS = [k for k, *_ in QOL_CATALOG]
 
@@ -187,11 +203,19 @@ BASELINE_FIXES = [
     ("birdaccel", r"Bird walk accel x2 BSE",                  True),
     # Dune Bud spray on the BSMSO disc: vanilla code creates the sand-dust
     # JPA emitter (resource 0x55) and stores scale fields through the result
-    # with NO null check; the repacked BSMSO particle archive lacks the
-    # resource -> NULL -> "Invalid write 0x154/0x158 PC 801d2bcc" every
-    # spray. Guard skips the store block when the emitter is null (the dust
-    # effect itself is missing on that disc either way).
+    # with NO null check -> "Invalid write 0x154/0x158 PC 801d2bcc" every
+    # spray. Guard skips the store block when the emitter is null.
+    # NOTE 2026-08-14 (late): the original "repacked archive lacks the
+    # resource" diagnosis is WRONG — every disc archive is byte-identical to
+    # pristine. 0x55 is the actor's own lazy registration of
+    # /scene/mapObj/SandBomb.jpa (Gelato stage arcs), skipped when the
+    # global once-flag 0x803FD0BD is stale for the current scene's manager.
+    # See research/codes/dunebud-dust-v1.txt + mac-online/dunebud_watch.py.
     ("dunebud",   r"DuneBud emitter null-guard BSE",          True),
+    # Restores the dust: registry-check instead of once-flag at 0x801d27a4.
+    # NEEDS-TEST in Gelato on the BSE disc; flip to True after an in-game
+    # pass (keep the null-guard on regardless).
+    ("dunebudreg", r"DuneBud dust re-register BSE",           False),
     ("bluecoin",  r"Blue-coin lifetime v6-BSE",              True),
 ]
 
