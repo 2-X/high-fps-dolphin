@@ -1,6 +1,6 @@
 ---
 name: sunshine-fov-mod
-description: "SMS USA FOV override Gecko — USA CPolarSubCamera layout (mFovy@+0x48, not JP's +0x30), unified C_MTXPerspective hook + entity-culling companion hook at SetViewFrustumClipCheckPerspective 0x802260CC, substitute-f1 pattern"
+description: "SMS USA FOV override Gecko: USA CPolarSubCamera layout (mFovy@+0x48, not JP's +0x30), unified C_MTXPerspective hook + entity-culling companion hook at SetViewFrustumClipCheckPerspective 0x802260CC, substitute-f1 pattern"
 metadata:
   type: project
 ---
@@ -11,7 +11,7 @@ value via Gecko. USA build (GMSE01) only.
 ## USA CPolarSubCamera layout (differs from JP decomp)
 
 The JP decomp header (`sms/include/JSystem/JDrama/JDRCamera.hpp`) puts
-`TPolarCamera::mFovy` at offset **0x30**. **USA is different — mFovy is at
+`TPolarCamera::mFovy` at offset **0x30**. **USA is different: mFovy is at
 offset 0x48**, so USA's CPolarSubCamera looks TLookAtCamera-shaped
 (mUp@0x30, mTarget@0x3C, mFovy@0x48). Empirically confirmed at 19 direct
 `gpCamera→lfs +0x48` reader sites across the DOL.
@@ -22,7 +22,7 @@ Confirmed USA offsets on the camera object:
 - `+0x48` **mFovy**
 - `+0x4C` mAspect
 - `+0x50` mMode
-- `+0x64` unk64 (mode flag bits — JET_COASTER=0x1000, GATE_DEMO=0x200)
+- `+0x64` unk64 (mode flag bits: JET_COASTER=0x1000, GATE_DEMO=0x200)
 - `+0x68` mCurrentParams pointer
 
 `gpCamera` (global CPolarSubCamera*) lives at **0x8040D0A8**.
@@ -31,16 +31,16 @@ Confirmed USA offsets on the camera object:
 
 Every frame `CPolarSubCamera::ctrlGameCamera_` (USA `0x800234E8`) does
 `*mCurrentParams = param;` where `param` is a fresh copy of
-`mSaveKindParam[mMode]` — this wholesale overwrite wipes any Gecko-installed
+`mSaveKindParam[mMode]`. This wholesale overwrite wipes any Gecko-installed
 mFovy override on either the camera OR the params struct. So a raw
 pointer-follow write is a no-op.
 
 The failed store site inside `ctrlGameCamera_` (`stfs f0, 0x48(r31)` at
-**0x8002380C**) is also a bad hook target — it's gated by
+**0x8002380C**) is also a bad hook target: it's gated by
 `isNormalDeadDemo()` and `(unk64 & 0x1200)`; in some scenes the guard skips
 the store entirely, so a C2 there silently never fires.
 
-## Working fix — substitute f1 in-flight at the three read sites
+## Working fix: substitute f1 in-flight at the three read sites
 
 Instead of touching the mFovy memory field, C2-hook the `lfs f1, 0x48(rN)`
 loads that feed each C_MTXPerspective call and substitute `f1 = <fov>` before
@@ -60,7 +60,7 @@ Three call sites need patching for a complete fix:
 
 Skip these to preserve stock behavior in their scopes: CameraDemo cutscenes
 (0x80032D8C/0x80033088), TCameraJetCoaster (own fovy), JDrama JSG demo
-cameras (0x802F725C/0x802F769C — the 0x30 offset there is genuine, not a
+cameras (0x802F725C/0x802F769C; the 0x30 offset there is genuine, not a
 stale-JP-offset bug), TLookAtCamera setter.
 
 ## Gecko template (substitute f1 = float via r12 + stack slot)
@@ -75,7 +75,7 @@ C021FFF8 00000000        ; lfs f1, -8(r1) ; terminator (branch-back)
 
 Where `0xXXYY0000` is the upper half of the target FOV as IEEE-754 float bits
 (mantissa low bits are always 0 for the common integer FOVs). The substitute
-does NOT re-execute the original `lfs f1, 0x48(rN)` — the whole point is to
+does NOT re-execute the original `lfs f1, 0x48(rN)`. The whole point is to
 replace the loaded value.
 
 Common float-bits upper halves:
@@ -107,18 +107,18 @@ C021FFF8 00000000
 ```
 
 To retune, swap `A4` in all three lis words (bytes at positions 3 of
-lines 2, 5, 8) in lockstep — folding the hooks into ONE entry keeps that
+lines 2, 5, 8) in lockstep; folding the hooks into ONE entry keeps that
 edit local.
 
 ## Entity-culling companion hook (fixed 2026-08-10)
 
 Symptom: with the FOV widened, actors/enemies vanish near the screen edges
-while still visible — the game's frustum culling still used the stale ~50°.
+while still visible. The game's frustum culling still used the stale ~50°.
 
 All entity culling funnels through one function:
 `SetViewFrustumClipCheckPerspective(fovy, aspect, near, far)` = USA
 **0x802260CC** (JP 0x800C1414; found by scanning for `bl` preceded by
-`lfs f1,0x48/lfs f2,0x4C` camera arg setup — 10 dispersed callers; body
+`lfs f1,0x48/lfs f2,0x4C` camera arg setup, 10 dispersed callers; body
 verified: 4× fcmpu early-out vs sKeepViewClip* statics at r13-0x612C…,
 `bl tanf` = 0x8033C5CC, tail `bl SetViewFrustumClipCheck` = 0x80226174,
 size 0xA8 same as JP). Callers: TLiveManager::clipActorsAux,
@@ -126,7 +126,7 @@ TConductor::clipAloneActors, gesso, enemyAttachment, fishoid,
 TAnimalManagerBase, NpcManager.
 
 Fix = 4th C2 hook at its ENTRY substituting f1, gated on value window
-[40,56) — same philosophy as the unified render gate:
+[40,56), same philosophy as the unified render gate:
 
 ```
 C22260CC 00000008
@@ -141,7 +141,7 @@ C001FFF8 FC010000
 ```
 
 Why the window gate (not a flat force): **NpcManager passes fovy/aspect
-SWAPPED** (stock game bug — `SetViewFrustumClipCheckPerspective(mAspect,
+SWAPPED** (stock game bug: `SetViewFrustumClipCheckPerspective(mAspect,
 mFovy, ...)`), so its f1 ≈ 1.33 must pass through untouched to preserve
 stock NPC clip behavior. Out-of-window demo fovs also stay stock; worst
 case there is a clip frustum wider than render = slightly less culling,
@@ -156,7 +156,7 @@ $FOV 58/60/62 (all unified+clip form now); reference file
 
 Portal-preview scenes (M-portals in Delfino Plaza) still render at native
 ~50° while our shimmer hook at `0x8022BA98` unconditionally forces 73°
-during the preview's effect-mtx computation — so the shimmer inside the
+during the preview's effect-mtx computation, so the shimmer inside the
 portal preview is misaligned (mirror image of the world-shimmer bug we
 fixed). Fix requires either widening the preview scene's own fovy or gating
 the shimmer hook on "not a preview render pass"; see
@@ -169,8 +169,8 @@ the shimmer hook on "not a preview render pass"; see
 - **`mCurrentParams->mFovy` write**: gets stomped every frame by
   `*mCurrentParams = param`.
 - **C2 at `0x8002380C` (ctrlGameCamera_ store)**: guarded, sometimes never
-  fires — appears to install cleanly but silently no-ops in some scenes.
-- **`getFovy()` inlines reading 0x30**: no — every `.getFovy()` in USA
+  fires; appears to install cleanly but silently no-ops in some scenes.
+- **`getFovy()` inlines reading 0x30**: no; every `.getFovy()` in USA
   compiles to `lfs f, 0x48(r_cam)`. Not a stale-JP-offset problem, USA is
   internally consistent at 0x48.
 - **Overriding C_MTXPerspective entry** (0x8034A404 unconditional f1 fixup):

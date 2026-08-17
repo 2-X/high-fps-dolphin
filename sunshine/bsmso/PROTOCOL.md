@@ -37,13 +37,13 @@ and writes remote players' inbound regions back into the buffer.
 | `WarpAllSlots` | `255` | |
 
 CRC32 is the standard reflected CRC-32 (poly `0xEDB88320`, init `0xFFFFFFFF`,
-xor-out `0xFFFFFFFF`) — `Crc32.Compute`, SMSO.Net L1469.
+xor-out `0xFFFFFFFF`): `Crc32.Compute`, SMSO.Net L1469.
 
 ---
 
 # A. Comm buffer (Dolphin-RAM shared region)
 
-## A.1 How the bridge LOCATES the comm buffer — the ANCHOR mechanism
+## A.1 How the bridge LOCATES the comm buffer: the ANCHOR mechanism
 
 The address is **dynamic** and found via a fixed **anchor pointer**, not by scanning
 for the comm buffer directly. There are two things in guest RAM:
@@ -60,7 +60,7 @@ for the comm buffer directly. There are two things in guest RAM:
    `bufferGuest = ReadUInt32BigEndian(off 8)` and validates
    `0x80000000 <= bufferGuest < 0x82000000` (`2147483648 .. 2181038080`).
 2. **The comm buffer** itself, whose guest address the anchor points to
-   (at runtime `0x80567C10`; must not be assumed — always read it from the anchor).
+   (at runtime `0x80567C10`; must not be assumed: always read it from the anchor).
 
 Note `_guestMailboxAddress` is misleadingly named "mailbox" throughout the bridge; it
 is the **anchor guest address** `0x817FC000`, and the resolved `MailboxHost` is the
@@ -69,17 +69,17 @@ is the **anchor guest address** `0x817FC000`, and the resolved `MailboxHost` is 
 ### Guest→host translation (Dolphin fastmem arena)
 `TryResolveMailboxFast` (SMSO.Bridge L5672):
 - `anchorGuestOffset = guestMailbox - 0x80000000` (offset of the anchor within MEM1).
-- Enumerate readable committed regions ≥ `MinFastmemArenaSize` (`8623489024` bytes ≈ 8 GB —
+- Enumerate readable committed regions ≥ `MinFastmemArenaSize` (`8623489024` bytes ≈ 8 GB,
   Dolphin's fastmem arena). For each candidate arena base, and for each of
   `DolphinMemLayout.Mem1ViewBaseOffsets` (6 candidate view offsets; RVA-init array, the
   standard set being `0`, `PhysicalBaseOffset=0x80000000`, `LogicalBaseOffset=0x200000000`,
-  etc. — see note below), compute
+  etc.; see note below), compute
   `anchorHost = arenaBase + viewBaseOffset + anchorGuestOffset`, read 12 bytes there,
   `TryParseAnchor`. If it parses, compute the comm-buffer host address:
   ```
   commHost = anchorHost - anchorGuestOffset + (bufferGuest - 0x80000000)
   ```
-  (SMSO.Bridge L5849 — arithmetic written as `anchorHost - anchorGuestOffset + (uint)((int)bufferGuest - -2147483648)`),
+  (SMSO.Bridge L5849; arithmetic written as `anchorHost - anchorGuestOffset + (uint)((int)bufferGuest - -2147483648)`),
   then confirm via `LooksLikeCommBuffer` (magic "SMSO" + version 15 at that host addr,
   and the first 12 bytes must **not** themselves parse as an anchor).
 - The resolved `(arenaBase, viewBaseOffset)` is cached (`_cachedArenaBase`,
@@ -127,7 +127,7 @@ sequence flag.
 |---|---|---|---|
 | 0 / 0x0000 | `Magic` | 4 | u32 BE = `0x534D534F` |
 | 4 / 0x0004 | `Version` | 2 | u16 BE = 15 |
-| 6 / 0x0006 | `BridgeFlags` | 4 | u32 BE (bitfield, see below) — **CommBridgeControlOffset=6** |
+| 6 / 0x0006 | `BridgeFlags` | 4 | u32 BE (bitfield, see below) - **CommBridgeControlOffset=6** |
 | 10 / 0x000A | `LocalSlot` | 1 | u8 |
 | 11 / 0x000B | `DolphinState` | 1 | u8 enum |
 | 12 / 0x000C | `PlayerCount` | 1 | u8 |
@@ -140,23 +140,23 @@ sequence flag.
 | 28 / 0x001C | `WarpFacingY` | 4 | f32 BE |
 | 32 / 0x0020 | `LocalPlayerName[16]` | 16 | UTF-8, NUL-padded |
 | 48 / 0x0030 | `LocalSnapshot` | 64 | PlayerSnapshot (A.3) |
-| 112 / 0x0070 | `RemoteSnapshots[10]` | 640 | 10 × PlayerSnapshot — **CommRemoteSnapshotsOffset=112** |
+| 112 / 0x0070 | `RemoteSnapshots[10]` | 640 | 10 × PlayerSnapshot - **CommRemoteSnapshotsOffset=112** |
 | 752 / 0x02F0 | `LocalNameTagAppearance` | 10 | NameTagAppearance |
-| 762 / 0x02FA | `RemoteNameTagAppearances[10]` | 100 | 10 × 10B — **CommNameTagAppearancesOffset=752, size 110** |
+| 762 / 0x02FA | `RemoteNameTagAppearances[10]` | 100 | 10 × 10B - **CommNameTagAppearancesOffset=752, size 110** |
 | 862 / 0x035E | `LocalMarioVoiceEvent` | 12 | MarioVoiceEvent |
-| 874 / 0x036A | `RemoteMarioVoiceEvents[10]` | 120 | 10 × 12B — **CommMarioVoiceEventsOffset=862, size 132** |
-| 994 / 0x03E2 | `GameModeState` | 21 | CommGameModeState (A.5) — **CommGameModeStateOffset=994** |
-| 1015 / 0x03F7 | `WorldSync` | 80 | CommWorldSyncState — **CommWorldSyncOffset=1015** |
-| 1095 / 0x0447 | `RosterHud` | 202 | CommRosterHudSync (A.5) — **CommRosterHudOffset=1095** |
-| 1297 / 0x0511 | `LocalMarioModelId[8]` | 8 | CharacterPack model id — **CommMarioModelIdsOffset=1297, size 88** |
+| 874 / 0x036A | `RemoteMarioVoiceEvents[10]` | 120 | 10 × 12B - **CommMarioVoiceEventsOffset=862, size 132** |
+| 994 / 0x03E2 | `GameModeState` | 21 | CommGameModeState (A.5) - **CommGameModeStateOffset=994** |
+| 1015 / 0x03F7 | `WorldSync` | 80 | CommWorldSyncState - **CommWorldSyncOffset=1015** |
+| 1095 / 0x0447 | `RosterHud` | 202 | CommRosterHudSync (A.5) - **CommRosterHudOffset=1095** |
+| 1297 / 0x0511 | `LocalMarioModelId[8]` | 8 | CharacterPack model id - **CommMarioModelIdsOffset=1297, size 88** |
 | 1305 / 0x0519 | `RemoteMarioModelIds[80]` | 80 | 10 × 8B |
-| 1385 / 0x0569 | `ProgressSnapshotHostSeq` | 4 | u32 BE — **CommProgressSnapshotOffset=1385** |
+| 1385 / 0x0569 | `ProgressSnapshotHostSeq` | 4 | u32 BE - **CommProgressSnapshotOffset=1385** |
 | 1389 / 0x056D | `ProgressSnapshotModuleAppliedSeq` | 4 | u32 BE |
 | 1393 / 0x0571 | `ProgressSnapshotPayloadLen` | 2 | u16 BE (≤4096) |
 | 1395 / 0x0573 | `ProgressSnapshotFlags` | 1 | u8 |
 | 1396 / 0x0574 | `ProgressSnapshotReserved` | 1 | u8 |
 | 1397 / 0x0575 | `ProgressSnapshotPayload[4096]` | 4096 | opaque |
-| 5493 / 0x1575 | `MusicVolume` | 1 | u8 (0..100, default 100) — **CommMusicVolumeOffset=5493** |
+| 5493 / 0x1575 | `MusicVolume` | 1 | u8 (0..100, default 100) - **CommMusicVolumeOffset=5493** |
 | **5494** | **TOTAL** | | matches `CommBufferSize` |
 
 `BridgeFlags` (u32 BE @6, `BridgeFlags` enum SMSO.Net L9466):
@@ -171,7 +171,7 @@ The 26-byte block at offset 6 (`CommBridgeControlOffset=6, CommBridgeControlSize
 **bridge→game control region** (the bridge writes it via `ApplyWarpIntentToControlSpan`,
 SMSO.Net L872).
 
-## A.3 Local-player OUTBOUND slot — `PlayerSnapshot` (64 B, SMSO.Net L8951; BE reader `ReadSnapshotInto` L1360)
+## A.3 Local-player OUTBOUND slot: `PlayerSnapshot` (64 B, SMSO.Net L8951; BE reader `ReadSnapshotInto` L1360)
 
 `LocalSnapshot` @ comm offset 48. The game writes it; the bridge reads it each poll and
 publishes it to the network. **Field byte layout within the 64-byte snapshot (BE in RAM):**
@@ -257,9 +257,9 @@ These are **bridge→game** (the bridge writes them so the game HUD/roster refle
 network state). `RosterHud` is written independently via `TryWriteRosterHudOnly`
 (host `+1095`, SMSO.Bridge L5251).
 
-**`CommWorldSyncState`** (80 B @1015): four `CommWorldEvent` (19 B each) —
+**`CommWorldSyncState`** (80 B @1015): four `CommWorldEvent` (19 B each):
 `LocalPendingOwnership`, `LocalPendingMission` (game→bridge outbound world events),
-`IncomingOwnership`, `Incoming` (bridge→game) — plus `LastAppliedEventId` u32 BE at +76.
+`IncomingOwnership`, `Incoming` (bridge→game), plus `LastAppliedEventId` u32 BE at +76.
 `CommWorldEvent` (19 B): `EventId u32 BE`, `Sequence u16 BE`, `Type u8`, `CourseId u8`,
 `EpisodeId u8`, `Payload0 u8`, `Reserved u8`, `Payload1 u32 BE`, `Payload2 u32 BE`.
 
@@ -292,7 +292,7 @@ magic (SMSO.Server L1350).
 
 ## B.2 Message catalog
 
-### `TcpPacketId` (u8, SMSO.Net L9419) — reliable
+### `TcpPacketId` (u8, SMSO.Net L9419) - reliable
 ```
 1  Handshake              9  WorldEvent           17 GameModeState
 2  HandshakeAck          10  Disconnect           18 WorldStateReplay
@@ -309,25 +309,25 @@ WorldEvent=10, Disconnect=11, Heartbeat=12, PlayerLeft=13, UdpRegister=14,
 MarioVoiceEvent=15, ClientTeleportSettings=16, GameModeState=17, WorldStateReplay=18,
 WorldProgressRequest=19, MarioModelIntent=20, WorldProgressSnapshot=21.)
 
-### `UdpPacketId` (u8, SMSO.Net L9443) — unreliable
+### `UdpPacketId` (u8, SMSO.Net L9443) - unreliable
 `PlayerSnapshot=20, SnapshotBatch=21, Ping=22, Pong=23`.
 
 ### Payload layouts (all payload-internal scalars LITTLE-endian)
 
-**Handshake (id 1)** — 18-byte payload (`BuildHandshake` L7915):
+**Handshake (id 1)** - 18-byte payload (`BuildHandshake` L7915):
 `clientGuid[16]` (`Guid.ToByteArray()` layout) + `modBuildId u16 LE` (=118).
 
-**HandshakeAck (id 2)** — 19-byte payload (`BuildHandshakeAck` L7934):
+**HandshakeAck (id 2)** - 19-byte payload (`BuildHandshakeAck` L7934):
 16 zero bytes + `slot u8` (@16) + `serverModBuildId u16 LE` (@17). (Client reads slot@16.)
 
-**JoinRequest (id 3)** — 26-byte payload (`BuildJoinRequest` L7961):
+**JoinRequest (id 3)** - 26-byte payload (`BuildJoinRequest` L7961):
 `username[16]` UTF-8 NUL-pad (≤15 bytes) + `marioModelId[8]` (CharacterPack.EncodeModelId,
 @16) + `modBuildId u16 LE` (@24, =118).
 
-**JoinAccepted (id 4)** — payload = `assignedSlot u8` (@0) + **roster blob** (rest).
+**JoinAccepted (id 4)** - payload = `assignedSlot u8` (@0) + **roster blob** (rest).
 Client: `_assignedSlot = payload[0]; ParseRoster(payload[1..])` (SMSO.Net L7430).
 
-**JoinRejected (id 5)** — 1-byte payload = `JoinRejectReason`:
+**JoinRejected (id 5)** - 1-byte payload = `JoinRejectReason`:
 `None=0, NameTaken=1, Full=2, InvalidName=3, VersionMismatch=4`.
 
 **RosterSnapshot (id 6)** / roster blob (`BuildRoster`, SMSO.Server L3396):
@@ -336,12 +336,12 @@ Client: `_assignedSlot = payload[0]; ParseRoster(payload[1..])` (SMSO.Net L7430)
 + `pingMs` (`BitConverter.GetBytes(ushort)` = 2 bytes LE) + `modelId[8]`.
 (30 = 1+16+1+1+1+2+8.)
 
-**WarpRequest (id 7)** — 3 bytes: `targetSlot, courseId, episodeId`.
-**WarpCommand (id 8)** — 4 bytes: `targetSlot, courseId, episodeId, requesterSlot`.
-**SyncSettings (id 9)** — 3 bytes: `syncFlags, syncObjects, syncProgress` (each 0/1).
-**ClientTeleportSettings (id 16)** — 1 byte: `allowClientTeleport` (0/1).
+**WarpRequest (id 7)** - 3 bytes: `targetSlot, courseId, episodeId`.
+**WarpCommand (id 8)** - 4 bytes: `targetSlot, courseId, episodeId, requesterSlot`.
+**SyncSettings (id 9)** - 3 bytes: `syncFlags, syncObjects, syncProgress` (each 0/1).
+**ClientTeleportSettings (id 16)** - 1 byte: `allowClientTeleport` (0/1).
 
-**WorldEvent (id 10)** — polymorphic by direction:
+**WorldEvent (id 10)** - polymorphic by direction:
 - client→server request (`BuildWorldEventRequest` L8494), **15 bytes**:
   `sequence u16 LE`, `type u8`, `courseId u8`, `episodeId u8`, `payload0 u8`,
   `reserved u8`, `payload1 u32 LE`, `payload2 u32 LE`.
@@ -354,27 +354,27 @@ RedCoinCollected=9, YoshiFruitTaken=10, MarioFruit{Kicked=11,Picked=12,Thrown=13
 Dropped=14,Sync=15}, NpcReact=16, NpcCleaned=17, GraffitiCleaned=18,
 SessionProgressReset=19.
 
-**WorldStateReplay (id 18)** — `count u16 LE` then `count` × 17-byte broadcast records
+**WorldStateReplay (id 18)** - `count u16 LE` then `count` × 17-byte broadcast records
 (`TryReadWorldStateReplay` L8558). Sent to a joiner to replay authoritative world state.
 
-**Disconnect (id 11)** — 1 byte `DisconnectReason`
+**Disconnect (id 11)** - 1 byte `DisconnectReason`
 (`UserRequest=0, Timeout=1, Kicked=2, ServerShutdown=3, DolphinClosed=4`).
-**Heartbeat (id 12)** — 8-byte payload `timestamp i64 LE` (`BuildHeartbeat` L8088);
+**Heartbeat (id 12)** - 8-byte payload `timestamp i64 LE` (`BuildHeartbeat` L8088);
 server echoes the same payload back.
-**PlayerLeft (id 13)** — broadcast when a slot frees.
-**UdpRegister (id 14)** — 2-byte payload `udpPort u16 LE` (`BuildUdpRegister` L8590).
+**PlayerLeft (id 13)** - broadcast when a slot frees.
+**UdpRegister (id 14)** - 2-byte payload `udpPort u16 LE` (`BuildUdpRegister` L8590).
 The server binds the client's UDP endpoint = `(TCP-source-IP, announced udpPort)`
 (SMSO.Server L746).
-**MarioVoiceEvent (id 15)** — 11-byte payload (`BuildMarioVoiceEvent` L8132):
+**MarioVoiceEvent (id 15)** - 11-byte payload (`BuildMarioVoiceEvent` L8132):
 `slot u8`, `soundId u32 LE`, `sequence u16 LE`, `flags u8`, `health u8`, `stageId u8`,
 `episodeId u8`.
-**GameModeState (id 17)** — 22-byte payload (`BuildGameModeState` L8020):
+**GameModeState (id 17)** - 22-byte payload (`BuildGameModeState` L8020):
 `gameMode u8`, `flags u8`, `seq u16 LE`, `roundStartMs u32 LE`, `tagEventId u8` (@8),
 `roleBySlot[10]` (@9..18), `lastTaggedSlot u8` (@19), `graceRemainingMs u16 LE` (@20).
-**WorldProgressRequest (id 19)** — 4-byte payload `clientProgressSeq u32 LE`.
-**MarioModelIntent (id 20)** — 12-byte payload (`BuildMarioModelIntent` L8100):
+**WorldProgressRequest (id 19)** - 4-byte payload `clientProgressSeq u32 LE`.
+**MarioModelIntent (id 20)** - 12-byte payload (`BuildMarioModelIntent` L8100):
 `sequence u32 LE` + `marioModelId[8]`.
-**WorldProgressSnapshot (id 21)** — variable TLV blob (`BuildWorldProgressSnapshotPayload`
+**WorldProgressSnapshot (id 21)** - variable TLV blob (`BuildWorldProgressSnapshotPayload`
 L8197): header `formatByte=2`, `unchanged u8`, `progressSeq u32 LE`; if changed:
 `shineBits[32]`, then count-prefixed lists (blue courses u8-count of {courseId u8,
 mask u64 LE}; story/secret u16-count of {id u32 LE, val u8}; trigger u16-count of
@@ -383,7 +383,7 @@ packedPos[8] u32 LE}; npcCleanStages u16-count of {courseId,episodeId,val u16 LE
 
 ### The high-frequency position update
 
-**UDP PlayerSnapshot (id 20)** — client→server, **74 bytes** (`WriteUdpSnapshotInto` L8604):
+**UDP PlayerSnapshot (id 20)** - client→server, **74 bytes** (`WriteUdpSnapshotInto` L8604):
 ```
 off 0 : magic u32 LE = 0x534D534F
 off 4 : id    u8     = 20
@@ -391,7 +391,7 @@ off 5 : slot  u8
 off 6 : seq   u32 LE
 off 10: snapshot[64]   (PlayerSnapshot, LITTLE-endian per SnapshotToBytes)
 ```
-**UDP SnapshotBatch (id 21)** — server→clients, up to 696 bytes
+**UDP SnapshotBatch (id 21)** - server→clients, up to 696 bytes
 (`WriteUdpSnapshotBatchHeader`/`Entry` L8618):
 ```
 off 0 : magic u32 LE
@@ -400,8 +400,8 @@ off 5 : count u8 (≤10)
 then count entries of 69 bytes: slot u8, seq u32 LE, snapshot[64]
 ```
 (`UdpSnapshotBatchHeaderSize=6, EntrySize=69, MaxSize=696`.)
-**UDP Ping (id 22)** — 18 bytes: magic + id + `slot u8` + `u32 LE (0)` + `timestampMs i64 LE`
-(`WriteUdpPingInto` L8674). **Pong (id 23)** — server reply for RTT.
+**UDP Ping (id 22)** - 18 bytes: magic + id + `slot u8` + `u32 LE (0)` + `timestampMs i64 LE`
+(`WriteUdpPingInto` L8674). **Pong (id 23)** - server reply for RTT.
 
 ## B.3 TCP vs UDP split
 - **Reliable (TCP):** all join/handshake, roster, warp, sync-settings, world events,
@@ -437,7 +437,7 @@ final xor `0xFFFFFFFF`). No CRC on UDP and no CRC inside the comm buffer.
   with the assigned slot. Version gate: if the handshake's modBuildId ≠ 118 ⇒
   `JoinRejected(VersionMismatch=4)`.
 - **JoinRequest (id 3):** re-checks modBuildId==118, validates the username
-  (`PlayerNameValidator`) and uniqueness (`TryRegisterName`, L3100 — duplicate live name ⇒
+  (`PlayerNameValidator`) and uniqueness (`TryRegisterName`, L3100; duplicate live name ⇒
   `JoinRejected(NameTaken=1)`; invalid ⇒ `InvalidName=3`). On success it sets the model id,
   then sends, in order: **JoinAccepted** (`[slot][roster]`), **SyncSettings**,
   **ClientTeleportSettings**, **GameModeState**, optionally a progress snapshot, and
@@ -453,7 +453,7 @@ final xor `0xFFFFFFFF`). No CRC on UDP and no CRC inside the comm buffer.
   sends it to **every** session with a UDP endpoint.
   ⇒ **The server DOES echo the sender's own snapshot back** (the batch includes all
   slots). The *client* filters its own slot on receive (`b != _assignedSlot`, SMSO.Net UDP
-  read loop) — a bot can simply ignore its own slot too.
+  read loop): a bot can simply ignore its own slot too.
 - **Disconnect / timeout:** `RemoveSession` frees the slot, records a `_recentReleases`
   entry (30 s reconnect window to preserve slot/name), and broadcasts roster + PlayerLeft.
 
@@ -462,15 +462,15 @@ final xor `0xFFFFFFFF`). No CRC on UDP and no CRC inside the comm buffer.
 Ordered exact packets (magic `0x534D534F` LE, version 2, CRC32 appended on all TCP):
 
 1. **TCP connect** to `server:27015`.
-2. **Send Handshake (id 1)** — payload `guid[16]` + `modBuildId=118` (u16 LE). Wait for
+2. **Send Handshake (id 1):** payload `guid[16]` + `modBuildId=118` (u16 LE). Wait for
    **HandshakeAck (id 2)**; read your `slot` from payload byte 16.
-3. **Send JoinRequest (id 3)** — `username[16]` (unique, valid) + `modelId[8]` +
+3. **Send JoinRequest (id 3):** `username[16]` (unique, valid) + `modelId[8]` +
    `modBuildId=118`. Wait for **JoinAccepted (id 4)**; confirm `slot = payload[0]`.
    (If you get JoinRejected, stop and read the reason byte.)
 4. **Bind a local UDP socket**; **Send UdpRegister (id 14)** over TCP with your local
    UDP port (u16 LE). The server now knows where to send you the batch and will accept
    your snapshots.
-5. **Loop at ~60 Hz (16 ms):** send **UDP PlayerSnapshot (id 20)** — 74 bytes:
+5. **Loop at ~60 Hz (16 ms):** send **UDP PlayerSnapshot (id 20):** 74 bytes:
    magic + `id=20` + `slot=yourSlot` + `seq++` (u32 LE) + 64-byte PlayerSnapshot
    (**little-endian**). Vary `Position`/`RotationY`/`AnimId` frame-to-frame so the puppet
    visibly moves. Set `Connected=1`, `Slot=yourSlot`, a valid `StageId`/`EpisodeId`
@@ -501,7 +501,7 @@ There is **no dirty/ready flag or sequence counter** guarding the buffer. Cohere
   `NameTagAppearances` (@752), `MarioVoiceEvents remote` (@874), `GameModeState` (@994),
   `WorldSync.Incoming*` (@1053/@1072), `RosterHud` (@1095), `MarioModelIds` (@1297),
   `MusicVolume` (@5493), and the 26-byte control block (@6, warp intent).
-- **Never write the whole 5494-byte buffer in one shot in steady state** — that would
+- **Never write the whole 5494-byte buffer in one shot in steady state:** that would
   clobber the game's live `LocalSnapshot`. Mirror the reference bridge: do **targeted
   sub-region writes** at the exact host offsets above (it uses `TryWriteRemoteSyncPayload`
   @+112 and @+874, `TryWriteRosterHudOnly` @+1095, `TryWriteMarioModelIdsOnly` @+1297,

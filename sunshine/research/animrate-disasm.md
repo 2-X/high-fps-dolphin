@@ -1,14 +1,14 @@
-# SMS high-fps family-B — binary disasm sweep (stub-TU coverage)
+# SMS high-fps family-B: binary disasm sweep (stub-TU coverage)
 
 DOL: `/Users/kbrethower/code/high-fps-dolphin/sunshine/research/main.dol`  ·  anchors: setFrameRate `0x80238e7c`, getFrameCtrl `0x80238f08`, AnmFrameRate `0x802a7bd8`
 
 Counts: **SUSPECT** 205, **REVIEW** 14, **CLEAN** 65
 
-Heuristic classifier — confirm each SUSPECT/REVIEW at its USA address. Sites here that also appear in `animrate-audit` are cross-validation; sites in **stub TUs** (popo, bosspakkun, …) appear ONLY here.
+Heuristic classifier: confirm each SUSPECT/REVIEW at its USA address. Sites here that also appear in `animrate-audit` are cross-validation; sites in **stub TUs** (popo, bosspakkun, …) appear ONLY here.
 
-## ★ Highest priority — runtime object-param rates (Petey-class), 16
+## ★ Highest priority - runtime object-param rates (Petey-class), 16
 
-A rate loaded from an object/param field (e.g. `mSLVomitAnmRate` at +0x16c) and set raw — tuned for 30Hz, so 4x fast at 120fps. Petey v16 (`0x800955cc`) is in this list. Fix shape: gate on the framerate global and scale, exactly like v16.
+A rate loaded from an object/param field (e.g. `mSLVomitAnmRate` at +0x16c) and set raw, tuned for 30Hz, so 4x fast at 120fps. Petey v16 (`0x800955cc`) is in this list. Fix shape: gate on the framerate global and scale, exactly like v16.
 
 | class | USA addr | enclosing func | kind | note |
 |---|---|---|---|---|
@@ -29,7 +29,7 @@ A rate loaded from an object/param field (e.g. `mSLVomitAnmRate` at +0x16c) and 
 | **SUSPECT** | `0x80244b88` | `0x80244800` | getFrameCtrl+stfs | raw rate <- lfs +0xc(r5) (4x fast at 120fps) |
 | **SUSPECT** | `0x80270204` | `0x8026fe38` | getFrameCtrl+stfs | raw rate <- lfs +0x120(r1) (4x fast at 120fps) |
 
-## SUSPECT — computed & baked-constant raw rates (4x fast)
+## SUSPECT - computed & baked-constant raw rates (4x fast)
 
 | class | USA addr | enclosing func | kind | note |
 |---|---|---|---|---|
@@ -223,23 +223,23 @@ A rate loaded from an object/param field (e.g. `mSLVomitAnmRate` at +0x16c) and 
 | **SUSPECT** | `0x80271b84` | `0x80271a10` | getFrameCtrl+stfs | raw rate <- constant 20 (4x fast at 120fps)  [r2-0xaf0=0x80416090] |
 | **SUSPECT** | `0x80284ec0` | `0x80284db8` | getFrameCtrl+stfs | raw rate <- constant 30 (4x fast at 120fps)  [r2-0x6c0=0x804164c0] |
 
-## REVIEW — computed / unresolved
+## REVIEW - computed / unresolved
 
 | class | USA addr | enclosing func | kind | note |
 |---|---|---|---|---|
-| **REVIEW** | `0x8000aff0` | `0x8000af8c` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x8000bbf0` | `0x8000bb7c` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x8004f028` | `0x8004ef94` | getFrameCtrl+stfs | computed rate (fadds f1,f0); AnmFrameRate in block — verify scaling/rate² |
+| **REVIEW** | `0x8000aff0` | `0x8000af8c` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x8000bbf0` | `0x8000bb7c` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x8004f028` | `0x8004ef94` | getFrameCtrl+stfs | computed rate (fadds f1,f0); AnmFrameRate in block - verify scaling/rate² |
 | **REVIEW** | `0x80098050` | `0x80097ba8` | getFrameCtrl+stfs | rate f31 source not resolved in block |
 | **REVIEW** | `0x800f2768` | `0x800f2144` | getFrameCtrl+stfs | rate f31 source not resolved in block |
-| **REVIEW** | `0x801c2204` | `0x801c216c` | getFrameCtrl+stfs | computed rate (fadds f31,f1); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x801c22b8` | `0x801c216c` | getFrameCtrl+stfs | computed rate (fadds f31,f1); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x801c9940` | `0x801c9734` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x801d2908` | `0x801d2880` | getFrameCtrl+stfs | computed rate (fsubs f2,f1); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x801d291c` | `0x801d2880` | getFrameCtrl+stfs | computed rate (fsubs f2,f1); AnmFrameRate in block — verify scaling/rate² |
-| **REVIEW** | `0x801d412c` | `0x801d4068` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block — verify scaling/rate² |
+| **REVIEW** | `0x801c2204` | `0x801c216c` | getFrameCtrl+stfs | computed rate (fadds f31,f1); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x801c22b8` | `0x801c216c` | getFrameCtrl+stfs | computed rate (fadds f31,f1); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x801c9940` | `0x801c9734` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x801d2908` | `0x801d2880` | getFrameCtrl+stfs | computed rate (fsubs f2,f1); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x801d291c` | `0x801d2880` | getFrameCtrl+stfs | computed rate (fsubs f2,f1); AnmFrameRate in block - verify scaling/rate² |
+| **REVIEW** | `0x801d412c` | `0x801d4068` | getFrameCtrl+stfs | computed rate (fmuls f1,f0); AnmFrameRate in block - verify scaling/rate² |
 | **REVIEW** | `0x80206830` | `0x802064b0` | setFrameRate | rate f1 source not resolved in block |
 | **REVIEW** | `0x80212520` | `0x802123e0` | getFrameCtrl+stfs | rate f31 source not resolved in block |
 | **REVIEW** | `0x80212530` | `0x802123e0` | getFrameCtrl+stfs | rate f31 source not resolved in block |
 
-## CLEAN — 65 sites (see CSV)
+## CLEAN - 65 sites (see CSV)

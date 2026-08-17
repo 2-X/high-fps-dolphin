@@ -1,26 +1,26 @@
 # TASK: fix dropped inputs at 180fps (Super Mario Sunshine, USA/GMSE01)
 
-> **STATUS UPDATE (session 4, 2026-08-04): the input fix is BUILT AND INSTALLED —
-> see §11 at the bottom. `$180fps v9` is enabled in the patched build's INI,
+> **STATUS UPDATE (session 4, 2026-08-04): the input fix is BUILT AND INSTALLED.
+> See §11 at the bottom. `$180fps v9` is enabled in the patched build's INI,
 > smoke-tested (no hang), and hook-verified in live memory. Awaiting user
 > playtest. §§2–4 below are the original analysis; the pad chain they said was
 > "not located yet" is now fully located (§11.1).**
 
 **You are picking this up cold. Read this whole file before touching anything.**
 
-**Goal:** the user wants to *play* Super Mario Sunshine at 180fps. 180fps already works —
+**Goal:** the user wants to *play* Super Mario Sunshine at 180fps. 180fps already works:
 correct speed, smooth, cutscenes fine. **One bug blocks playing: edge-triggered inputs are
 dropped roughly half the time.** Jump is the worst (you die constantly). Other one-shot
 actions are affected too. Analog stick movement is fine.
 
-**Secondary (do the input bug first):** the audio is *partly* wrong at 180fps — see §10. It has
+**Secondary (do the input bug first):** the audio is *partly* wrong at 180fps (see §10). It has
 a real diagnosis and is probably the same root cause as the input bug, so fixing input may fix
 it for free. Check §10 before assuming it's separate work.
 
 Success = the user can play at 180fps without losing jumps.
 
 **Confirmed working as of the last session:** 180fps at correct speed (v8 fixed the residual
-10% slowness — user-confirmed), smooth gameplay, cutscenes normal with music and animation.
+10% slowness, user-confirmed), smooth gameplay, cutscenes normal with music and animation.
 
 ---
 
@@ -29,10 +29,11 @@ Success = the user can play at 180fps without losing jumps.
 Dolphin emulates the GameCube. Gecko codes patch the game's PPC code in memory. This project
 makes SMS run at high framerates by:
 
-1. `044167B8 <float>` — the game's "framerate global" G (`fps/60`; stock 0.5 = 30fps, 3.0 = 180)
-2. `042FCB24 60000000` — NOP one of two `VIWaitForRetrace` calls per frame (30 → 60 frames
+1. `044167B8 <float>` - the game's "framerate global" G (`fps/60`; stock 0.5 = 30fps, 3.0 = 180)
+2. `042FCB24 60000000` - NOP one of two `VIWaitForRetrace` calls per frame (30 → 60 frames
    per *emulated* second)
 3. Dolphin's `EmulationSpeed = N` runs the whole console N times faster than real time
+
 
 The render loop is **retrace-locked**, so:
 
@@ -44,7 +45,7 @@ At N=3 you get a rock-solid 179.82 fps. That part is done and verified; don't re
 
 ---
 
-## 2. The bug — mechanism (this is understood, don't re-investigate)
+## 2. The bug: mechanism (this is understood, don't re-investigate)
 
 **SMS simulates at a fixed 120 Hz internally.** The scheduler is in `TMarDirector::direct`
 (**0x80299838**):
@@ -76,10 +77,10 @@ on simulation frames. A press that lands on a skipped frame gets latched away un
 This explains every observed detail: only edge-triggered actions break, analog is immune, and
 the loss rate (~1 in 3 frames skipped) matches "about half the time" in practice.
 
-**The fix is to sample input in lockstep with the simulation** — i.e. don't advance the pad
+**The fix is to sample input in lockstep with the simulation**: don't advance the pad
 latch on skipped frames.
 
-### ★ The decisive evidence — use this as your A/B control
+### ★ The decisive evidence (use this as your A/B control)
 
 The user found a case where input is **never** dropped:
 
@@ -89,7 +90,7 @@ The user found a case where input is **never** dropped:
 | Controlling Mario (dive) | **B** | drops ~half the time |
 
 Same button, same controller, same frame. **This proves the pad latch and the trigger
-computation are working correctly** — the hardware read happens every frame and the edge is
+computation are working correctly.** The hardware read happens every frame and the edge is
 computed correctly. What differs is *who consumes it*:
 
 - **Dialogue / NPC code runs in the per-frame path** → runs on all 3 frames → sees every press.
@@ -103,9 +104,9 @@ between two consecutive reads without any simulation frame ever observing it.
 **Preferred fix: only advance the pad latch on simulation frames** (gate the pad read/update on
 `acc >= 15`, the same condition the substep loop uses). Then `prev` and `now` step at 120 Hz in
 lockstep with the sim, every edge survives to be consumed, and per-frame consumers like
-dialogue still see input at 120 Hz — plenty responsive, and no risk of double-triggering.
+dialogue still see input at 120 Hz, plenty responsive, and no risk of double-triggering.
 
-*(Alternative if that's awkward: sticky trigger bits — OR each frame's `now & ~prev` into a
+*(Alternative if that's awkward: sticky trigger bits. OR each frame's `now & ~prev` into a
 pending mask that is cleared only when a simulation frame consumes it. This preserves per-frame
 consumers exactly, but risks double-firing dialogue, so prefer the gate.)*
 
@@ -117,11 +118,11 @@ gated something too broadly.
 
 ## 3. What is already ruled out (do not redo)
 
-- `0x80298e80` — director **state-machine dispatcher** (13-entry jump table @`0x803DF05C`). Not input.
-- `0x80360400` — **GX flush** (writes GX commands to the write-gather pipe at `0xCC008000`). Not input.
+- `0x80298e80` - director **state-machine dispatcher** (13-entry jump table @`0x803DF05C`). Not input.
+- `0x80360400` - **GX flush** (writes GX commands to the write-gather pipe at `0xCC008000`). Not input.
 - The accumulator `director->0x54` is read/written by **only** the 5 instructions in the
   scheduler above (verified with `xref.py`). Nothing else depends on the 600/5 scale.
-- The framerate global G is **not** the lever for gameplay speed — proven by a probe that set
+- The framerate global G is **not** the lever for gameplay speed, proven by a probe that set
   G=6.0 and changed nothing about movement (cutscenes did go slow-mo). Don't chase G.
 
 ---
@@ -130,36 +131,36 @@ gated something too broadly.
 
 The pad read has **not** been located yet. Find it mechanically, not by opening functions at random.
 
-**Route A — via the SI hardware registers (preferred).** The GameCube reads controllers
+**Route A: via the SI hardware registers (preferred).** The GameCube reads controllers
 through the Serial Interface at `0xCC006400`. Find the code that touches SI / the PAD library,
 then walk up to the per-frame `PADRead`-equivalent and whatever computes the trigger bits.
 `callers.py` gives you `bl` xrefs; `xref.py` gives r2/r13-relative data xrefs.
 
-**Route B — via live memory diffing.** `gcmem.py` reads GameCube RAM out of a running Dolphin.
+**Route B: via live memory diffing.** `gcmem.py` reads GameCube RAM out of a running Dolphin.
 Snapshot memory with a button held vs released, diff, and the pad state words fall out
 immediately. Then `xref.py` whoever reads that address.
 
-**Route C — the decomp.** `git clone https://github.com/doldecomp/sms` (JP, *matching* decomp).
+**Route C: the decomp.** `git clone https://github.com/doldecomp/sms` (JP, *matching* decomp).
 Find `TMarioGamePad::read` / the trigger computation in source, then locate the USA address by
-function-size fingerprinting. Addresses do NOT transfer directly (JP vs USA) — fingerprint.
+function-size fingerprinting. Addresses do NOT transfer directly (JP vs USA). Fingerprint.
 
 Once found, gate it the same way the scheduler is gated: **only advance the pad latch when
 `acc >= 15`** (the v8 threshold), so input is sampled at 120 Hz in lockstep with the sim.
 
 **Plausible alternative if gating the read is awkward:** make the trigger bits *sticky* across
-skipped frames — accumulate `now & ~prev` into a pending mask that is only cleared when a
+skipped frames: accumulate `now & ~prev` into a pending mask that is only cleared when a
 simulation frame actually consumes it. This may be easier than moving the read.
 
 ---
 
-## 5. Current state — exactly what is installed
+## 5. Current state: exactly what is installed
 
-Two Dolphin builds. **Use the patched one** (`dolphin-src`) — it has the audio tempo fix:
+Two Dolphin builds. **Use the patched one** (`dolphin-src`), which has the audio tempo fix:
 
 | | path |
 |---|---|
 | **Patched build (use this)** | `C:\code\high-fps-dolphin\dolphin-src\Binary\x64\Dolphin.exe` |
-| ~~Stock portable build~~ (GONE — do not use) | ~~`C:\code\high-fps-dolphin\dolphin-bin\Dolphin-x64\Dolphin.exe`~~ |
+| ~~Stock portable build~~ (GONE, do not use) | ~~`C:\code\high-fps-dolphin\dolphin-bin\Dolphin-x64\Dolphin.exe`~~ |
 | ROM | `C:\Users\krisb\kris-documents\games\dolphin\Super Mario Sunshine (USA).rvz` |
 | DOL for disasm | `sunshine\research\main.dol` |
 
@@ -168,7 +169,7 @@ NOT portable (no `portable.txt`, no `<build>\User\` dir), so the live user folde
 `%APPDATA%\Dolphin Emulator\` and the live game INI is
 `C:\Users\krisb\AppData\Roaming\Dolphin Emulator\GameSettings\GMSE01.ini`.
 Do NOT write to `dolphin-bin\...\User\`, `dolphin-src\Binary\x64\User\`, or a repo-root
-`GameSettings\` — none of those are read by the running emulator.
+`GameSettings\` - none of those are read by the running emulator.
 
 Launch:
 
@@ -201,12 +202,12 @@ C2299958 00000007
 `1800/240` = 7 → 111.9 Hz; it would need a ×12 scale, 7200/60.)
 
 **Known-good fallback:** `$120fps + TRUE-FIX v3` with `EmulationSpeed = 2.0` in **both** INIs
-is fully correct — speed, audio, everything. Use it to A/B, and offer it to the user if you
+is fully correct (speed, audio, everything). Use it to A/B, and offer it to the user if you
 end up stuck.
 
 ---
 
-## 6. Tooling (already built — use it, don't rebuild it)
+## 6. Tooling (already built, use it, don't rebuild it)
 
 In `sunshine/research/scripts/`. All need `SMS_DOL` set:
 
@@ -236,14 +237,14 @@ Python 3.12 + capstone are installed. Use `python`, not `python3` (that's the St
 1. **Dolphin rewrites `User/GameSettings/GMSE01.ini` from memory when it quits.** Any edit made
    while Dolphin is running is silently reverted. **Always confirm Dolphin is closed before
    editing.** Use the helper: `python .claude/skills/dolphin-gecko/scripts/gecko.py` (there's a
-   `dolphin-gecko` skill — invoke it).
+   `dolphin-gecko` skill, invoke it).
 2. **C2 code blocks MUST end with a `00000000` pad word.** The code handler overwrites the last
    word of the block with its branch-back. If your final word is a real instruction it is
    silently destroyed. Add a `60000000 00000000` line to make the count land right.
-3. **`EmulationSpeed` lives in TWO files** — `User/GameSettings/GMSE01.ini` `[Core]` *and*
+3. **`EmulationSpeed` lives in TWO files**: `User/GameSettings/GMSE01.ini` `[Core]` *and*
    `User/Config/Dolphin.ini`. **Set both.** A mismatch produced "movement *and* audio both
    1.5x fast" (emulator ran one value, audio patch read the other).
-4. **Never write these INIs with PowerShell `Set-Content -Encoding UTF8`** — it adds a UTF-8
+4. **Never write these INIs with PowerShell `Set-Content -Encoding UTF8`** - it adds a UTF-8
    BOM and Dolphin then fails to parse `[Core]` entirely. Use Python with `newline=""`.
 5. **`User/StateSaves/GMSE01.s02` is poisoned.** It was captured during a 360fps session and
    **restores G=6.0, overriding whatever Gecko code is enabled** (confirmed by reading memory).
@@ -257,7 +258,7 @@ Python 3.12 + capstone are installed. Use `python`, not `python3` (that's the St
 
 ## 8. How to test
 
-The user is the fastest oracle — they can tell in ten seconds of play whether jumps drop. But
+The user is the fastest oracle. They can tell in ten seconds of play whether jumps drop. But
 **verify it doesn't hang first** (you're patching a per-frame scheduler; the failure mode is a
 hang, not a wrong number):
 
@@ -268,7 +269,7 @@ Start-Sleep -Seconds 40
 (Get-Process -Id $p.Id -ErrorAction SilentlyContinue) -ne $null   # must be True
 ```
 
-Frame logs land in `<build>\User\Logs\{render,vblank}_times.txt` — one interval in ms per line,
+Frame logs land in `<build>\User\Logs\{render,vblank}_times.txt`, one interval in ms per line,
 so `fps = 1000*N/sum`. They flush as they go. `render:vblank` should stay ~1:1 and VPS ~179.82.
 
 A useful earlier lesson: when the fix jumped to the function's *return* instead of into the
@@ -283,7 +284,7 @@ frames, you've skipped per-frame work that must still run.**
 the v6→v7→v8 ladder. `sunshine/README.md` has the address map, the Gecko code anatomy, and the
 M-portal/particle history. `research/memory/` is the older knowledge base.
 
-Key addresses (USA GMSE01, disasm-verified — trust these):
+Key addresses (USA GMSE01, disasm-verified, trust these):
 
 - SDA bases: **r2 = 0x80416BA0, r13 = 0x804141C0**
 - Framerate global **0x804167B8**; readers `SMSGetAnmFrameRate` **0x802A7BD8** (= `1/G`) and
@@ -293,12 +294,12 @@ Key addresses (USA GMSE01, disasm-verified — trust these):
 - `VIWaitForRetrace` **0x8034F684**; per-frame VI governor **0x802FC9A4**
 - Player/cam position vec `-0x60B4(r13)` = **0x8040E10C**
 
-Good luck. The hard part is done — the simulation now runs at the right rate. This is one
+Good luck. The hard part is done. The simulation now runs at the right rate. This is one
 well-scoped bug between the user and playing at 180fps.
 
 ---
 
-## 10. The audio symptoms (secondary — likely the SAME root cause)
+## 10. The audio symptoms (secondary, likely the SAME root cause)
 
 Observed at 180fps under v8, reported by the user:
 
@@ -307,31 +308,31 @@ Observed at 180fps under v8, reported by the user:
 | **Bianco Hills BGM** | **perfect** |
 | **Mario + FLUDD sounds** | **perfect** |
 | **Coin sounds** | **perfect** |
-| **In-world object sounds** (enemies, level objects) | **pulsate / echo** — rhythmic amplitude wobble |
+| **In-world object sounds** (enemies, level objects) | **pulsate / echo**, rhythmic amplitude wobble |
 | **Delfino Plaza BGM** | **silent** |
 | Cutscene music + audio | **normal** |
 
 **Note the split carefully: it is not "audio is broken".** BGM, Mario, FLUDD and coins are all
 clean. Only sounds belonging to **objects positioned in the world** are affected. Mario/FLUDD
 sounds are effectively listener-local and coins are UI-ish; neither needs continuous 3D
-parameter tracking. World-object sounds do — distance attenuation, panning, doppler, all
+parameter tracking. World-object sounds do (distance attenuation, panning, doppler), all
 recomputed from the emitter's position.
 
 Earlier, under v7 (sim at 107.9 Hz), *all* level BGM was silent; under v8 (sim at exactly
 119.88 Hz) Bianco came back. **So the audio tracks the simulation rate.** That is the single
-most important clue — do not treat this as an unrelated audio bug.
+most important clue. Do not treat this as an unrelated audio bug.
 
 ### Why this is probably the input bug wearing a different hat
 
 Under v8 the simulation runs on **2 of every 3** rendered frames, while per-frame PRE/POST work
 runs on **all 3**. Anything that reads simulation state but updates per-frame now samples a
-value that only changes 2 times out of 3 — a 3-frame beat pattern (a 60 Hz cycle at 180fps).
+value that only changes 2 times out of 3: a 3-frame beat pattern (a 60 Hz cycle at 180fps).
 
 - **Pulsating world-object SFX** is exactly what that produces, and the symptom split confirms
   it precisely. Positional sound parameters (volume, panning, distance attenuation, doppler)
   recomputed **every frame** from emitter positions that only move on **2 of 3** frames give a
   repeating 2-then-1 stagger → audible amplitude wobble at a 60 Hz beat. Sounds that don't
-  track a world position — BGM, Mario, FLUDD, coins — are untouched, **which is exactly what
+  track a world position (BGM, Mario, FLUDD, coins) are untouched, **which is exactly what
   the user observes.** This is the same bug as the input drop, one layer over: a per-frame
   consumer reading simulation state that updates at 2/3 the rate.
   The fix is the same shape: **update positional audio parameters in lockstep with the
@@ -345,29 +346,29 @@ value that only changes 2 times out of 3 — a 3-frame beat pattern (a 60 Hz cyc
 
 ### Suggested order
 
-1. Fix the input latch (§2–§4). **Both symptoms share one root cause** — a per-frame consumer
+1. Fix the input latch (§2–§4). **Both symptoms share one root cause:** a per-frame consumer
    reading state that now updates on only 2 of 3 frames. Input drops and object-sound pulsing
    are the same defect in two subsystems.
-2. **Re-test audio immediately afterward** — if the pad fix works by gating on the accumulator,
+2. **Re-test audio immediately afterward.** If the pad fix works by gating on the accumulator,
    applying the same gate to the audio parameter update is likely a one-line variation, and
    both symptoms may resolve together.
 3. Only if they persist, investigate the audio path separately. Note the emulator-side audio
    tempo patch (`SystemTimers.cpp`, scales the audio DMA period by `EmulationSpeed`) is
-   **known-good** — it is what makes 120fps audio correct, and cutscene audio proves it works
+   **known-good**: it is what makes 120fps audio correct, and cutscene audio proves it works
    at N=3 too. Don't start by suspecting it.
 
 ### History worth knowing
 
 The user originally said the missing music was fine and asked for it to be left alone. That was
 when *all* level music was silent. Now that Bianco's music works and the SFX pulse, the audio is
-worth fixing — but **input remains the priority**, because dropped jumps are what make the game
+worth fixing, but **input remains the priority**, because dropped jumps are what make the game
 unplayable.
 
 ---
 
 # ★ SESSION 4 (2026-08-04): input fix built + installed. Music bug scoped.
 
-## 11.1 The pad chain — fully located (USA, disasm-verified)
+## 11.1 The pad chain: fully located (USA, disasm-verified)
 
 Decomp (`C:\Users\krisb\code\sms-decomp`, doldecomp/sms, JP-matching) gave the
 structure; fingerprinting gave the USA addresses:
@@ -394,7 +395,7 @@ TApplication::gameLoop  (~0x802a5f00..)          per RENDER frame:
   (0x80299a6c-80299aa8) so an edge is consumed exactly once per frame. v9
   mirrors this exact pattern for zero-substep frames.
 
-## 11.2 The fix — `$180fps v9` (installed & enabled)
+## 11.2 The fix: `$180fps v9` (installed & enabled)
 
 `sunshine/research/codes/180v9.txt` = v8 + one C2 at **0x802a600c** (replaces
 `bl TMarioGamePad::read`):
@@ -428,20 +429,20 @@ hook sites (0x802a600c, 0x80299958) patched to cave branches.
 
 ## 11.3 What the user must test (10 seconds each)
 
-1. **Mario dive/jump (B/A repeatedly)** — should go from ~50% to ~100%.
-2. **Windmill NPC dialogue (B)** — must still advance exactly ONE box per
+1. **Mario dive/jump (B/A repeatedly)** - should go from ~50% to ~100%.
+2. **Windmill NPC dialogue (B)** - must still advance exactly ONE box per
    press: no drops (would mean over-gating) and no double-advance (would mean
    the trigger-zeroing isn't sufficient).
 3. If double-advance appears anywhere (dialogue, pause menu), the refinement is
    to also zero the meaning-edge fields +0xd4/+0xde on skip frames.
 
-## 11.4 Music bug — new evidence (user, this session) + tooling
+## 11.4 Music bug: new evidence (user, this session) + tooling
 
 Symptoms now: **fresh boot into a level = BGM fine. ANY transition breaks it**:
 load-save→Plaza = silent; return-from-level→Plaza = single sustained tone;
 re-enter Bianco (ep3) = single sustained tone. So it is the BGM
 **teardown/restart path on scene change**, not dynamic layering (Bianco's
-static BGM breaks too — the layered-crossfade theory in §10 is dead).
+static BGM breaks too, so the layered-crossfade theory in §10 is dead).
 "Single tone" = sequencer got note-on then stopped advancing → suspect the
 JASystem seq tick / stream-load state machine after a stop/start cycle, still
 plausibly beating against the 2-of-3-frames sim pattern.
@@ -481,14 +482,14 @@ additions to keep:
   freezes the JUT latch *and* the meaning latch derives from it; user-confirmed.
 - **The instance `pad->mButton` is a per-frame copy of the static
   `JUTGamePad::mPadButton[4]` at 0x80404484** (CButton stride 0x30; statics:
-  mPadStatus 0x80404454, mPadMStick 0x80404544, mPadSStick 0x80404584 —
+  mPadStatus 0x80404454, mPadMStick 0x80404544, mPadSStick 0x80404584,
   derived statically, not live-verified). Patches to instance fields would be
-  overwritten on the next read — v9 dodges this only because it skips the copy.
+  overwritten on the next read. v9 dodges this only because it skips the copy.
 - `JUTGamePad::CButton::update` = 0x802C9240. `TMarDirector+0x18` is a
   **pointer** to the pad array, not inline. `mDisabledFrames` +0xE8.
 - All three latches are invertible (rollback math in Opus's notes). Its
   rate-independent rollback variant (C2 at 0x80299958, 18 lines) is saved at
-  `research/codes/180v9-rollback-opus.txt` — NOT installed; use only if v9
+  `research/codes/180v9-rollback-opus.txt` - NOT installed; use only if v9
   needs replacing (e.g. for a future 240fps bundle where v9's `acc<5`
   prediction is wrong).
 - `direct()` structure correction: the "PRE-work" branch is the **DRAW branch**
@@ -496,7 +497,7 @@ additions to keep:
   0x4000 persists across calls.
 - decomp file for direct: `src/System/MarDirectorDirect.cpp` (matching source).
 
-## 12.2 Music bug — current state (the only remaining bug)
+## 12.2 Music bug: current state (the only remaining bug)
 
 Symptoms after v9 (user, this session):
 - Boot → save → **Plaza BGM works** (the earlier "blank on load" did not repro).
@@ -505,7 +506,7 @@ Symptoms after v9 (user, this session):
 
 So: first scene OK, every subsequent scene transition broken. "First note
 repeating" narrows it to either **retrigger** (something calls startBGM /
-resets the seq every frame — Plaza has sound-change cubes and
+resets the seq every frame, Plaza has sound-change cubes and
 MSStageDistFade logic pumped from `stageLoop`, which runs only on the last
 substep now) or **stall** (seq starts, first event plays, sequencer never
 advances past it and hits a loop point).
@@ -519,10 +520,10 @@ the new scene cases 2/3/4: `MSMainProc::startStageBGM` → `MSound::initSound`
 `setVolume(0.75, 0, 8)`. Opus flagged the same `SMSGetVSyncTimesPerSec`
 seconds→frames conversions as the suspect class: anything counted in "frames"
 that actually ticks at the 120Hz sim rate (not the 180Hz render rate) runs
-1.5x long at 180 — e.g. a still-running 72-frame fade-to-zero on a track
+1.5x long at 180, e.g. a still-running 72-frame fade-to-zero on a track
 handle that the new scene's BGM then reuses would silence it.
 
-**Next step is LIVE, not static** — `scripts/bgmstate.py <pid> --watch 10`
+**Next step is LIVE, not static.** Run `scripts/bgmstate.py <pid> --watch 10`
 (upgraded this session) samples the BGM slots + MSound flag block at 2Hz and
 reports churn vs. freeze:
 - slot empty → startBGM never fired/failed → walk changeState/nextStateInitialize
@@ -538,7 +539,7 @@ Protocol: capture `--watch 10` in (a) working Plaza, (b) silent Bianco,
 
 # ★ SESSION 6 (2026-08-04): MUSIC FREEZE ROOT-CAUSED. v12 installed (merged lineages).
 
-## 13.1 The music bug — captured and diagnosed
+## 13.1 The music bug: captured and diagnosed
 
 Deep logger (`scripts/bgmlog2.py`, follows JAISound → JAISeqParameter->unk0 →
 `TrackMgr::sRootTrack` [ptr @ **0x8040E6C0**, count @ 0x8040E6C8] → TTrack)
@@ -559,16 +560,16 @@ command, so nothing ever recomputes the rate.
 tempo(+0x3B8) / gDacRate(32028.5 @ 0x8040CDF0, r13-0x73D0) × 80/60, then
 **× outerParam->unk18 (tempo proportion) if outer switch 0x40 is set**
 (outer ptr = track+0x304). Tempo was valid in every capture → the zero factor
-is the outer proportion — the game never legitimately sets it to 0 (MSModBgm's
+is the outer proportion. The game never legitimately sets it to 0 (MSModBgm's
 death-slowdown bottoms at 0.3, changeTempo min 1.0), so 0 = uninitialized /
 raced parameter (JAI port-cmd path, JAISystemInterface: mFlags&0x80 →
 setParam(0x40, mTrackTempo)).
 
-**Fix (in v10/v12): C2 at 0x8031b8c8** — the `lfs f0, 0x18(r3)` that loads the
+**Fix (in v10/v12): C2 at 0x8031b8c8**, the `lfs f0, 0x18(r3)` that loads the
 outer proportion; if it reads 0.0, substitute 1.0 (r2 pool: 0.0 @ -0x5E8, 1.0
 @ -0x7FE8). Self-contained, race-agnostic, cannot affect legit tempo mods.
 
-## 13.2 Version untangling (parallel Opus 5 session — coordinate via this file!)
+## 13.2 Version untangling (parallel Opus 5 session, coordinate via this file!)
 
 Two sessions edited the same INI concurrently. Lineages:
 - Fable: v9 (input gate, **user-confirmed fix**) → **v10** = v9 + BGM tempo guard
@@ -587,22 +588,22 @@ re-enable earlier versions, and note changes here.
 
 - Input: fixed (v9 gate, in v12). Music: v9 already improved it ("works every
   other level and re-load into delfino"); remaining failures were the rate-0
-  freeze (Plaza sometimes silent on first load) — v12's guard targets exactly
+  freeze (Plaza sometimes silent on first load). v12's guard targets exactly
   that. Awaiting user test.
-- **NEW/remaining: Bianco windmills are EXTRA LOUD** — first confirmed instance
+- **NEW/remaining: Bianco windmills are EXTRA LOUD**, first confirmed instance
   of the §10 positional-SFX class (world-object volume params staled/raced by
   the 2-of-3 sim pattern; likely distance attenuation never applied → default
   full volume). Not yet investigated. Start at MSSetSound::frameLoopDyna /
   MSMarioPosVolume; same gating family as everything else.
 - Logger `bgmlog2.py` is self-arming (waits for game boot, re-arms between
-  sessions) — leave one running during any test.
+  sessions). Leave one running during any test.
 
 ---
 
 # ★ SESSION 7 (2026-08-10): NPC talk-INITIATION fix (impossible at 360fps)
 
 Symptom: B near an NPC would not open dialogue at 360fps AT ALL; flaky-feeling
-at lower rates. This is NOT the v9 latch class — dialogue-ADVANCE was fine.
+at lower rates. This is NOT the v9 latch class; dialogue-ADVANCE was fine.
 
 Root cause (decomp `MarDirectorEvent.cpp` + USA disasm, all verified):
 - `TMarDirector::movement_game` (USA **0x8029A788**, runs once per SUBSTEP via
@@ -620,10 +621,10 @@ Root cause (decomp `MarDirectorEvent.cpp` + USA disasm, all verified):
   ~50% of initiation presses eaten.
 
 Fix (in fpspatch, emitted with the substep retune; also in `--check`):
-**`0429A908 540007FF`** — retarget the test `rlwinm. r0,r0,0,30,30` (bit1) to
+**`0429A908 540007FF`**: retarget the test `rlwinm. r0,r0,0,30,30` (bit1) to
 bit0, which movement_game itself just set. Vanilla-equivalent at stock/G=2:
 the 0x800 meaning can only exist if pad flag 0x4 was set at frame start, which
-only an earlier movement_game tick does — the "NPC already near" debounce
+only an earlier movement_game tick does. The "NPC already near" debounce
 survives via that path. Rate-independent, zero cave words.
 
 Verified: only two real consumers of +0x128 exist (movement_game, changeState
@@ -636,18 +637,18 @@ regenerated `--check`-clean and reinstalled into the live INI
 # ★ SESSION 8 (2026-08-10): shine-select screen cadence fix (unusable at 360fps)
 
 Symptom: the in-stage episode/shine select screen is completely unbounded by
-the framerate — at 360fps one tap of left/right skips from episode 8 to 1
+the framerate: at 360fps one tap of left/right skips from episode 8 to 1
 (repeat delay ~0.11s at ~30 steps/sec vs stock 0.33s at 10/sec).
 
 Root cause (all USA addresses disasm-verified this session):
 - The select screen runs under **TSelectDir** (vtable **0x803C0EF0**, ctor
-  0x80177538) — a separate director. Its `direct()` (**0x80175EC4**) calls
+  0x80177538) - a separate director. Its `direct()` (**0x80175EC4**) calls
   plain `JDrama::TDirector::direct()` (**0x802F7D28**, the `bl` at
   **0x80175FE8**), which fires CUE_MOVE|CUE_CALC_ANIM on the menu once per
   RENDERED frame. None of the TMarDirector gating (substep scheduler, v9 pad
   latch) applies: menu logic runs 30 Hz stock → 60G Hz under the bundle.
 - Twice broken on top of that: `TSelectMenu::initData` (**0x8017449C**) caches
-  `+0x14C = 1.0/SMSGetAnmFrameRate()` (**0x801744D0** — one of the §8-backlog
+  `+0x14C = 1.0/SMSGetAnmFrameRate()` (**0x801744D0**, one of the §8-backlog
   "reciprocal" sites) and times its stick-repeat as `N * (+0x14C)` ticks; the
   v11 stub pins the rate at 0.5, so the cache reads 2.0 at every G instead of
   the 1/G the formula needs. Same for the pad's own repeat
@@ -661,7 +662,7 @@ Root cause (all USA addresses disasm-verified this session):
 
 Fix (fpspatch `select_gate` + extended `input_latch`, emitted with the substep
 retune, both enforced by `--check`): hold the whole select-screen tick to
-**1 frame in ceil(G/2) = a 120 Hz cadence** — exactly what every 0.5-stub
+**1 frame in ceil(G/2) = a 120 Hz cadence**, exactly what every 0.5-stub
 constant is calibrated for, so the 40-tick repeat delay is 0.33s at 10
 steps/sec, bit-exact stock timing, at every even G (G=3 rounds to 90 Hz, mild).
 - **C2 @0x802F7DBC** (v2): inside the SHARED `JDrama::TDirector::direct`, at
@@ -669,9 +670,9 @@ steps/sec, bit-exact stock timing, at every even G (G=3 rounds to 90 Hz, mild).
   r3=unk10/r4=3/r5=&graphics already set). Vptr-compares against TSelectDir
   (inert for logo/menu/movie directors), increments a low-arena frame counter
   (**0x800016E8**; 0x16E0/16E4 are Noki's, 0x16F0 camera) and skips ONLY the
-  MOVE|CALC_ANIM testPerform on gated frames — the CUE_DRAW pass at 0x802F7DD0
+  MOVE|CALC_ANIM testPerform on gated frames; the CUE_DRAW pass at 0x802F7DD0
   still runs every frame.
-  On gated frames the call is NOT skipped — it goes out with **r4 = 2
+  On gated frames the call is NOT skipped; it goes out with **r4 = 2
   (CUE_CALC_ANIM only)**, and only CUE_MOVE is withheld.
   **Two traps, both shipped and user-sighted 2026-08-10, do not repeat:**
   1. v1 hooked TSelectDir::direct's own `bl TDirector::direct` (0x80175FE8)
@@ -688,10 +689,10 @@ steps/sec, bit-exact stock timing, at every even G (G=3 rounds to 90 Hz, mild).
      the tail, `bl 0x802ef66c`). A draw with no same-frame entry draws no
      shines. CALC_ANIM passthrough is safe: the shine path re-applies the
      same +0x3C frame (idempotent), and TSelectMenu's non-MOVE path handles
-     only CUE_DRAW — it ignores CALC_ANIM entirely.
+     only CUE_DRAW, it ignores CALC_ANIM entirely.
   3. v3's CALC_ANIM passthrough surfaced a THIRD regression (user-sighted as
      "micro-flickering"): **TSelectGrad::perform** (USA 0x80175560, vtable
-     0x803C0EC8) advances its background color-cycle ON CUE_CALC_ANIM — a RAW
+     0x803C0EC8) advances its background color-cycle ON CUE_CALC_ANIM: a RAW
      +/-2 per call on channel bytes +0x20/21/22 (state machine +0x10/14/18),
      family-B raw-rate class. At 240fps the gradient strobed 8x stock behind
      the shine panels. Fix: **select_grad_gate** (C2 @0x80175584, the beq
@@ -701,23 +702,23 @@ steps/sec, bit-exact stock timing, at every even G (G=3 rounds to 90 Hz, mild).
      Emitted only alongside select_gate (at G=2 the counter never ticks and a
      frozen gate would freeze the ramp).
   Rule distilled: gate ONLY CUE_MOVE globally; draw AND draw-buffer entry
-  (CALC_ANIM) must run every rendered frame — and any RAW-rate advancer that
+  (CALC_ANIM) must run every rendered frame; any RAW-rate advancer that
   rides CALC_ANIM (grad ramp) then needs its own native-cadence gate. Audit
   every CALC_ANIM consumer of a director before passthrough: the select
   screen's full set is TSelectMenu (ignores it), TSelectShineManager
-  (idempotent frame-pin + entry), TSelectGrad (RAW advancer — the trap),
+  (idempotent frame-pin + entry), TSelectGrad (RAW advancer, the trap),
   TEmitterViewObj (MOVE-only).
 - **input_latch TSelectDir case**: second vtable compare in the v9 block; pad
-  reads gated to the SAME frames via the predicate `(ctr+1) % N` — predicted,
+  reads gated to the SAME frames via the predicate `(ctr+1) % N`, predicted,
   not stored, because read() runs BEFORE direct() in gameLoop, and only the
   direct-gate increments. Trigger edges are therefore consumed by exactly one
   menu tick (same pending-edge mechanism as gameplay v9).
-- At G=2 neither block is emitted (cadence already 120 Hz — and indeed the
+- At G=2 neither block is emitted (cadence already 120 Hz; indeed the
   select screen was always fine at 120fps); bare120.txt is byte-identical.
 
 Follow-ups NOT done: title-screen/file-select (TMenuDir) and any other
-TDirector-direct directors have the same class of bug — the counter +
+TDirector-direct directors have the same class of bug; the counter +
 per-vtable-case architecture extends to them if they ever annoy. The other
 §8 reciprocal sites (0x8000AB4C, 0x800F4B78, 0x80205F24, 0x802A8994/A8)
 remain unaudited; 0x801744D0 is RESOLVED for the select screen by cadence
-(not patched — under a 120 Hz tick, 1/0.5 = 2.0 is the correct value again).
+(not patched; under a 120 Hz tick, 1/0.5 = 2.0 is the correct value again).

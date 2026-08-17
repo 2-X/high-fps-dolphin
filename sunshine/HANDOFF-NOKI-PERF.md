@@ -1,4 +1,4 @@
-# HANDOFF — Noki Bay Ep.1 performance drop — FIXED (2026-08-07)
+# HANDOFF: Noki Bay Ep.1 performance drop - FIXED (2026-08-07)
 
 **Status: SHIPPED. 105fps → 119 stable, no EFB config hacks needed.**
 Code `$Noki pollution counting 30Hz gate (120fps Ep.1 perf)` enabled in `GameSettings/GMSE01.ini`.
@@ -6,7 +6,7 @@ Source + full doc: `research/codes/noki-pollution-30hz-gate-v1.txt`.
 
 ## Symptom
 On M2 Max at 120fps, **Noki Bay Episode 1 ("Uncork the Waterfall")** was stuck at ~105fps
-while everything else — including **Noki Bay Episode 2** — held 119. Area-specific, sustained,
+while everything else (including **Noki Bay Episode 2**) held 119. Area-specific, sustained,
 not a momentary hitch.
 
 ## Two wrong theories first (kept, because the misfires are instructive)
@@ -21,7 +21,7 @@ Both were plausible from the decomp. Both were disproven only by measuring. Less
 
 ## Actual root cause (measured, `sample` of the emulation thread)
 `research/fpsprofile.sh` on the running process, in-level, showed **~39% of the "CPU-GPU
-thread" blocked in `-[MTLCommandBuffer waitUntilCompleted]`** — synchronous GPU→CPU readbacks:
+thread" blocked in `-[MTLCommandBuffer waitUntilCompleted]`**: synchronous GPU→CPU readbacks:
 
 | Dolphin function | samples / ~3658 | source |
 |---|---|---|
@@ -29,16 +29,16 @@ thread" blocked in `-[MTLCommandBuffer waitUntilCompleted]`** — synchronous GP
 | `PerfQuery::FlushResults` | 189 | `GXReadPixMetric` in `drawSyncCallback` (`countObjDegree`) |
 | `FramebufferManager::PeekEFBColor` | 162 | EFB color peek |
 
-These come from the **pollution degree-counting** — the game renders the goop coverage and
+These come from the **pollution degree-counting**: the game renders the goop coverage and
 reads it back to CPU **every frame** to know how much pollution remains. SMS is a **30fps**
 game; at 120fps (4×) that readback fires **4× as often as designed**. Ep.1 starts **fully
 polluted** → maximal counting → the cap drops to 105. Ep.2 has no goop → no readback → 120.
-`EFB peeks: 0` throughout — the stat counter excludes EFB-copy readbacks, which is why the
-overlay alone looked innocent.
+`EFB peeks: 0` throughout (the stat counter excludes EFB-copy readbacks, which is why the
+overlay alone looked innocent).
 
 Confirmation before patching: toggling **Store EFB Copies to Texture Only** + **Skip EFB
 Access from CPU** (live, Graphics → Hacks) removed the `ReadTexels` + `PeekEFB` paths → 105→115.
-The residual 4fps was the `GXReadPixMetric` path those toggles don't cover — exactly the
+The residual 4fps was the `GXReadPixMetric` path those toggles don't cover, exactly the
 prediction.
 
 ## The fix
@@ -50,7 +50,7 @@ C2 at **`TPollutionManager::perform` = USA `0x8019D8C8`** (PAL `0x80196150`), di
 8019d940 bl 0x801887ac         ; else: TJointModelManager::perform (visible DRAW — NOT gated)
 ```
 Gates **both** counting passes to **1 frame in 4** (native 30Hz) via two self-contained
-scratch counters — objCtr `0x800016E0` (ticked per obj-cue), texCtr `0x800016E4` (ticked when
+scratch counters: objCtr `0x800016E0` (ticked per obj-cue), texCtr `0x800016E4` (ticked when
 layer==0). On gated frames it `blr`s immediately; counters hold their last value; the visible
 goop draw still runs every frame. All three readback stalls now fire at a quarter of the rate.
 
@@ -62,7 +62,7 @@ normally again).
 - Spray goop and confirm it still **clears** at a normal pace (30Hz clear-detection should feel
   identical to stock). If it feels sluggish → back the divisor to 1-in-2: change the two
   `andi. r0,r11,3` words (`71600003`) to `71600001`.
-- Crash on load would mean the C2 early-return LR assumption failed (it hasn't — timer-fix v15
+- Crash on load would mean the C2 early-return LR assumption failed (it hasn't; timer-fix v15
   proves `blr`-in-C2 returns to caller); the fallback is gating the two `bl` call-sites directly.
 
 ## PC (180/360)
@@ -72,56 +72,56 @@ way (`fpsprofile.sh`).
 
 See also: `research/PERF-PLAYBOOK.md` (the general method), memory `sunshine-noki-pollution-perf`.
 
-## v2 (2026-08-09) — REQUIRED companion fix: the Bianco Ep.1 load freeze
+## v2 (2026-08-09): REQUIRED companion fix: the Bianco Ep.1 load freeze
 
 The v1 gate froze **every polluted level whose actors stamp their models into
 goop** (Bianco Ep.1 "Road to the Big Windmill", et al.) on load, ending in a
 Metal `Preallocate` OOM after the vertex buffer doubled to ~64GB.
 
 **Root cause (measured, not theorized):** gating `TPollutionManager::perform`
-lets `pushModelStampTask` accumulate G frames of tasks — the same J3DModel
+lets `pushModelStampTask` accumulate G frames of tasks. The same J3DModel
 queued up to G times. On the pass frame `calcViewMtx()` calls `model->entry()`
 per queue slot; J3D's `entry()` is a push-front intrusive list insert, so the
 second insert of the same packet sets `packet->next = packet`. The J3D draw
-walks the self-loop forever, streaming one mat packet into the FIFO — the game
+walks the self-loop forever, streaming one mat packet into the FIFO. The game
 thread never finishes the frame, nothing presents, Dolphin's vertex batcher
 grows without bound. Confirmed by dumping the live FIFO ring from the frozen
 process (`scripts/fifodump.py` + `scripts/gxdisasm.py`): one ~95-byte packet
 (CALL DL 80abc880/815fb2e0 + matrix loads) repeated wall-to-wall. Noki Bay has
-no model-stamping actors — why v1 tested clean there.
+no model-stamping actors, which is why v1 tested clean there.
 
 Two instrumentation notes that made this findable:
 - `[hifps]` NOTICE logs added to our Dolphin: PE token-coalescing events,
   CP breakpoint arm/disarm/hit with FIFO addresses, Metal Preallocate growth
   >64MB (kept in tree; near-zero cost).
 - Dolphin token coalescing (`PixelEngine::SetToken` overwrites `m_token_pending`)
-  was investigated and CLEARED — zero coalesced tokens in the failing run. The
+  was investigated and CLEARED: zero coalesced tokens in the failing run. The
   DrawSyncManager ring/breakpoint protocol is NOT the problem.
 
 **Fix:** dedupe at the push. C2 @ `pushModelStampTask` USA **0x8019B120**
 (disasm-verified) scans the queue slots (this+0x38, stride 8) for the incoming
-model ptr (r5) and `blr`s on a hit — same shape as the stock queue-full
+model ptr (r5) and `blr`s on a hit, same shape as the stock queue-full
 early-return. ctr untouched (callers can loop on it), only r10-r12 clobbered.
 Emitted automatically by `fpspatch.py` alongside the gate (`noki_dedupe()`).
 
 Verify: Bianco Ep.1 loads and plays; goop stamping/cleaning behaves; Noki Bay
 Ep.1 still holds ~119.
 
-## v3 (2026-08-11) — REDESIGN: call-site gates; v1 gate + v2 dedupe RETIRED
+## v3 (2026-08-11): REDESIGN: call-site gates; v1 gate + v2 dedupe RETIRED
 
 **Symptom that exposed v1/v2's flaw (user, 240fps):** entering an M portal, the
 rainbow-surface ripples of Mario's atom-dots hitting the gate "appear way later
 than when the dots hit." Live capture (`research/scripts/warplog.py`) proved the
-whole warp logic chain substep-clean — the desync was OUR code: the gate-surface
+whole warp logic chain substep-clean. The desync was OUR code: the gate-surface
 impact ripples are model stamps through `pushModelStampTask`. v1's whole-perform
 `blr` also skipped the layer-0 stamp-queue drain (`calcViewMtx` 0x8019B16C), so
 stamps batched 2G frames; the v2 dedupe then collapsed every same-model stamp in
-the batch to ONE — at 240fps up to 7 of every 8 ripple stamps were silently
+the batch to ONE; at 240fps up to 7 of every 8 ripple stamps were silently
 discarded, and survivors landed on pass frames. Ripples = late + sparse.
 
 **v3 (in `fpspatch.py noki_gate()`, emitted per-fps):** gate ONLY the two
-expensive counting calls at their call sites; everything else — crucially the
-drain — runs every frame, so batches never form and the v2 dedupe is
+expensive counting calls at their call sites; everything else (crucially the
+drain) runs every frame, so batches never form and the v2 dedupe is
 unnecessary (removed; it also deleted legitimate same-frame stamps that stock
 allows):
 | hook | call | policy |
@@ -130,13 +130,13 @@ allows):
 | 0x8019D90C | calcViewMtx = stamp drain (layer 0) | tick texCtr 0x800016E4, ALWAYS |
 | 0x8019D91C | per-layer countTexDegree (ReadTexels) | read texCtr, 1-in-FPS/30 |
 | 0x8019D934 | last-layer finish | read texCtr, 1-in-FPS/30 |
-`noki_copy_gate` (TEfbCtrlTex) is unchanged — texCtr still ticks exactly once
+`noki_copy_gate` (TEfbCtrlTex) is unchanged; texCtr still ticks exactly once
 per rendered frame, so its phase contract holds. Perf is identical to v1 (the
 readbacks were always the whole cost; the drain is cheap pointer walking).
 `--check` now errors if the old 0x8019D8C8 / 0x8019B120 blocks reappear.
 
-Verify at 240/360: M-portal entry — ripple rings appear ON dot impacts; goop
+Verify at 240/360: M-portal entry: ripple rings appear ON dot impacts; goop
 stamps/clears normally; Bianco Ep.1 still loads (the freeze can't recur: no
 batching means no duplicate entry()). The old standalone `$Noki pollution
 counting 30Hz gate` INI title and the pre-v3 120fps bundles still carry v1/v2
-blocks — harmless while unticked, but never enable them alongside a v3 bundle.
+blocks (harmless while unticked, but never enable them alongside a v3 bundle).

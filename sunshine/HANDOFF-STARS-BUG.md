@@ -1,4 +1,4 @@
-# HUD star-sparkle bug (120fps) — investigation handoff
+# HUD star-sparkle bug (120fps): investigation handoff
 
 **Symptom:** the star sparkles around the HUD counters (shine ×N, blue-coin ×N,
 coin ×N) stay active indefinitely; counters linger on screen during gameplay.
@@ -16,7 +16,7 @@ Intermittent ("only happens sometimes"). Screenshot taken on the beach level.
 
 `JPABaseEmitter->mStatus` @ +0x11C, bit0 = STOP_EMIT. **The particles are
 stepped/drawn by a separate `TEmitterViewObj` (gpEmitterManager4D2) in "Group
-2D"** — NOT by the console. So if the console's logic stalls, sparkles keep
+2D"**, NOT by the console. So if the console's logic stalls, sparkles keep
 animating forever regardless.
 
 The **coin** emitter is never stopped during normal play even in stock (SMS
@@ -30,7 +30,7 @@ slides all counters out and stops emitters 144/164 **only when ALL guards
 pass**, notably:
 
 - shine pane (`TExPane*` con+0x140) interpolator offsets (+0x14/+0x18) **round
-  to exactly (0,0)** — i.e. the slide-in animation fully arrived;
+  to exactly (0,0)** (i.e. the slide-in animation fully arrived);
 - `gpMarDirector->mState` (dir+0x64) not 5 (pause) / 0xB;
 - `dir+0x124 != 2` (not talking); con+0x60, con+0x50, con+0x16C, con+0x8A all 0.
 
@@ -51,14 +51,14 @@ counter con+0x30 counts up; >200 → `startAppearStar` (periodic reveal).
 Later (after the user paused/unpaused and/or changed area) the same fields ran
 normally: pane arrived (0,0) and retracted to -163, unk30 cycled, pauseOut set
 STOP on 144/164. So the stuck state is a **stranded console state machine**,
-not a permanently broken one — matches "only happens sometimes".
+not a permanently broken one, matches "only happens sometimes".
 
 ## Cue plumbing facts (needed to interpret)
 
 - `TViewObj::unkC` is a **DISABLE mask** (`cue &= ~unkC` in testPerform).
   Console created with unkC=0xB (disabled) in `TMarDirector::setupObjects`
   (USA 0x8029c894), then **enabled** (`unkC.off(0xB)`) in
-  `nextStateInitialize` states 2/4 — but ONLY when `mMap (dir+0x7C) != 0xf`
+  `nextStateInitialize` states 2/4, but ONLY when `mMap (dir+0x7C) != 0xf`
   and (case 4) `mState <= 3` (USA 0x80298444/0x80298484).
 - Pause (state 5) strips MOVE+CALC from the main perform lists (uVar8|=3 in
   `direct()`) → HUD logic frozen during pause by design; Group-2D list unk30
@@ -83,20 +83,20 @@ not a permanently broken one — matches "only happens sometimes".
 
 ## Tools added
 
-- `research/scripts/starprobe.py` — one-shot/looping dump of console HUD state
+- `research/scripts/starprobe.py`: one-shot/looping dump of console HUD state
   (flags, counters, emitters). `SMS_DOL=../main.dol python3 starprobe.py 1 10`
-- `research/scripts/starwatch.py` — transition logger (mask, mMap, mState,
+- `research/scripts/starwatch.py`: transition logger (mask, mMap, mState,
   d124, con ptr, unk30, ConsoleStr phase, spY, emitter STOP bits). Currently
   running in background → `/tmp/starwatch.log`.
   `cd research/scripts && SMS_DOL=../main.dol python3 starwatch.py 3600 > /tmp/starwatch.log`
 - gpMarDirector (USA) = **0x8040E178** ([r13-0x6048], r13=0x804141C0);
-  console = [dir+0x74]. (An earlier arithmetic slip said 0x8040DB78 — wrong.)
+  console = [dir+0x74]. (An earlier arithmetic slip said 0x8040DB78, wrong.)
 
 ## Repro guidance
 
 Play normally; the moment stars stick, note the wall-clock time and what just
 happened (pause? talk/sign? shine banner? area entry?). Then read
-`/tmp/starwatch.log` around that timestamp — the transition that strands the
+`/tmp/starwatch.log` around that timestamp; the transition that strands the
 console will be the last mask/mState/d124/spY edge before the freeze.
 
 ## Fix directions (once mechanism confirmed)
@@ -116,7 +116,7 @@ console will be the last mask/mState/d124/spY edge before the freeze.
 
 **Root cause confirmed: orphaned PAUSE-MENU sparkle emitter.** The perpetual
 stars were `TPauseMenu2::mEmitter` (menu at gpMarDirector+0xAC, emitter ptr
-+0x110) — the star sparkle on the selected pause-menu item. Its deletion is an
++0x110, the star sparkle on the selected pause-menu item. Its deletion is an
 `mFadeAnim == 0.0f` tick inside `disappearWindow()`; at 120fps the director
 leaves pause state 5 before the menu close-anim reaches that tick (mFadeAnim
 observed frozen at 11.0 of ~46), so the emitter is left alive+emitting forever,
@@ -127,7 +127,7 @@ Validated by live mach_vm_write of STOP_EMIT into both orphaned emitters
 (status 0x28 -> 0x29 confirmed in memory; on-screen fade pending user confirm).
 
 **Shipped: `$120fps + StarFix (stop coin sparkle on unpause)` v2** (installed
-+ enabled in GMSE01.ini) — C2 @0x8014A850 inside pauseOut:
++ enabled in GMSE01.ini): C2 @0x8014A850 inside pauseOut:
 
 ```
 C214A850 00000007
@@ -142,22 +142,22 @@ C214A850 00000007
 
 Constraints at the hook: r29=console, r3/r4 free, **r0 must be preserved**
 (holds 0 for a later stb). Emitters carry ENABLE_DELETE (0x8) so stopping them
-lets the manager free them once particles die — no slot leak.
+lets the manager free them once particles die, no slot leak.
 
 Tooling note: any "wait for Dolphin to quit" logic must use `pgrep -x Dolphin`;
 `pgrep -if dolphin` self-matches scripts whose path contains "dolphin"
-(this repo!). `gecko.py`'s guard still has that bug — pending user OK to patch.
+(this repo!). `gecko.py`'s guard still has that bug, pending user OK to patch.
 
 ## v3 addendum (final shipped fix)
 
 v2 alone was insufficient: TPauseMenu2 re-creates the item sparkle **every
 bounce loop** (create gated on `mBounceAnim == mEffectKeyFrame`, USA create
-site 0x80155d8c) and overwrites mEmitter WITHOUT deleting the old one — each
+site 0x80155d8c) and overwrites mEmitter WITHOUT deleting the old one; each
 pause session orphans several immortal emitters (observed 4-5 alive at screen
 top, y≈24-40). They persist until a scene change frees the manager.
 
 **v3 = v2 + second C2 @0x80155D8C**: stop the previous mEmitter right before
-each re-create (r6/r7 scratch there; r0/r4/r5 live — do not touch):
+each re-create (r6/r7 scratch there; r0/r4/r5 live, do not touch):
 
 ```
 C2155D8C 00000004
@@ -168,21 +168,21 @@ C2155D8C 00000004
 ```
 
 Possible follow-up: same create pattern exists at 0x8015ef40, 0x801608f4,
-0x8016605c, 0x8016a980, 0x8016b800 (guide/save/option menus) — extend the same
+0x8016605c, 0x8016a980, 0x8016b800 (guide/save/option menus): extend the same
 stop-before-create hook if lingering stars appear after those screens.
 gpEmitterManager4D2 (USA) = [r13-0x5fdc] = 0x8040E1E4.
 
-## v4 addendum (watchdog — the actual persistent stars)
+## v4 addendum (watchdog: the actual persistent stars)
 
 The stars surviving v3 were **three continuous (maxFrame=0) banner emitters**
 (episode-title/wipe sparkles, TConsoleStr) stranded at fixed screen positions
-— their cleanup milestone is skipped at 120fps (menu/banner logic ticks per
+their cleanup milestone is skipped at 120fps (menu/banner logic ticks per
 frame but emitters age at parity-60Hz = 1/4 the stock per-tick rate). Pause
 plumbing STOPs all 2D emitters on pause and re-enables on unpause, which is
 why they vanished while paused and returned on unpause.
 
 Beware pool ghosts when scanning: the manager free list (mgr+0x14) keeps
-freed emitters with stale "alive-looking" status/age — only membership in
+freed emitters with stale "alive-looking" status/age; only membership in
 mgr+0x44 group lists means active. Emitter+0x10 is the AGE frame counter
 (f32), NOT a position; real position = unk160 (+0x160) / mTrans (+0x19C).
 
@@ -208,5 +208,5 @@ C2324EB8 00000009
 60000000 00000000
 ```
 
-Naming note: "$120fps + StarFix" contains NO framerate-global writes — it is
+Naming note: "$120fps + StarFix" contains NO framerate-global writes; it is
 an add-on safe alongside exactly one base 120fps variant (TRUE-FIX v3).

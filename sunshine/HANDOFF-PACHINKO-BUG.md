@@ -1,10 +1,10 @@
-# HANDOFF — Pachinko / Chip-Shine red-coin FLUDD "suction" bug at 120fps
+# HANDOFF: Pachinko / Chip-Shine red-coin FLUDD "suction" bug at 120fps
 
 **Status: DIAGNOSIS ONLY. Not yet reproduced under instrumentation. No fix landed.**
 
 ## Symptom (user report, 2026-08-07)
 
-Delfino Plaza secret shine — the pachinko/plinko-board level accessed by jumping off
+Delfino Plaza secret shine: the pachinko/plinko-board level accessed by jumping off
 the boat and entering under the bridge. Coin blocks (green/red/blue) sit between
 `PachinkoKugi` peg columns on a slanted floor.
 
@@ -12,7 +12,7 @@ At 120fps the **top-left red coin is nearly unreachable**:
 
 - Approaching from above with **FLUDD hover**, Mario gets **pulled toward the middle**.
 - If you hold hover past the green coin, you get "sucked into the blue coin at the top
-  middle" — user has to release hover with perfect timing to bank left.
+  middle"; user has to release hover with perfect timing to bank left.
 - User believes this doesn't happen at stock 30fps ("the collisions being more
   frequent makes it seem like it's pulling me into the middle").
 
@@ -20,9 +20,9 @@ At 120fps the **top-left red coin is nearly unreachable**:
 
 Per [[sunshine-highfps-bug-surface]] and [[sunshine-fpspatch-generator]], **CUE_MOVE is
 substep-pinned at 120Hz at every display rate** (stock 30fps: 4 substeps/frame · 30 =
-120Hz; 60fps: 2·60; 120fps: 1·120). Mario's `playerControl()` — and therefore
-`rocketing()` @ [MarioJump.cpp:923](../code/sms/src/Player/MarioJump.cpp:923) with its
-hover spring, forward-vel accel, and brake — runs under CUE_MOVE and should tick at
+120Hz; 60fps: 2·60; 120fps: 1·120). Mario's `playerControl()` and therefore
+`rocketing()` @ [MarioJump.cpp:923](../code/sms/src/Player/MarioJump.cpp:923) (with its
+hover spring, forward-vel accel, and brake) run under CUE_MOVE and should tick at
 the **same 120Hz** at stock and at hack. So the naive "rate-dependent brake/accel"
 theory does **not** explain any 30fps↔120fps delta in hover behavior.
 
@@ -39,20 +39,20 @@ If the delta is real, the bug is either
 
 - Pegs: **`MapObjPachinkoNail`** (BMD `PachinkoKugi.bmd`, collision id `PachinkoKugi`,
   type 2), registered in [MapObjInit.cpp:10322-10352](../code/sms/src/MoveBG/MapObjInit.cpp:10322).
-  Static collision mesh — no per-tick actor logic on the peg itself.
+  Static collision mesh, no per-tick actor logic on the peg itself.
 - Coin blocks: standard `TCoinRed` / `TCoinBlue` items ([Item.cpp:348](../code/sms/src/MoveBG/Item.cpp:348),
   [Item.cpp:366](../code/sms/src/MoveBG/Item.cpp:366)).
 - Shine name is `ChipShine` ([MapObjInit.cpp:10513](../code/sms/src/MoveBG/MapObjInit.cpp:10513)).
-- Stage name is unknown from grep so far — likely `chip` / `casino_ex` variant.
+- Stage name is unknown from grep so far, likely `chip` / `casino_ex` variant.
   Confirm from a live save before instrumenting.
 
 ## Suspect code paths (in priority order)
 
-### 1. FLUDD hover control loop — `TMario::rocketing()`  [MarioJump.cpp:923-993](../code/sms/src/Player/MarioJump.cpp:923)
+### 1. FLUDD hover control loop: `TMario::rocketing()`  [MarioJump.cpp:923-993](../code/sms/src/Player/MarioJump.cpp:923)
 
 The lateral-drift-inducing lines:
 - `mForwardVel += mag * cos(angleDiff) * mDivingParams.mAccelControl.get()` (line 958,
-  the "wide-angle" branch — the branch that fires when the stick and face are within
+  the "wide-angle" branch, fires when the stick and face are within
   ±0x1555 of each other, i.e., you're aiming roughly forward).
 - `mSlideVelX = mForwardVel * sin(mFaceAngle.y)` / `mSlideVelZ = mForwardVel * cos(...)`
   (lines 982-985).
@@ -68,10 +68,10 @@ CUE_CALC_ANIM or the draw path, that's the bug.
 
 The hover nozzle sprays water downward. If the spray applies a **recoil / reaction
 push** to Mario per-emitter-tick, and the emitter fires per render frame, hover-lift
-would be 4× stronger at 120fps — which would over-brake the fall and let the slanted
+would be 4× stronger at 120fps, which would over-brake the fall and let the slanted
 floor + peg deflection dominate.
 
-Look at `TWaterGun::perform(CUE_MOVE)` and `perform(CUE_CALC_ANIM)` — the CUE_MOVE
+Look at `TWaterGun::perform(CUE_MOVE)` and `perform(CUE_CALC_ANIM)`: the CUE_MOVE
 path is fine; CUE_CALC_ANIM is not (it runs at display rate for animation).
 Files: [WaterGun.cpp](../code/sms/src/Player/WaterGun.cpp),
 [SplashManager.cpp](../code/sms/src/Player/SplashManager.cpp).
@@ -81,14 +81,14 @@ Files: [WaterGun.cpp](../code/sms/src/Player/WaterGun.cpp),
 `TSplashManager` (or the spray emitter) spawns particles when water hits geometry.
 Peg contacts × frames-per-sec = 4× splash-per-second at 120fps. If any splash particle
 imparts collision force on Mario (unlikely for splash, but worth ruling out), that's
-the "suction". Check the emitter rate gate — the existing `_rate_gate` in `fpspatch.py`
+the "suction". Check the emitter rate gate; the existing `_rate_gate` in `fpspatch.py`
 handles the *one* known emitter site, but there may be a FLUDD-specific one.
 
 ### 4. Input polling latency
 
 `mInput`, `mIntendedMag`, `mIntendedYaw` are read once per Mario tick. If the stick
 sample is refreshed at 30Hz but the sim reads at 120Hz, three of every four ticks see
-identical input — should be neutral, but the timing of "hold vs release" edges shifts.
+identical input, which should be neutral, but the timing of "hold vs release" edges shifts.
 Probably not the cause here, but rule out.
 
 ## Anti-hypotheses (do not chase without evidence)
@@ -96,7 +96,7 @@ Probably not the cause here, but rule out.
 - **"Peg reflect impulse is applied 4× per second."** PachinkoNail is static collision
   and reflection is via `mWallPlane` in `MarioPhysics.cpp`. That runs under CUE_MOVE at
   substep-pinned 120Hz. Rate-invariant.
-- **"Mario's brake/accel constants."** Same reason — CUE_MOVE-driven, invariant.
+- **"Mario's brake/accel constants."** Same reason: CUE_MOVE-driven, invariant.
 - **"Anim-rate."** [[sunshine-highfps-bug-surface]] shows anmrate is a family-B animation
   bug set already covered by `fpspatch.py`'s `anmrate()`. Would affect animation speed,
   not physics drift. Not this bug.
@@ -124,7 +124,7 @@ Probably not the cause here, but rule out.
 
 ## Save/setup
 
-- Save file needed: a save that has entered this shine's stage (name TBC — likely
+- Save file needed: a save that has entered this shine's stage (name TBC, likely
   `chip` or `casino_ex`; check `saves/` and `dolphin-config` for existing setup).
 - Run the hover approach from a fixed spawn (top of the slide, above the top-left
   red-coin block).
@@ -133,7 +133,7 @@ Probably not the cause here, but rule out.
 
 ## Instrumentation
 
-**`research/scripts/hoverlog.py`** — live TMario state sampler. Auto-locates the
+**`research/scripts/hoverlog.py`**: live TMario state sampler. Auto-locates the
 TMario instance by matching gpMarioPos (`0x8040E10C`) against every candidate
 pointer in MEM1, then verifies via mForwardVel + mWaterGun sanity. Samples
 mPosition, mVel, mForwardVel, mSlideVelX/Z, mFaceAngle.y, mIntendedYaw/Mag,
@@ -145,7 +145,7 @@ sudo -E SMS_DOL=../main.dol ../venv/bin/python hoverlog.py 60 20 --only-hover \
     > hoverlog-current.txt
 ```
 
-Run the top-left-red-coin approach under hover twice — once with the enabled
+Run the top-left-red-coin approach under hover twice: once with the enabled
 `$180fps v12`, once with stock (no high-fps code active). If per-tick `dv` /
 `dp` in the hover state differ meaningfully, the physics ARE tick-rate-varying
 and the "sim pinned at 120Hz" invariant is broken in this state. If they
@@ -153,7 +153,7 @@ match, drift is coming from something outside `rocketing()` (splash push,
 particle collision, input polling edges, or something in `TWaterGun::perform`
 running under CUE_CALC_ANIM).
 
-## Sim rate — the actual enabled code
+## Sim rate: the actual enabled code
 
 Currently enabled in `dolphin-config/GameSettings/GMSE01.ini` is **`$180fps v12`**
 (not $120fps). The "sim pinned at 120 Hz" argument still holds: at G=3,

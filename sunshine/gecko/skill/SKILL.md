@@ -10,13 +10,13 @@ description: Add, replace, list, or remove Gecko codes in the Dolphin per-game I
 Dolphin loads the **user** per-game INI at
 `~/Library/Application Support/Dolphin/GameSettings/GMSE01.ini`
 and **rewrites it from memory when it closes** (after any per-game setting was
-touched — e.g. ticking a Gecko code). So **any edit made while Dolphin is
+touched (e.g. ticking a Gecko code). So **any edit made while Dolphin is
 running is reverted on quit.** That is the "I added a code but it doesn't show
 up" symptom.
 
 **Golden rule: Dolphin must be fully quit before editing the INI, then relaunched.**
 
-Do NOT edit the Sys/GameSettings INI in the app bundle to work around this — it
+Do NOT edit the Sys/GameSettings INI in the app bundle to work around this: it
 is the shipped default set, gets overwritten on rebuild, and merge semantics
 cause duplicate/confusing entries. Always target the user INI above.
 
@@ -27,7 +27,7 @@ cause duplicate/confusing entries. Always target the user INI above.
    quit it, or quit it gracefully: `osascript -e 'quit app "Dolphin"'` then wait
    for the process to disappear (poll `pgrep`). Never edit until it is gone.
 2. **Use the helper script** (it backs up to `<ini>.bak`, sanitizes lines, and is
-   idempotent — re-adding a title replaces the old block):
+   idempotent; re-adding a title replaces the old block):
    ```bash
    PY=python3
    S=.claude/skills/dolphin-gecko/scripts/gecko.py
@@ -70,7 +70,7 @@ C2C28028 EC2105B2
 FEC00890 00000000
 ```
 plus whatever patch/hook is appended. Only ONE 120fps variant should be enabled
-at a time — they all write `0x804167B8` and will fight otherwise.
+at a time: they all write `0x804167B8` and will fight otherwise.
 
 ## Building C2 (insert-assembly) hooks
 
@@ -79,13 +79,13 @@ at a time — they all write `0x804167B8` and will fight otherwise.
 - Those lines are the PPC instructions to run; the code handler branches back to
   `address + 4` afterward, so **re-execute the original instruction** at the top
   of your block (the C2 replaces it with a branch).
-- **CRITICAL GOTCHA — the block MUST end with a `00000000` padding word.** The
+- **CRITICAL GOTCHA: the block MUST end with a `00000000` padding word.** The
   code handler **overwrites the LAST word of the block with its branch-back**. If
   your last word is a real instruction it gets clobbered → `f`-reg/`r`-reg left
   garbage → typically an "Invalid write to 0x00000000" crash or silent no-op.
   Always pad so the final word is `00000000` (add a `60000000 00000000` line if
   needed to make the instruction count land right). This single mistake silently
-  breaks every multi-instruction C2 — verify the last word is `00000000`.
+  breaks every multi-instruction C2. Verify the last word is `00000000`.
 - Relative branches inside the block (`b`, `bge`, …) are self-relative and stay
   correct because the handler copies the block verbatim to its cave.
 - Dolphin's C2 cave is SMALL. Stacking many/large C2 codes overflows it and they

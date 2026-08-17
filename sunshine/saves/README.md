@@ -1,4 +1,4 @@
-# sunshine/saves/ — Bring Your Own Saves
+# sunshine/saves/: Bring Your Own Saves
 
 This directory previously contained Dolphin savestates, a memory card image (.gci),
 and an SRAM file for Super Mario Sunshine (GMSE01). Those files have been removed

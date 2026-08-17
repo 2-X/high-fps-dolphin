@@ -1,6 +1,6 @@
-# PC session handoff — updated 2026-08-03 (session 2)
+# PC session handoff, updated 2026-08-03 (session 2)
 
-**Bottom line: 180fps is DONE — locked, correct speed, verified.** 360fps is **not reachable
+**Bottom line: 180fps is DONE, locked, correct speed, verified.** 360fps is **not reachable
 as a logic rate** on this hardware today: the measured Plaza throughput ceiling is **5.17x**
 and 360 needs **6.0x**.
 
@@ -9,12 +9,12 @@ disagree, this doc wins. Corrections are marked **[CORRECTED]**.
 
 ---
 
-## 0. The pacing model — settled, with proof
+## 0. The pacing model: settled, with proof
 
 Session 1 claimed the render loop free-runs. **It does not.** [CORRECTED]
 
 `0x802FC9A4` is the **per-frame VI governor**. All four of its `VIWaitForRetrace` calls
-belong to it (the epilogue at `802fcb40`–`802fcb58` matches its `stwu r1,-0x20` prologue —
+belong to it (the epilogue at `802fcb40`–`802fcb58` matches its `stwu r1,-0x20` prologue;
 they are not separate functions):
 
 ```
@@ -34,7 +34,7 @@ they are not separate functions):
 `0x8034f684` is `VIWaitForRetrace` beyond doubt: `OSDisableInterrupts` → sleep on the
 retrace queue until `retraceCount` (`-0x58f0(r13)`) changes → `OSRestoreInterrupts`.
 
-With `target = count + 2`, the gate at `802fc9c8` blocks until `count >= target - 1` — i.e.
+With `target = count + 2`, the gate at `802fc9c8` blocks until `count >= target - 1`, i.e.
 **one field**. NOPping `802fcb24` removes the *second* field, converting 30 → 60 frames per
 emulated second. **One retrace wait per frame always remains.** The loop is retrace-locked.
 
@@ -48,7 +48,7 @@ game speed = real_fps / (60 x framerate_global)
 Speed is correct **iff the host actually sustains that multiplier**. This is purely a
 throughput problem. The achievable ladder is exactly 120=2x, 180=3x, 240=4x, 360=6x.
 
-**Independent confirmation:** frames:vblanks is 1:1 in every run ever logged —
+**Independent confirmation:** frames:vblanks is 1:1 in every run ever logged,
 166260:167639 (session 1), 20290:20292 (session 2 locked-180). A free-running loop would
 diverge wildly.
 
@@ -63,8 +63,8 @@ bug had disengaged the throttle entirely.
 **`User/GameSettings/GMSE01.ini` `[Core] EmulationSpeed` overrides BOTH
 `User/Config/Dolphin.ini` AND the `-C Dolphin.Core.EmulationSpeed=` command-line flag.**
 
-The per-game INI had `EmulationSpeed = 6.0` left over from session 1. Every run — including
-ones explicitly launched with `-C ...EmulationSpeed=3.0` — silently ran at 6.0. Because 6.0
+The per-game INI had `EmulationSpeed = 6.0` left over from session 1. Every run, including
+ones explicitly launched with `-C ...EmulationSpeed=3.0`, silently ran at 6.0. Because 6.0
 is *above* the machine's 5.17x ceiling, they all ran effectively unthrottled, which looks
 exactly like "the throttle doesn't work."
 
@@ -76,7 +76,7 @@ Symptom to recognise: the game runs **fast**, and measured VPS ignores whatever 
 
 ## 2. Measured results (Vulkan, P-core pinned, Plaza `F2` savestate, batch mode)
 
-### Throughput ceiling — run unthrottled and see what the host delivers
+### Throughput ceiling: run unthrottled and see what the host delivers
 
 Warmed steady state: **310 VPS = 5.17x**, and it is *rock stable* (307.4 / 310.2 / 307.5 /
 306.5 / 311.0 / 309.1 / 310.2 / 311.1 over 10s windows from 90s to 180s).
@@ -90,9 +90,9 @@ figures were partly cold.
 | 120 | 2.0x | 2.59x margin | trivial |
 | **180** | **3.0x** | **1.72x margin** | **locked, verified correct** |
 | 240 | 4.0x | 1.29x margin | should hold; untested |
-| 360 | 6.0x | **0.86x — short by 16%** | not reachable today |
+| 360 | 6.0x | **0.86x, short by 16%** | not reachable today |
 
-### Locked 180 — the validated configuration
+### Locked 180: the validated configuration
 
 | metric | value |
 |---|---|
@@ -104,20 +104,20 @@ figures were partly cold.
 | Video thread | 46.1% of one core |
 | VK submission | 7.8% |
 
-### Backend — Vulkan wins, D3D11 answered [CORRECTED §3.4 / §4.1]
+### Backend: Vulkan wins, D3D11 answered [CORRECTED §3.4 / §4.1]
 
 | backend | VPS | mult | note |
 |---|---|---|---|
 | **Vulkan** (pinned) | **307.4** | 5.13x | best |
 | Vulkan (no pinning) | 288.7 | 4.82x | |
 | D3D12 (pinned) | 265.8 | 4.43x | |
-| D3D11 (pinned) | 263.6 | 4.40x | **tested — no win** |
+| D3D11 (pinned) | 263.6 | 4.40x | **tested, no win** |
 
 D3D11 was session 1's top "to do". It is dead. Caveat: the three 45s runs are partly inside
-the warm-up window, so their absolute numbers are pessimistic — but Vulkan *unpinned* still
+the warm-up window, so their absolute numbers are pessimistic, but Vulkan *unpinned* still
 beat D3D12 *pinned*, so Vulkan's advantage is robust.
 
-### Host CPU tuning — real but smaller than hoped [CORRECTED §4.3]
+### Host CPU tuning: real but smaller than hoped [CORRECTED §4.3]
 
 P-core pinning (`ProcessorAffinity = 0xFFFF`, logical 0–15) + `High` priority: **+6.5%**
 (288.7 → 307.4 VPS). Session 1 estimated 10–20%. Ultimate Performance power plan was
@@ -125,24 +125,24 @@ P-core pinning (`ProcessorAffinity = 0xFFFF`, logical 0–15) + `High` priority:
 
 ---
 
-## 3. Why 360 is blocked — and the one idea left
+## 3. Why 360 is blocked, and the one idea left
 
 At the 5.17x ceiling **neither hot thread is saturated**: CPU 77.2%, Video 77.1%. Scaled to
 6.0x they would need ~89% each, which individually fits. The loss is **CPU↔Video
-serialization** — almost certainly the game's per-frame draw-sync forcing a barrier so the
+serialization**, almost certainly the game's per-frame draw-sync forcing a barrier so the
 two threads cannot overlap. Both sitting at the same ~77% is the signature of a lock-step
 barrier, not of a producer/consumer bottleneck (which would saturate one side).
 
 Untried idea worth one experiment: affinity is currently `0xFFFF`, which lets Windows place
 the CPU thread and Video thread on **hyperthread siblings of the same physical core**.
-Pinning to `0x5555` (logicals 0,2,4,…,14 — one per physical P-core) guarantees they never
+Pinning to `0x5555` (logicals 0,2,4,…,14, one per physical P-core) guarantees they never
 share silicon. Could be a meaningful slice of the missing 16%.
 
 If that falls short, the honest path to a 360Hz *image* is **locked 180 logic + frame
 interpolation to 360** (2:1, exact). That source is already in
 `dolphin-patches/high-fps-dolphin.patch` (`Present.cpp/.h`, `FramebufferShaderGen.*`).
 
-Note also that **240 into a 360Hz panel is 1.5:1 — uneven cadence, visible judder.** Even if
+Note also that **240 into a 360Hz panel is 1.5:1, uneven cadence, visible judder.** Even if
 240 runs, 180 is the better target for this display.
 
 ---
@@ -156,13 +156,13 @@ Note also that **240 into a 360Hz panel is 1.5:1 — uneven cadence, visible jud
 
 `User/Config/Dolphin.ini`: `GFXBackend = Vulkan`, `CPUThread = True`,
 `OverclockEnable = False`, `AudioPreservePitch = True`, `AudioBufferSize = 136`,
-`DSPHLE = True`. (`EmulationSpeed` here is **inert** — see §1.)
+`DSPHLE = True`. (`EmulationSpeed` here is **inert**; see §1.)
 
-`User/Config/GFX.ini`: `InternalResolution = 3` and `EFBScaledCopy = True` **restored** —
+`User/Config/GFX.ini`: `InternalResolution = 3` and `EFBScaledCopy = True` **restored**,
 both free, the 4090 sits at ~15%. `VSync = False`, `ShaderCompilationMode = 0`,
 `LogRenderTimeToFile = True`, `ShowFPS/ShowVPS/ShowSpeed = True`.
 
-**Lowering resolution does nothing** — confirmed twice. The video thread's cost is FIFO
+**Lowering resolution does nothing**, confirmed twice. The video thread's cost is FIFO
 parsing / vertex loading / draw submission, proportional to *frames drawn*, not pixels.
 
 ---
@@ -177,23 +177,23 @@ parsing / vertex loading / draw submission, proportional to *frames drawn*, not 
 - The `0x5555` HT-aware affinity experiment (§3).
 - `04414904` co-scaled const: the plain `$120FPS`/`$180FPS` ladder codes carry it, the
   TRUE-FIX bundles do not. v2/v3 were confirmed correct at 120 without it, so it is probably
-  unnecessary — but it has never been explained.
+  unnecessary, but it has never been explained.
 
-## 6. Environment — session 1's §7 is STALE [CORRECTED]
+## 6. Environment: session 1's §7 is STALE [CORRECTED]
 
 All of these are **installed**, contrary to session 1:
 
 - **Python 3.12.10** at `C:\Users\krisb\AppData\Local\Programs\Python\Python312\python.exe`
-  (`python3` is the Store stub — use `python`). **capstone 5.0.7** present.
+  (`python3` is the Store stub; use `python`). **capstone 5.0.7** present.
 - **VS Build Tools 2022** (MSVC 14.44.35207, Windows SDK 10.0.26100), with CMake and Ninja
   bundled under `BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\`.
 
-`sms_dump.py` has a hardcoded Mac `DOL=` path — override it, e.g.
+`sms_dump.py` has a hardcoded Mac `DOL=` path; override it, e.g.
 `sed 's|^DOL=.*|import os; DOL=os.environ["SMS_DOL"]|'`.
 
 **Patched Dolphin:** built this session at `C:\Users\krisb\code\dolphin-src` (upstream
 `b6d8bc2`, patch applied cleanly). README §4's warning that the audio tempo factor "was
-written for 2x" is **wrong** — the patch reads `Config::Get(Config::MAIN_EMULATION_SPEED)`
+written for 2x" is **wrong**: the patch reads `Config::Get(Config::MAIN_EMULATION_SPEED)`
 at runtime and generalises to any speed:
 
 ```cpp
@@ -203,24 +203,24 @@ if (speed > 1.0f) period = static_cast<u64>(period * speed);
 
 **Build-version mismatch:** the patched build stamps **2606-184**; the portable binary in
 `dolphin-bin/` is **2606-278**. Savestates are build-locked, so **`GMSE01.s02` will not load
-on the patched build** — make a fresh benchmark savestate there. The `.gci` memcard save is
+on the patched build**. Make a fresh benchmark savestate there. The `.gci` memcard save is
 portable and unaffected.
 
 ---
 
-## 7. Measurement methodology (reusable — this part of session 1 was right)
+## 7. Measurement methodology (reusable; this part of session 1 was right)
 
 - `render_times.txt` / `vblank_times.txt` are **per-frame intervals in ms**, one per line.
-  `fps = 1000 * N / sum`. They only flush on close — stop Dolphin to collect.
+  `fps = 1000 * N / sum`. They only flush on close; stop Dolphin to collect.
 - Benchmark harness: `Dolphin.exe -e "<rom>" -s "<state>" -b` boots straight into the
   savestate with no UI. Reproducible, and the character stands still.
-- **Run at least 90 seconds** and read the tail — the shader cache needs ~80s to warm.
+- **Run at least 90 seconds** and read the tail; the shader cache needs ~80s to warm.
 - To measure the ceiling, set `EmulationSpeed` *above* what the host can do and see what it
   delivers. One run answers "is target X reachable" for every X.
 - Thread names via `GetThreadDescription` P/Invoke; `ProcessThread.TotalProcessorTime`
   deltas over a wall-clock window give % of one core.
 - **Do not aggregate across a session.** Always chronological windows, one area, steady state.
-- Beware background load — a session was wasted measuring while Palworld ran. Check first.
+- Beware background load. A session was wasted measuring while Palworld ran. Check first.
 
 ---
 
@@ -228,7 +228,7 @@ portable and unaffected.
 
 **Status: 180fps runs at correct speed, smooth, cutscenes intact.** Two bugs remain
 (edge-triggered input, level BGM). Everything below supersedes §3's "movement scales with N"
-framing — that was a symptom, not the cause.
+framing. That was a symptom, not the cause.
 
 ## S3.1 The actual mechanism (this is the important part)
 
@@ -248,7 +248,7 @@ framing — that was a symptom, not the cause.
   80299c00 POST-work -> 80299c24: b 80299d24 -> return
 ```
 
-**One substep = 5/600 = 1/120 s. SMS simulates at a fixed 120 Hz** — stock 30fps runs 4
+**One substep = 5/600 = 1/120 s. SMS simulates at a fixed 120 Hz.** Stock 30fps runs 4
 substeps/frame, 120fps runs exactly 1. That is why 120 is flawless: one render per sim step.
 
 **The bug:** the loop always runs **at least one substep per frame** (the exit flag is cleared
@@ -260,18 +260,18 @@ sim rate = fps  (not 120)   ->   speed = fps/120 = 179.82/120 = 1.5x
 ```
 
 That is the whole 1.5x mystery. It is also why the G=6 probe changed nothing (budget 1 is
-still floored to 1 substep) while **cutscenes went slow-mo** — cutscenes are driven off the
+still floored to 1 substep) while **cutscenes went slow-mo**; cutscenes are driven off the
 budget, gameplay off the floored substep count. The framerate global was never the lever.
 
-`director->0x54` (the accumulator) is read/written by **only** those 5 instructions — nothing
+`director->0x54` (the accumulator) is read/written by **only** those 5 instructions; nothing
 else in the game depends on the 600/5 scale. Verified by xref.
 
 ## S3.2 The fix ladder (all in `GameSettings/GMSE01.ini`)
 
-- **v6** `C2299948` — skipped the loop by jumping to the function's return. **Speed became
+- **v6** `C2299948`: skipped the loop by jumping to the function's return. **Speed became
   correct at 180fps** (proof of diagnosis) but flashed black and hung the audio: it skipped
   the per-frame PRE- and POST-work too.
-- **v7** `C2299958` — gate at the loop body instead; on a zero-substep frame set `0x4000`
+- **v7** `C2299958`: gate at the loop body instead; on a zero-substep frame set `0x4000`
   (so next frame still runs PRE-work), `li r29,0` (return value), and jump to **POST-work
   0x80299c00** rather than past it. **This is the one that works.**
 - **v8** = v7 + ×3 granularity, because `600/180` truncates 3.333→3 and loses 10%
@@ -291,16 +291,16 @@ else in the game depends on the 600/5 scale. Verified by xref.
    analog movement is fine). Almost certainly the pad latch (`pressed = now & ~prev`) advances
    every frame while the check only runs on simulation frames, so presses landing on a skipped
    frame are latched away unread. **Fix: gate the pad read on the same accumulator.** The pad
-   read has NOT been located yet — ruled out: `0x80298e80` (director state-machine dispatcher,
+   read has NOT been located yet; ruled out: `0x80298e80` (director state-machine dispatcher,
    13-entry jump table @0x803DF05C) and `0x80360400` (GX flush to the 0xCC008000 write-gather
    pipe). Look at the virtual `perform(-1,&msg)` chain on director fields
    0x40/0x38/0x3c/0x1c/0x20/0x24.
-2. **Level BGM** — silent under v7, "first tone only" under v8. Cutscene music is fine. The
+2. **Level BGM**: silent under v7, "first tone only" under v8. Cutscene music is fine. The
    scale-corruption theory is dead (see S3.1 xref), so it tracks the substep *rate*. No theory yet.
 
 ## S3.4 Tooling built this session
 
-- `gcmem.py` — reads GameCube memory out of a live Dolphin process. Finds MEM1 by matching the
+- `gcmem.py`: reads GameCube memory out of a live Dolphin process. Finds MEM1 by matching the
   `VIWaitForRetrace` prologue from `main.dol`, then translates 0x80xxxxxx to host pointers.
   **Use this first** instead of inferring machine state from feel; it settled G=3.0 vs 6.0
   immediately after several wasted rounds of guessing.
@@ -310,7 +310,7 @@ else in the game depends on the 600/5 scale. Verified by xref.
 ## S3.5 TRAP: the benchmark savestate is poisoned
 
 `User/StateSaves/GMSE01.s02` was captured during the 360 session and **restores G=6.0,
-overriding whatever Gecko code is enabled** — confirmed by reading memory after loading it.
+overriding whatever Gecko code is enabled**, confirmed by reading memory after loading it.
 Any speed conclusion drawn from an `F2` run is invalid. Throughput/VPS numbers are unaffected
 (those are Dolphin-side). **Boot clean, or make a fresh savestate.**
 
@@ -319,7 +319,7 @@ Any speed conclusion drawn from an `F2` run is invalid. Throughput/VPS numbers a
 Set it in **both** `User/GameSettings/GMSE01.ini` `[Core]` **and** `User/Config/Dolphin.ini`.
 A mismatch (per-game 2.0, global 3.0) produced "movement *and* audio both 1.5x fast", because
 the emulator ran at one value while the audio patch read the other. Also never write these
-files with PowerShell `Set-Content -Encoding UTF8` — it adds a **UTF-8 BOM** and Dolphin then
+files with PowerShell `Set-Content -Encoding UTF8`; it adds a **UTF-8 BOM** and Dolphin then
 fails to parse `[Core]` at all.
 
 ## S3.7 Correction to §3 / README

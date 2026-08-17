@@ -1,10 +1,10 @@
-# SMS high-fps family-B — MASTER worklist (source ∪ binary)
+# SMS high-fps family-B: MASTER worklist (source ∪ binary)
 
 Function work-items: **168** (127 BINARY/USA-addr, 41 SOURCE/named).  By severity: PARAM=13, MISUSE=16, COMPUTED=56, CONSTANT=72, REVIEW=11.
 
 **One row = one function to fix** (a single C2 hook usually covers all its sites, like v16). Ranked worst-severity first; within a severity, USA (fix-ready) before JP (named hint).
 
-> **Overlap:** a decompiled-TU function appears twice — once BINARY (USA addr, no name) and once SOURCE (named, JP hint) — because the two address spaces can't be auto-joined. Confirm they're the same function when you open the USA address; fix once. Stub-TU functions (popo, bosspakkun, …) appear ONLY as BINARY rows.
+> **Overlap:** a decompiled-TU function appears twice: once BINARY (USA addr, no name) and once SOURCE (named, JP hint), because the two address spaces can't be auto-joined. Confirm they're the same function when you open the USA address; fix once. Stub-TU functions (popo, bosspakkun, …) appear ONLY as BINARY rows.
 
 | sev | from | func addr | name / key | sites | representative detail |
 |---|---|---|---|---|---|
@@ -23,8 +23,8 @@ Function work-items: **168** (127 BINARY/USA-addr, 41 SOURCE/named).  By severit
 | PARAM | SOURCE | `0x8026fc2c` (JP hint) | `THinokuri2::changeBck` | 2 | raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get()) |
 | MISUSE | SOURCE | `0x80365c6c` (JP hint) | `TAnimalBase::execWalk` | 5 | arithmetic on rate: ...SLMaxMarchSpeed.get() * <<>>SMSGetAnmFrameRate();... |
 | MISUSE | SOURCE | `0x802eb298` (JP hint) | `TBEelTears::getBasNameTable` | 3 | arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);... |
-| MISUSE | SOURCE | — (JP hint) | `TBossManta::startWalkAnim` | 2 | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... |
-| MISUSE | SOURCE | — (JP hint) | `TBossManta::startDamageAnim` | 2 | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... |
+| MISUSE | SOURCE | - (JP hint) | `TBossManta::startWalkAnim` | 2 | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... |
+| MISUSE | SOURCE | - (JP hint) | `TBossManta::startDamageAnim` | 2 | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... |
 | MISUSE | SOURCE | `0x8016ad74` (JP hint) | `TBaseNPC::perform` | 2 | compared as timing: ...f32 rate = <<>>SMSGetAnmFrameRate();... |
 | MISUSE | SOURCE | `0x80199fe0` (JP hint) | `TManhole::touchPlayer` | 2 | arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());... |
 | MISUSE | SOURCE | `0x801466f4` (JP hint) | `TSplashManager::load` | 2 | arithmetic on rate: ...unk638 = (<<>>SMSGetAnmFrameRate() * -0.5f) *... |
@@ -160,7 +160,7 @@ Function work-items: **168** (127 BINARY/USA-addr, 41 SOURCE/named).  By severit
 | CONSTANT | SOURCE | `0x8014ef78` (JP hint) | `TYoshi::thinkUpper` | 2 | raw literal rate 1.0f (4x fast at 120fps) |
 | CONSTANT | SOURCE | `0x802884c0` (JP hint) | `TBossGessoManager::load` | 1 | raw literal rate 1.0f (4x fast at 120fps) |
 | CONSTANT | SOURCE | `0x80247440` (JP hint) | `TPatternAnmControl::setupAnm` | 1 | raw literal rate 1.0f (4x fast at 120fps) |
-| CONSTANT | SOURCE | — (JP hint) | `TOptionSoundUnit` | 1 | raw literal rate 1.0f (4x fast at 120fps) |
+| CONSTANT | SOURCE | - (JP hint) | `TOptionSoundUnit` | 1 | raw literal rate 1.0f (4x fast at 120fps) |
 | CONSTANT | SOURCE | `0x8018880c` (JP hint) | `TMapObjBase::makeObjAppeared` | 1 | raw literal rate 1.0f (4x fast at 120fps) |
 | CONSTANT | SOURCE | `0x80164248` (JP hint) | `TMario::getGesso` | 1 | raw literal rate 0.5f (4x fast at 120fps) |
 | CONSTANT | SOURCE | `0x8014fcd8` (JP hint) | `TYoshi::thinkBtp` | 1 | raw literal rate 0.5f (4x fast at 120fps) |
@@ -181,106 +181,106 @@ Function work-items: **168** (127 BINARY/USA-addr, 41 SOURCE/named).  By severit
 
 
 ### PARAM · BINARY · `0x8013c30c` `0x8013c30c`
-- `0x8013c3ac` — raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
-- `0x8013c408` — raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
-- `0x8013c46c` — raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+- `0x8013c3ac` - raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+- `0x8013c408` - raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
+- `0x8013c46c` - raw rate <- lfs +0x1e4(r5) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x80205354` `0x80205354`
-- `0x802054d8` — raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
-- `0x802054ec` — raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
-- `0x80205624` — raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+- `0x802054d8` - raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+- `0x802054ec` - raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
+- `0x80205624` - raw rate <- lfs +0x1d0(r31) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x80244800` `0x80244800`
-- `0x80244b88` — raw rate <- lfs +0xc(r5) (4x fast at 120fps)
-- `0x80244bc8` — raw rate <- constant nan (4x fast at 120fps)  [r2-0x110c=0x80415a74]
+- `0x80244b88` - raw rate <- lfs +0xc(r5) (4x fast at 120fps)
+- `0x80244bc8` - raw rate <- constant nan (4x fast at 120fps)  [r2-0x110c=0x80415a74]
 
 ### PARAM · BINARY · `0x8009548c` `0x8009548c`
-- `0x800955cc` — raw rate <- lfs +0x16c(r3) (4x fast at 120fps)
+- `0x800955cc` - raw rate <- lfs +0x16c(r3) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x801175fc` `0x801175fc`
-- `0x8011763c` — raw rate <- lfs +0x188(r31) (4x fast at 120fps)
+- `0x8011763c` - raw rate <- lfs +0x188(r31) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x801176bc` `0x801176bc`
-- `0x801176ec` — raw rate <- lfs +0x188(r31) (4x fast at 120fps)
+- `0x801176ec` - raw rate <- lfs +0x188(r31) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8013b668` `0x8013b668`
-- `0x8013b6c4` — raw rate <- lfs +0x1bc(r5) (4x fast at 120fps)
+- `0x8013b6c4` - raw rate <- lfs +0x1bc(r5) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8013c1cc` `0x8013c1cc`
-- `0x8013c24c` — raw rate <- lfs +0x194(r3) (4x fast at 120fps)
+- `0x8013c24c` - raw rate <- lfs +0x194(r3) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8013c490` `0x8013c490`
-- `0x8013c4e8` — raw rate <- lfs +0x298(r5) (4x fast at 120fps)
+- `0x8013c4e8` - raw rate <- lfs +0x298(r5) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8013c52c` `0x8013c52c`
-- `0x8013c584` — raw rate <- lfs +0x1d0(r5) (4x fast at 120fps)
+- `0x8013c584` - raw rate <- lfs +0x1d0(r5) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8013c5c8` `0x8013c5c8`
-- `0x8013c620` — raw rate <- lfs +0x1a8(r5) (4x fast at 120fps)
+- `0x8013c620` - raw rate <- lfs +0x1a8(r5) (4x fast at 120fps)
 
 ### PARAM · BINARY · `0x8026fe38` `0x8026fe38`
-- `0x80270204` — raw rate <- lfs +0x120(r1) (4x fast at 120fps)
+- `0x80270204` - raw rate <- lfs +0x120(r1) (4x fast at 120fps)
 
 ### PARAM · SOURCE · `0x8026fc2c` `THinokuri2::changeBck`
-- `Enemy/hinokuri2.cpp:748` — raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get())  `pJVar7->setRate(getSaveParam()->mSLWalkSpeedRateLv0.get());`
-- `Enemy/hinokuri2.cpp:750` — raw literal rate 1.0f (4x fast at 120fps)  `pJVar7->setRate(1.0f);`
+- `Enemy/hinokuri2.cpp:748` - raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get())  `pJVar7->setRate(getSaveParam()->mSLWalkSpeedRateLv0.get());`
+- `Enemy/hinokuri2.cpp:750` - raw literal rate 1.0f (4x fast at 120fps)  `pJVar7->setRate(1.0f);`
 
 ### MISUSE · SOURCE · `0x80365c6c` `TAnimalBase::execWalk`
-- `Animal/AnimalBase.cpp:271` — arithmetic on rate: ...SLMaxMarchSpeed.get() * <<>>SMSGetAnmFrameRate();...  `f32 speed = save->mSLMaxMarchSpeed.get() * SMSGetAnmFrameRate();`
-- `Animal/AnimalBase.cpp:272` — arithmetic on rate: ...->mSLMarchAccel.get() * <<>>SMSGetAnmFrameRate()...  `f32 accel = save->mSLMarchAccel.get() * SMSGetAnmFrameRate()`
-- `Animal/AnimalBase.cpp:276` — arithmetic on rate: ...SLMarchDecrease.get() * <<>>SMSGetAnmFrameRate()...  `f32 decel = save->mSLMarchDecrease.get() * SMSGetAnmFrameRate()`
-- `Animal/AnimalBase.cpp:283` — arithmetic on rate: ...nSpeed    = waitSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed    = waitSpeed * SMSGetAnmFrameRate();`
-- `Animal/AnimalBase.cpp:286` — arithmetic on rate: ...nSpeed    = walkSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed    = walkSpeed * SMSGetAnmFrameRate();`
+- `Animal/AnimalBase.cpp:271` - arithmetic on rate: ...SLMaxMarchSpeed.get() * <<>>SMSGetAnmFrameRate();...  `f32 speed = save->mSLMaxMarchSpeed.get() * SMSGetAnmFrameRate();`
+- `Animal/AnimalBase.cpp:272` - arithmetic on rate: ...->mSLMarchAccel.get() * <<>>SMSGetAnmFrameRate()...  `f32 accel = save->mSLMarchAccel.get() * SMSGetAnmFrameRate()`
+- `Animal/AnimalBase.cpp:276` - arithmetic on rate: ...SLMarchDecrease.get() * <<>>SMSGetAnmFrameRate()...  `f32 decel = save->mSLMarchDecrease.get() * SMSGetAnmFrameRate()`
+- `Animal/AnimalBase.cpp:283` - arithmetic on rate: ...nSpeed    = waitSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed    = waitSpeed * SMSGetAnmFrameRate();`
+- `Animal/AnimalBase.cpp:286` - arithmetic on rate: ...nSpeed    = walkSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed    = walkSpeed * SMSGetAnmFrameRate();`
 
 ### MISUSE · SOURCE · `0x802eb298` `TBEelTears::getBasNameTable`
-- `Enemy/bosseel.cpp:545` — arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(-frameRate * SMSGetAnmFrameRate(), 0);`
-- `Enemy/bosseel.cpp:550` — arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);`
-- `Enemy/bosseel.cpp:602` — arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);`
+- `Enemy/bosseel.cpp:545` - arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(-frameRate * SMSGetAnmFrameRate(), 0);`
+- `Enemy/bosseel.cpp:550` - arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);`
+- `Enemy/bosseel.cpp:602` - arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);...  `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);`
 
 ### MISUSE · SOURCE · `` `TBossManta::startWalkAnim`
-- `Enemy/bossManta.cpp:369` — arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...  `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);`
-- `Enemy/bossManta.cpp:368` — raw/computed rate ()  `getMActor()->setFrameRate(`
+- `Enemy/bossManta.cpp:369` - arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...  `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);`
+- `Enemy/bossManta.cpp:368` - raw/computed rate ()  `getMActor()->setFrameRate(`
 
 ### MISUSE · SOURCE · `` `TBossManta::startDamageAnim`
-- `Enemy/bossManta.cpp:376` — arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...  `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);`
-- `Enemy/bossManta.cpp:375` — raw/computed rate ()  `getMActor()->setFrameRate(`
+- `Enemy/bossManta.cpp:376` - arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);...  `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);`
+- `Enemy/bossManta.cpp:375` - raw/computed rate ()  `getMActor()->setFrameRate(`
 
 ### MISUSE · SOURCE · `0x8016ad74` `TBaseNPC::perform`
-- `NPC/NpcBase.cpp:692` — compared as timing: ...f32 rate = <<>>SMSGetAnmFrameRate();...  `f32 rate = SMSGetAnmFrameRate();`
-- `NPC/NpcBase.cpp:693` — raw/computed rate ()  `mMActor->setFrameRate(`
+- `NPC/NpcBase.cpp:692` - compared as timing: ...f32 rate = <<>>SMSGetAnmFrameRate();...  `f32 rate = SMSGetAnmFrameRate();`
+- `NPC/NpcBase.cpp:693` - raw/computed rate ()  `mMActor->setFrameRate(`
 
 ### MISUSE · SOURCE · `0x80199fe0` `TManhole::touchPlayer`
-- `MoveBG/MapObjTown.cpp:86` — arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());`
-- `MoveBG/MapObjTown.cpp:98` — arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());`
+- `MoveBG/MapObjTown.cpp:86` - arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());`
+- `MoveBG/MapObjTown.cpp:98` - arithmetic on rate: ...meCtrl(0)->getFrame() + <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->getFrame() + SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x801466f4` `TSplashManager::load`
-- `Player/SplashManager.cpp:24` — arithmetic on rate: ...unk638 = (<<>>SMSGetAnmFrameRate() * -0.5f) *...  `unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();`
-- `Player/SplashManager.cpp:24` — arithmetic on rate: ...mFrameRate() * -0.5f) * <<>>SMSGetAnmFrameRate();...  `unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();`
+- `Player/SplashManager.cpp:24` - arithmetic on rate: ...unk638 = (<<>>SMSGetAnmFrameRate() * -0.5f) *...  `unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();`
+- `Player/SplashManager.cpp:24` - arithmetic on rate: ...mFrameRate() * -0.5f) * <<>>SMSGetAnmFrameRate();...  `unk638 = (SMSGetAnmFrameRate() * -0.5f) * SMSGetAnmFrameRate();`
 
 ### MISUSE · SOURCE · `0x800fc380` `TMarioGamePad::reset`
-- `System/MarioGamePad.cpp:8` — arithmetic on rate: ...peat(0xf00000f, 20.0f / <<>>SMSGetAnmFrameRate(),...  `setButtonRepeat(0xf00000f, 20.0f / SMSGetAnmFrameRate(),`
-- `System/MarioGamePad.cpp:9` — arithmetic on rate: ...6.0f / <<>>SMSGetAnmFrameRate());...  `6.0f / SMSGetAnmFrameRate());`
+- `System/MarioGamePad.cpp:8` - arithmetic on rate: ...peat(0xf00000f, 20.0f / <<>>SMSGetAnmFrameRate(),...  `setButtonRepeat(0xf00000f, 20.0f / SMSGetAnmFrameRate(),`
+- `System/MarioGamePad.cpp:9` - arithmetic on rate: ...6.0f / <<>>SMSGetAnmFrameRate());...  `6.0f / SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x80366ba0` `TAnimalBase::init`
-- `Animal/AnimalBase.cpp:75` — arithmetic on rate: ...TurnSpeed = turnSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed = turnSpeed * SMSGetAnmFrameRate();`
+- `Animal/AnimalBase.cpp:75` - arithmetic on rate: ...TurnSpeed = turnSpeed * <<>>SMSGetAnmFrameRate();...  `mTurnSpeed = turnSpeed * SMSGetAnmFrameRate();`
 
 ### MISUSE · SOURCE · `0x80313eac` `TBGTentacle::setAttackTarget`
-- `Enemy/bgtentacle.cpp:755` — arithmetic on rate: ...ner->getAttackSpeed() * <<>>SMSGetAnmFrameRate());...  `ctrl->setRate(mOwner->getAttackSpeed() * SMSGetAnmFrameRate());`
+- `Enemy/bgtentacle.cpp:755` - arithmetic on rate: ...ner->getAttackSpeed() * <<>>SMSGetAnmFrameRate());...  `ctrl->setRate(mOwner->getAttackSpeed() * SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x80261928` `TBossEel::setBckAnm`
-- `Enemy/bosseel.cpp:1923` — arithmetic on rate: ...trl(0)->setRate(0.25f * <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->setRate(0.25f * SMSGetAnmFrameRate());`
+- `Enemy/bosseel.cpp:1923` - arithmetic on rate: ...trl(0)->setRate(0.25f * <<>>SMSGetAnmFrameRate());...  `getMActor()->getFrameCtrl(0)->setRate(0.25f * SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x800cf318` `TMultiBtk::setNthData`
-- `MarioUtil/ModelUtil.cpp:38` — arithmetic on rate: ...unk0c[n].setRate(0.5f * <<>>SMSGetAnmFrameRate());...  `unk0c[n].setRate(0.5f * SMSGetAnmFrameRate());`
+- `MarioUtil/ModelUtil.cpp:38` - arithmetic on rate: ...unk0c[n].setRate(0.5f * <<>>SMSGetAnmFrameRate());...  `unk0c[n].setRate(0.5f * SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x801d9230` `TLampTrapSpike::control`
-- `MoveBG/MapObjTrap.cpp:169` — arithmetic on rate: ...ctrl->setRate(-<<>>SMSGetAnmFrameRate());...  `ctrl->setRate(-SMSGetAnmFrameRate());`
+- `MoveBG/MapObjTrap.cpp:169` - arithmetic on rate: ...ctrl->setRate(-<<>>SMSGetAnmFrameRate());...  `ctrl->setRate(-SMSGetAnmFrameRate());`
 
 ### MISUSE · SOURCE · `0x800dc368` `TEmitterViewObj::perform`
-- `System/EmitterViewObj.cpp:29` — compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`
+- `System/EmitterViewObj.cpp:29` - compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`
 
 ### MISUSE · SOURCE · `0x800dc2ac` `TEmitterIndirectViewObj::perform`
-- `System/EmitterViewObj.cpp:42` — compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`
+- `System/EmitterViewObj.cpp:42` - compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`
 
 ### MISUSE · SOURCE · `0x800dbd30` `TMarioParticleManager::perform`
-- `System/EmitterViewObj.cpp:110` — compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`
+- `System/EmitterViewObj.cpp:110` - compared as timing: ...for (int i = <<>>SMSGetAnmFrameRate(); i > 0; --i...  `for (int i = SMSGetAnmFrameRate(); i > 0; --i)`

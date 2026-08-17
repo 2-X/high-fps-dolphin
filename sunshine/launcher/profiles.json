@@ -1,5 +1,5 @@
 {
-  "last": "Offline 30 Vanilla",
+  "last": "Offline 120",
   "profiles": [
     {
       "name": "Moveset 120",
@@ -57,7 +57,7 @@
       "mode": "offline",
       "fps": 120,
       "fov": 70,
-      "aspect": "mac",
+      "aspect": "tv",
       "ghost": false,
       "hd_portals": true,
       "player_name": "Kris",

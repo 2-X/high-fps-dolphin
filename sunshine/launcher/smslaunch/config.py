@@ -85,6 +85,7 @@ DOLPHIN_USER = _path(
 # ---- Dolphin user config ---------------------------------------------------
 LIVE_INI = DOLPHIN_USER / "GameSettings" / "GMSE01.ini"      # per-game Gecko/Core
 DOLPHIN_INI = DOLPHIN_USER / "Config" / "Dolphin.ini"        # global (MEM1 override)
+GFX_INI = DOLPHIN_USER / "Config" / "GFX.ini"                # global (wideScreenHack)
 
 # ---- launcher state --------------------------------------------------------
 PROFILES_JSON = LAUNCHER_DIR / "profiles.json"
@@ -149,13 +150,25 @@ def iso_for(mode: str, fps: int) -> Path:
 # `ratio` = width/height, used to convert the user's horizontal FOV to the
 # vertical fovy the $FOV Gecko actually sets. `bse` = native gAspectRatioSetting
 # enum; `video` = Dolphin per-game display AspectRatio keys.
+# `wshack`  = the Dolphin Widescreen Hack value this aspect needs (global GFX.ini).
+#   Dolphin's hack widens the 3D world but is HARDWIRED to 16:9 and ignores the
+#   custom display aspect. So 16:9 (`tv`) can ride the hack, but 16:10 (`mac`)
+#   CANNOT — the hack would render a 16:9 world stretched into the 16:10 frame
+#   (thin/tall). 16:10 instead turns the hack OFF and drives the world aspect
+#   from the `$World aspect 16:10` Gecko (codegen.gen_world_aspect); 4:3 needs no
+#   widening at all. See [[sunshine-widescreen-2d-fix]].
+# `world`   = drive the 3D projection aspect from the Gecko override (hack off)
+#   rather than Dolphin's 16:9 hack. Only 16:10 needs it today.
 ASPECTS = {
     "mac":  {"label": "16:10 (MBP 16\" fullscreen)", "ratio": 16 / 10, "bse": 2,
+             "wshack": "False", "world": True,
              "video": {"AspectRatio": "4", "CustomAspectRatioWidth": "16",
                        "CustomAspectRatioHeight": "10"}},
     "tv":   {"label": "16:9 (external TV/monitor)", "ratio": 16 / 9, "bse": 3,
+             "wshack": "True", "world": False,
              "video": {"AspectRatio": "1"}},
     "none": {"label": "4:3 (no widescreen)", "ratio": 4 / 3, "bse": 0,
+             "wshack": "False", "world": False,
              "video": {"AspectRatio": "0"}},   # Auto -> native 4:3
 }
 # aspects that actually apply a widescreen code (offline) — 4:3 applies none.

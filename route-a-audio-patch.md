@@ -1,8 +1,8 @@
-# Route A — audio compensation patch (draft, apply AFTER vanilla build passes)
+# Route A: audio compensation patch (draft, apply AFTER vanilla build passes)
 
 ## Goal
 When the console runs at N× (EmulationSpeed=N) to render high fps, make DSP/AI audio play at
-correct **wall-clock tempo** instead of N× fast — by slowing the audio subsystem 1/N in game-cycles.
+correct **wall-clock tempo** instead of N× fast, by slowing the audio subsystem 1/N in game-cycles.
 
 ## Mechanism
 Audio DMA is scheduled every `callback_period` CPU cycles in `AudioDMACallback`. The game's audio
@@ -11,7 +11,7 @@ coherently (generation + playback), avoiding dropout. Multiply the period by N s
 often in game-cycles → at N× emulation = 1× wall-clock tempo.
 
 ## Patch site
-`Source/Core/Core/HW/SystemTimers.cpp` — `GetAudioDMACallbackPeriod()` (~line 78).
+`Source/Core/Core/HW/SystemTimers.cpp`, `GetAudioDMACallbackPeriod()` (~line 78).
 Add include: `#include "Core/Config/MainSettings.h"` (for MAIN_EMULATION_SPEED).
 
 ## First-cut change
@@ -34,8 +34,8 @@ static int GetAudioDMACallbackPeriod(u32 cpu_core_clock, u32 aid_sample_rate_div
 - Test: does music play at correct tempo at 360fps?
 
 ## Open risks / iterate empirically
-- Multiple audio paths: `m_dma_mixer` (32kHz DSP — likely music/SFX) vs `m_streaming_mixer`
-  (48kHz streamed — maybe voice/some BGM/cutscene audio). This patch only scales the DMA (DSP) path.
+- Multiple audio paths: `m_dma_mixer` (32kHz DSP, likely music/SFX) vs `m_streaming_mixer`
+  (48kHz streamed, maybe voice/some BGM/cutscene audio). This patch only scales the DMA (DSP) path.
   Streaming audio may need a parallel fix (AudioInterface AIS / streaming period).
 - Mixer rate-control/resampling may partially fight the change → watch for pitch vs stutter.
 - Cutscenes/timers are separate (game-side); not addressed here.

@@ -1,24 +1,24 @@
 ---
 name: sunshine-poink-launch-bug
-description: "Bianco 5 Poink (TPopo) flies ~1/8 distance at 180fps — full actor RE, USA addresses, static analysis says tick-invariant, live logger ready (popolog.py)"
+description: "Bianco 5 Poink (TPopo) flies ~1/8 distance at 180fps. Full actor RE, USA addresses, static analysis says tick-invariant, live logger ready (popolog.py)"
 metadata:
   type: project
 ---
 
-# Poink short-launch bug at 180fps (v12) — investigation state (2026-08-04)
+# Poink short-launch bug at 180fps (v12) - investigation state (2026-08-04)
 
 **Symptom (user):** In Bianco Hills ep5 (Petey fight), filled Poinks launch and travel
 ~1/8 the distance needed to hit Petey. Works at stock.
 
-## Actor identification (settled — two wrong turns first)
+## Actor identification (settled, two wrong turns first)
 
-- The Poink = **`TPopo`** (`src/Enemy/popo.cpp` in decomp — empty stub, symbols only).
+- The Poink = **`TPopo`** (`src/Enemy/popo.cpp` in decomp, empty stub, symbols only).
   Proven by: bianco4.szs (ep5) contains `popo/` + `bosspakkun/` and NO puku dirs;
   `TNervePopoPossessedNozzle`; `/enemy/popo.prm` param names `mSL*`.
 - **Wrong turn 1:** TTabePuku = "プクプク(レール巡回)" rail-patrol fish that bites the nozzle
-  and drags Mario (mDragLength). Fully RE'd (USA TU 0x80136570–0x8013909c) — rate-clean.
+  and drags Mario (mDragLength). Fully RE'd (USA TU 0x80136570–0x8013909c), rate-clean.
 - **Wrong turn 2:** TTobiPuku/TMoePuku + LaunchPads = pad-launched flying fish
-  (USA ~0x80099000–0x800a2400, inflate fn 0x8009be58, pad release 0x8009bfd0) — not Bianco.
+  (USA ~0x80099000–0x800a2400, inflate fn 0x8009be58, pad release 0x8009bfd0): not Bianco.
 
 ## USA TPopo map (JP − 0x211F84; fingerprint-verified)
 
@@ -73,12 +73,12 @@ TRUE-FIX v3 run (known-good) or stock-speed run.
 ## Related genuine rate bugs found during the sweep (fix in v13 alongside)
 
 - **0x802670C8**: splash droplet gravity = −0.5·AnmFrameRate² (consumed at 0x80266F20,
-  `v+=g; p+=v`): stock −2.0, v12 −0.125 (16× weak — droplets float). Quadratic →
+  `v+=g; p+=v`): stock −2.0, v12 −0.125 (16× weak, droplets float). Quadratic,
   needs site patch, not getter change. Constructor-baked: mind Gecko boot-race.
 - **0x80177DB4**: `(int)(counter × rate)` truncates to 0 at rate 0.5 → wait-counter
   vs 360 may stall (same class as EmitterViewObj bug; NOT covered by v12 FX hooks).
 - **0x80008064 / 0x80008098**: two more rate² products; 0x800080C4/D8/0x800090B0
-  approach-speed ×rate (4× small at v12) vs hard 100.0 gate — camera/effect follow TU.
+  approach-speed ×rate (4× small at v12) vs hard 100.0 gate (camera/effect follow TU).
 - Reciprocal sites (×4 too big at v12): 0x8000AB4C, 0x800F4B78, 0x80205F24,
   0x801744D0, 0x802A8994/A8. Threshold mismatch: 0x801D690C/0x801D6998.
 - VSync callers (14) reclassified: all timers/fades/scheduler, no physics.

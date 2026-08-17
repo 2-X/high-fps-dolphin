@@ -12,13 +12,13 @@ Dolphin loads the **user** per-game INI at
 - Windows: `%APPDATA%\Dolphin Emulator\GameSettings\GMSE01.ini`
 
 and **rewrites it from memory when it closes** (after any per-game setting was
-touched — e.g. ticking a Gecko code). So **any edit made while Dolphin is
+touched, e.g. ticking a Gecko code). So **any edit made while Dolphin is
 running is reverted on quit.** That is the "I added a code but it doesn't show
 up" symptom.
 
 **Golden rule: Dolphin must be fully quit before editing the INI, then relaunched.**
 
-Do NOT edit the Sys/GameSettings INI in the app bundle to work around this — it
+Do NOT edit the Sys/GameSettings INI in the app bundle to work around this; it
 is the shipped default set, gets overwritten on rebuild, and merge semantics
 cause duplicate/confusing entries. Always target the user INI above.
 
@@ -30,16 +30,16 @@ cause duplicate/confusing entries. Always target the user INI above.
      disappear (poll `pgrep -x Dolphin`).
      Use `-x` (exact process-name match), **not** `pgrep -if dolphin`: `-f`
      matches the whole command line, so anything launched from this repo path
-     (`.../high-fps-dolphin/...` — e.g. the BSMSO `bridge.py`, `ghost_bot.py`,
+     (`.../high-fps-dolphin/...`, e.g. the BSMSO `bridge.py`, `ghost_bot.py`,
      `memhelper`) falsely reads as "Dolphin is running".
    - Windows: `tasklist /FI "IMAGENAME eq Dolphin.exe" /NH` → if it lists
      `Dolphin.exe`, Dolphin is running. Quit it gracefully with
-     `taskkill /IM Dolphin.exe` (no `/F` — a forced kill skips the on-close INI
+     `taskkill /IM Dolphin.exe` (no `/F`; a forced kill skips the on-close INI
      rewrite but can lose other unsaved state), or ask the user to close it.
 
    Never edit until the process is gone. (The script also checks this itself.)
 2. **Use the helper script** (it backs up to `<ini>.bak`, sanitizes lines, and is
-   idempotent — re-adding a title replaces the old block). Use `python3` on
+   idempotent; re-adding a title replaces the old block). Use `python3` on
    macOS, `python` on Windows:
    ```bash
    PY=python   # python3 on macOS
@@ -52,14 +52,14 @@ cause duplicate/confusing entries. Always target the user INI above.
    ```
    The script **refuses** to write while Dolphin is running (override: `--force`).
    `enable --title` accepts a substring: it is resolved against the `$` titles in
-   `[Gecko]` and the matched title — **normalized to the name Dolphin matches
-   on** — is written to `[Gecko_Enabled]` (errors on zero or multiple matches;
+   `[Gecko]` and the matched title (**normalized to the name Dolphin matches
+   on**) is written to `[Gecko_Enabled]` (errors on zero or multiple matches;
    an exact match wins). Two silent-mismatch traps, both of which bit us:
    - a *partial* title in `[Gecko_Enabled]` never ticks the code ("FLUDD Aim
      Invert v1" vs the full "FLUDD Aim Invert v1 (up aims up)");
    - a *bracket suffix* never ticks either: Dolphin parses `$Name [creator]` by
      splitting at the first `[` (bracket text becomes the creator field) but
-     compares enabled lines verbatim against the stripped name — so
+     compares enabled lines verbatim against the stripped name, so
      `$Particle parity … [kris]` in `[Gecko_Enabled]` NEVER matches. Write the
      stripped name, and prefer bracket-free titles for new codes.
 3. **Verify** the code is present and well-formed: `$PY $S list`.
@@ -94,7 +94,7 @@ C2C28028 EC2105B2
 FEC00890 00000000
 ```
 plus whatever patch/hook is appended. Only ONE 120fps variant should be enabled
-at a time — they all write `0x804167B8` and will fight otherwise.
+at a time; they all write `0x804167B8` and will fight otherwise.
 
 ## Building C2 (insert-assembly) hooks
 
@@ -103,23 +103,23 @@ at a time — they all write `0x804167B8` and will fight otherwise.
 - Those lines are the PPC instructions to run; the code handler branches back to
   `address + 4` afterward, so **re-execute the original instruction** at the top
   of your block (the C2 replaces it with a branch).
-- **CRITICAL GOTCHA — the block MUST end with a `00000000` padding word.** The
+- **CRITICAL GOTCHA: the block MUST end with a `00000000` padding word.** The
   code handler **overwrites the LAST word of the block with its branch-back**. If
   your last word is a real instruction it gets clobbered → `f`-reg/`r`-reg left
   garbage → typically an "Invalid write to 0x00000000" crash or silent no-op.
   Always pad so the final word is `00000000` (add a `60000000 00000000` line if
   needed to make the instruction count land right). This single mistake silently
-  breaks every multi-instruction C2 — verify the last word is `00000000`.
-- **CRITICAL GOTCHA #2 — only the LAST `00000000` is the branch-back; every other
+  breaks every multi-instruction C2; verify the last word is `00000000`.
+- **CRITICAL GOTCHA #2: only the LAST `00000000` is the branch-back; every other
   `00000000` in the block is a LIVE cave word.** If any path *falls into* or
   *branches to* an interior `00000000`, the CPU executes it as an instruction →
   `IntCPU: Unknown instruction 00000000 at PC = 800026xx` (PC inside the handler
-  cave). RULE: **every code path must converge on the LAST word** — either by
+  cave). RULE: **every code path must converge on the LAST word**, either by
   fall-through or by a branch that targets *exactly* that final word. There must
   be only ONE `00000000` in the whole block. For an even word count, pad the
   interior with **`60000000` (nop)**, never a second `00000000`. Common trap: a
   multi-path block where each branch jumps to a shared "end" label that you placed
-  one word before the real branch-back — that "end" is a dead zero and crashes.
+  one word before the real branch-back; that "end" is a dead zero and crashes.
   (This burned 4 rebuilds of the blue-coin timer; `coinhook_assemble.py` now
   asserts "no interior 00000000" to catch it. Prefer arranging one store/path to
   *fall through* into the branch-back, like the working no-op probe does.)

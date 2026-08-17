@@ -1,12 +1,12 @@
-# Delfino canal boats (TFruitsBoat) — NOT fast under the fpspatch (assessed 2026-08-10)
+# Delfino canal boats (TFruitsBoat): NOT fast under the fpspatch (assessed 2026-08-10)
 
-User suspected the plaza gondolas/boats run fast at high fps. Verdict: **no — they cannot
+User suspected the plaza gondolas/boats run fast at high fps. Verdict: **no. They cannot
 run fast**; one of their two modes is exactly stock speed, the other is 4x SLOW (bird-bug
 class). Code-level assessment only, no bench, no fix shipped.
 
 **User closed it same session (2026-08-10): "boats are moving normal ish speed" and
 "fish looked normal" in-game.** So: boat concern = false alarm; the TBoidLeader 4x-fast
-finding below stands at code level but has NO user-visible complaint — don't ship a gate
+finding below stands at code level but has NO user-visible complaint; don't ship a gate
 for it unless someone actually sees fast shoals (plaza may simply not spawn boids where
 the user looks).
 
@@ -14,7 +14,7 @@ the user looks).
 
 The canal boats are the fruit-transport boats **`TFruitsBoat` / `TFruitsBoatManager`**
 (object names `FruitsBoat`/`B`/`C`/`D`, models `/scene/fruitsboat[b|c|d]`).
-`sms-decomp/src/Enemy/fruitsboat.cpp` is an EMPTY STUB — everything below came from
+`sms-decomp/src/Enemy/fruitsboat.cpp` is an EMPTY STUB; everything below came from
 disassembling the USA DOL (`sunshine/research/main.dol`) via the enemy factory string
 table. Red herrings: `FerrisGondola` = Pinna ferris wheel (static TMapObjBase);
 Ricco `riccoBoatL/S`/`riccoYacht*`/`riccoShip` = bob-in-place `MapObjFloat`, don't cruise.
@@ -44,10 +44,10 @@ every G. Two placement-chosen movement modes:
 2. **BckTrace (position baked in a BCK):** setBckTrack builds a private J3DFrameCtrl
    (actor+0x160), rate set at **0x800EC82C: bl SMSGetAnmFrameRate; fmuls; stfs →ctrl+0xC**
    (0.2 × AnmFrameRate), and the NERVE advances that ctrl on the substep clock →
-   substep-paced ANMRATE_STUB consumer = **4x SLOW at every patched G** — same family as
+   substep-paced ANMRATE_STUB consumer = **4x SLOW at every patched G**, same family as
    the kamome fix (`ANIMAL_SPEED_SITES`), opposite of "fast". Unfixed; bench if anyone
-   reports sluggish boats. (Which mode dolpic placements use was not determined — no
-   files/ extract on hand — but neither mode can be fast.)
+   reports sluggish boats. (Which mode dolpic placements use was not determined; no
+   files/ extract on hand, but neither mode can be fast.)
 
 Cosmetic body BCKs go through the normal MActor CALC_ANIM/stub path (correct); rocking/
 tilt smoothing uses per-substep constants (correct).

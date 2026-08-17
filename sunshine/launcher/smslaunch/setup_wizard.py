@@ -522,9 +522,11 @@ def _guarantee_mem1(user: Path, backup_dir: Path) -> bool:
     return True
 
 
-# GFX keys our kit needs (HiresTextures toggled on in step 6; here we make sure
-# the wide-screen hack the widescreen Gecko pairs with is on).
-_GFX_SETTINGS = {"wideScreenHack": "True"}
+# GFX keys our kit needs. wideScreenHack is now owned by the launcher per-profile
+# (16:9 rides Dolphin's 16:9-only hack; 16:10 turns it OFF and drives the 3D world
+# from the `$World aspect 16:10` Gecko instead — see launcher._set_wshack). Seed it
+# False so a fresh setup defaults to the Gecko path; the launcher flips it at launch.
+_GFX_SETTINGS = {"wideScreenHack": "False"}
 
 
 def _guarantee_gfx(user: Path, backup_dir: Path) -> bool:

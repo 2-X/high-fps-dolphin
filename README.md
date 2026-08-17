@@ -1,7 +1,7 @@
-# high-fps-dolphin — Super Mario Sunshine high-FPS project
+# high-fps-dolphin: Super Mario Sunshine high-FPS project
 
 Play Super Mario Sunshine (NTSC-U, GMSE01) at 120fps+ with correct audio, correct
-timers, and correct animations — via a patched Dolphin fork, a curated Gecko code
+timers, and correct animations, via a patched Dolphin fork, a curated Gecko code
 stack, and a Textual TUI launcher. Optional widescreen (16:9 / 16:10 including 2D
 screens), online multiplayer via BSMSO, and HD textures.
 
@@ -16,7 +16,7 @@ Full documentation, setup guide, and technical reference:
 
 | Path | Contents |
 |---|---|
-| `sunshine/README.md` | Public-facing setup guide and technical reference — start here |
+| `sunshine/README.md` | Public-facing setup guide and technical reference (start here) |
 | `sunshine/launcher/` | TUI launcher (`sunshine/launcher/sms` to run) |
 | `sunshine/dolphin-patches/` | `high-fps-dolphin.patch` + build instructions |
 | `sunshine/HIGH-FPS-CATALOG.md` | Master fix catalog (addresses, Gecko, root causes) |
@@ -35,7 +35,7 @@ git checkout $(cut -d' ' -f1 sunshine/dolphin-patches/UPSTREAM_COMMIT.txt)
 git apply sunshine/dolphin-patches/high-fps-dolphin.patch
 # then: mkdir build && cd build && cmake .. && make -j$(nproc)
 
-# SMS decomp (JP) — research reference only
+# SMS decomp (JP) - research reference only
 git clone https://github.com/doldecomp/sms
 ```
 

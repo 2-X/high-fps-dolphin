@@ -1,8 +1,8 @@
-# high-fps Dolphin patch — build & setup
+# high-fps Dolphin patch: build & setup
 
 `high-fps-dolphin.patch` is the custom-Dolphin half of this project. The Gecko
 bundles in `sunshine/gecko/` and the profiles emitted by `fpspatch.py` **do not
-work on a stock Dolphin build** — they need both the code changes here *and* one
+work on a stock Dolphin build**: they need both the code changes here *and* one
 runtime setting (§3). This file documents what the patch contains, how to build
 it, and the non-obvious prerequisites.
 
@@ -29,18 +29,18 @@ Pinned upstream base: see [`UPSTREAM_COMMIT.txt`](UPSTREAM_COMMIT.txt)
 | **Frame interpolation + overlay QoL** | `VideoCommon/Present.*`, `VideoCommon/FramebufferShaderGen.*`, `VideoCommon/Statistics.cpp`, `Core/Config/GraphicsSettings.*` | Optional XFB blend interpolation (`DOLPHIN_FRAME_INTERP=N`) and a collapsible stats overlay. |
 
 ⭐ = the two features that make the high-fps Gecko bundles function. They were
-**missing from earlier revisions of this patch** — if you cloned this repo before
+**missing from earlier revisions of this patch.** If you cloned this repo before
 2026-08-11 and only got audio/interpolation changes, re-pull and re-apply.
 
 ## 2. Build
 
-Standard Dolphin build for your platform — the patch adds no new dependencies.
+Standard Dolphin build for your platform; the patch adds no new dependencies.
 - **Windows:** open `Source/dolphin-emu.sln` in Visual Studio, build `Release|x64`.
 - **Linux/macOS:** `mkdir build && cd build && cmake .. && make -j$(nproc)`.
 
 See the upstream [Dolphin build guides](https://github.com/dolphin-emu/dolphin#building-for-various-platforms).
 
-## 3. ⚠ Required runtime setting — the MEM1 override
+## 3. ⚠ Required runtime setting: the MEM1 override
 
 The code-limit relocation only triggers when Dolphin has **over-provisioned
 MEM1** (retail games can't see RAM past 24 MB, so that region is guaranteed free).

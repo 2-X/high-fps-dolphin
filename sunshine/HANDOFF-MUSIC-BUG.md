@@ -1,6 +1,6 @@
 # HANDOFF: level-BGM "coin toss" silence at 120fps (for a fresh look)
 
-**Facts only. This is a hard bug — every game-side audio value is byte-identical
+**Facts only. This is a hard bug: every game-side audio value is byte-identical
 between an audible and a silent level, so the divergence is below the game state,
 in Dolphin's audio pipeline. Read all of §2 before proposing a fix.**
 
@@ -9,12 +9,12 @@ in Dolphin's audio pipeline. Read all of §2 before proposing a fix.**
 - Super Mario Sunshine (USA, GMSE01), patched Dolphin, **EmulationSpeed 2.0 = 120fps**.
 - Entering a **level** (repro: Bianco Hills), the level BGM **plays ~50% of the time**.
   It's a coin toss per level *load*. When it fails, it's **total silence for the whole
-  level session** — not a transient dropout or glitch. Re-entering re-rolls the dice
+  level session**, not a transient dropout or glitch. Re-entering re-rolls the dice
   (observed sequences: "silent, silent, music"; "music×3, silent"; "silent, music").
 - Delfino Plaza BGM is fine, and its music cutting out during an active goop hazard is
   **vanilla state-driven behavior**, NOT this bug.
-- SFX / coins audibility during a silent level: **not yet characterized** — worth checking
-  (is it ALL audio, or only BGM/synth voices?).
+- SFX / coins audibility during a silent level: **not yet characterized** (worth checking:
+  is it ALL audio, or only BGM/synth voices?).
 
 ## 1. Environment
 
@@ -24,7 +24,7 @@ in Dolphin's audio pipeline. Read all of §2 before proposing a fix.**
 - Audio config (current): `DSPHLE=True`, `DSPThread=False` (experiment, see §3),
   `AudioStretch=True` (experiment, see §3), `AudioPreservePitch=True`,
   `AudioBufferSize=136`, backend Cubeb, GFX Metal. **PC-parity defaults were
-  `DSPThread=True`, `AudioStretch=False`** — revert if you want the clean baseline.
+  `DSPThread=True`, `AudioStretch=False`** (revert if you want the clean baseline).
 - The build's audio-tempo patch (`Source/Core/Core/HW/SystemTimers.cpp`,
   `GetAudioDMACallbackPeriod`): when `EmulationSpeed > 1`, it multiplies the AI audio
   DMA callback period by the speed, so audio plays at correct wall-clock tempo instead
@@ -32,7 +32,7 @@ in Dolphin's audio pipeline. Read all of §2 before proposing a fix.**
   frequency at 120fps.** Patch body is trivially correct (see the .patch); the *timing
   consequence* is the suspect, not the arithmetic.
 
-## 2. What is RULED OUT (live memory capture — this is the crux)
+## 2. What is RULED OUT (live memory capture, this is the crux)
 
 Tooling: `research/scripts/bgmwatch.py` (+ `gcmem.py` Mach backend, `bgmlog2.py`).
 Captured a genuinely SILENT level entry and compared, field by field, against audible
@@ -47,17 +47,17 @@ entries. **Every readable game-side audio value is identical:**
 | Per-track volume | TTrack `+0x3ac` ≈ **0.906**; JAISound `+0x40..0x54` = 0 | same | same |
 
 Conclusions that follow:
-- **NOT** "startBGM never fires" — the track loads and is active on silent loads too.
-- **NOT** a sequencer/tempo freeze — cursor+wait advance identically.
+- **NOT** "startBGM never fires": the track loads and is active on silent loads too.
+- **NOT** a sequencer/tempo freeze: cursor+wait advance identically.
 - **NOT** master volume, **NOT** the MSound enable/fade toggles, **NOT** per-track volume.
 - ⇒ The silence is **not represented anywhere in GC memory**. The game issues the same
   note/voice/volume state both times. The divergence is in **Dolphin's DSP-HLE AX voice
-  mixing and/or the AI output stream** at level-load — which is NOT visible from MEM1.
+  mixing and/or the AI output stream** at level-load (NOT visible from MEM1).
 
-## 3. Config experiments tried — NONE fixed it
+## 3. Config experiments tried (NONE fixed it)
 
 - Enabled the 180-bundle BGM tempo guard `$C231B8C8` (hooks `0x8031B8C8`, the audio
-  tempo/rate region). No effect — wrong subsystem (it scales tempo, not output).
+  tempo/rate region). No effect (wrong subsystem; it scales tempo, not output).
 - `DSPThread True → False` (kill async DSP-thread race). No effect.
 - `AudioStretch False → True` (decouple audio output from emulation timing). No effect.
 
@@ -78,7 +78,7 @@ Conclusions that follow:
 
 ## 5. Cheap isolation tests before deep instrumentation
 
-- **Stock-speed baseline:** EmulationSpeed 1.0, fps Gecko disabled — does BGM ever drop on
+- **Stock-speed baseline:** EmulationSpeed 1.0, fps Gecko disabled. Does BGM ever drop on
   level load? (Establishes whether this is strictly high-fps-induced.)
 - **DSP-LLE** (needs `dsp_rom.bin`/`dsp_coef.bin` dumps): does the coin-toss disappear under
   LLE? If yes → it's an HLE-AX timing bug.
@@ -87,12 +87,12 @@ Conclusions that follow:
 
 ## 6. Tooling & addresses (all verified this session)
 
-- `research/scripts/gcmem.py` — cross-platform live GC memory (macOS Mach backend
+- `research/scripts/gcmem.py`: cross-platform live GC memory (macOS Mach backend
   `task_for_pid`+`mach_vm_read`; needs Dolphin re-signed with get-task-allow, which it is).
-  **MEM1 is only readable while a level is actively emulating** — the signature is absent
-  at menus/idle (that's why probes "fail" when the game is paused).
-- `research/scripts/bgmwatch.py` — per-entry BGM slot/vol/MSound/track-vol logger →
-  `bgmwatch.txt`. `bgmstate.py`, `bgmlog2.py` — deeper BGM/track dumps.
+  **MEM1 is only readable while a level is actively emulating** (the signature is absent
+  at menus/idle; that's why probes "fail" when the game is paused).
+- `research/scripts/bgmwatch.py`: per-entry BGM slot/vol/MSound/track-vol logger →
+  `bgmwatch.txt`. `bgmstate.py`, `bgmlog2.py`: deeper BGM/track dumps.
 - Addresses: `SM_BGM_IN_TRACK=0x803E9C80` (MSBgm*[3]); `SM_MAIN_VOLUME=0x8040C1C0`;
   `gpMSound=0x8040D05C`; JAISound = `MSBgm+0x14`; TTrack via `JAISound+0x38`→idx into
   root-track array `0x8040E6C0`; TTrack `+0x3b0` = tempo rate (0.5995 for tempo 120 @120fps),
@@ -101,7 +101,7 @@ Conclusions that follow:
   see `HANDOFF-INPUT-BUG.md` §11.4/§12.2 for the scene-transition BGM path
   (`MSMainProc::onStageBgm` → fade all → `startStageBGM` → `initSound` → `startBGM`).
 
-**Bottom line for Fable:** the game is provably innocent — it sets up the same BGM state
+**Bottom line for Fable:** the game is provably innocent. It sets up the same BGM state
 every time. The 50/50 lives in Dolphin's DSP-HLE/AI audio path at scene load, interacting
 with the 2× DMA-period tempo patch. Start at §4.1 (AX voice instrumentation) or the §4.3
 patch-off isolation test; the game-memory angle is exhausted.
@@ -119,7 +119,7 @@ There are no AX VPBs to instrument; the mixing layer is `ZeldaUCode` +
 
 ### 7.2 Two HLE-side states that match the symptom exactly (invisible to MEM1)
 
-Both are pure Dolphin-side ucode-protocol state — the game can be byte-identical in
+Both are pure Dolphin-side ucode-protocol state. The game can be byte-identical in
 MEM1 while these diverge, and both re-roll on the next level load:
 
 1. **Sticky HALTED state.** A sync mail arriving when the HLE thinks rendering is not
@@ -136,8 +136,8 @@ MEM1 while these diverge, and both re-roll on the next level load:
    silence; §0's open "are SFX audible?" question discriminates between #1 and #2.
 
 Also: a stray sync mail in WAITING state whose low half is *nonzero* gets misread as a
-command-header mail (`m_mail_expected_cmd_mails = mail & 0xFFFF`) → garbage protocol
-desync. Which of the three you get depends on the mail's bits — a literal coin toss.
+command-header mail (`m_mail_expected_cmd_mails = mail & 0xFFFF`), causing garbage protocol
+desync. Which of the three you get depends on the mail's bits: a literal coin toss.
 
 ### 7.3 Instrumented build (deployed to `dolphin/build/Binaries/Dolphin.app`)
 
@@ -161,7 +161,7 @@ scaling is implicated). No rebuild needed for the A/B.
 1. Quit Dolphin, run `research/audiolog.sh` (enables DSPHLE+AI file logging; refuses
    to run while Dolphin is open because Dolphin rewrites Logger.ini on quit).
 2. Relaunch, enter Bianco repeatedly until a silent load; note SFX audibility (§0 gap).
-3. `research/audiolog.sh grep` — compare a silent window's `[hifps]` heartbeat/warnings
+3. `research/audiolog.sh grep`: compare a silent window's `[hifps]` heartbeat/warnings
    against an audible one. Expected outcomes map directly to §7.2 #1 vs #2 vs misread-cmd.
 4. Optional A/B: relaunch with `HIFPS_NO_AUDIO_SLOWDOWN=1` and count ~10 level entries.
 
@@ -171,7 +171,7 @@ and includes the instrumentation + toggle (7 files).
 ## 8. BREAKTHROUGH session, 2026-08-06 late (live VPB capture on an all-silent session)
 
 User repro'd a session with NO music anywhere (menus, plaza, levels) but ALL SFX
-working — plus one oddity: the level load-screen music played. Live analysis of that
+working, plus one oddity: the level load-screen music played. Live analysis of that
 running session (no restart), via lldb runtime log-enable + `scripts/vpbdump.py`
 (new tool: locates the Zelda-ucode VPB array in MEM1 by channel-ID pattern scan,
 dumps all 64 voices):
@@ -184,28 +184,28 @@ dumps all 64 voices):
     (0x69xxxx-0xABxxxx bank). These are audible.
   - **BGM voices** (~12): `dolby=0`, mixed via channels[] to frontL/frontR,
     sample bases in high ARAM (0xEFxxxx-0xF3xxxx instrument bank), loop flags on
-    sustained notes — but **resampling_ratio=0, ALL channel volumes 0 (target and
+    sustained notes, but **resampling_ratio=0, ALL channel volumes 0 (target and
     current), ARAM cursor never advances**. Rendered as silence every frame.
-  - Note slots churn (new notes allocated with fresh sample addresses) — the
+  - Note slots churn (new notes allocated with fresh sample addresses): the
     sequencer IS starting notes; only pitch/volume never take effect.
 - **HW watchpoint on a BGM voice's ratio word**: the game writes REAL pitches
-  (0x0B03, then 0x09D0) and then writes 0. So the game starts the note with real
-  parameters and then something (in-game logic) kills it — for every BGM note, all
+  (0x0B03, then 0x09D0) and then writes 0. The game starts the note with real
+  parameters and then something (in-game logic) kills it, for every BGM note, all
   session. HLE StoreVPB writeback (words 0-0x7F only) was considered as a clobber
   and ruled unlikely: with DSPThread=False the whole per-voice Fetch->mix->Store is
   atomic inside the game's mailbox-write instruction.
 
 **Leading theory now:** JAudio's DSP-channel keep-up/kill logic (JASDSPChannel /
-JASDriver state machine) declares sequenced channels dead — plausibly a
+JASDriver state machine) declares sequenced channels dead, plausibly a
 DSP-frame-sync bookkeeping check thrown off by the tempo patch's halved AI-DMA
-cadence — and kills each started note. SFX use the positional path that skips
+cadence, and kills each started note. SFX use the positional path that skips
 whatever check kills the sequenced notes. The load-screen music playing hints that
 path bypasses the affected layer too (different driver mode during loads?).
 
 **Next steps (in order):**
 1. Decomp dive (JASystem/JAudio, e.g. tww/SMS decomp): find JASDSPChannel status
    word / kill path; identify what condition zeroes a started channel. Map the
-   zero-writer PC: one more SHORT watchpoint run (<=5s, it lags the game hard —
+   zero-writer PC: one more SHORT watchpoint run (<=5s, it lags the game hard;
    warn the user) capturing writer PCs, then translate JIT PC -> PPC PC.
 2. §4.3 isolation A/B: relaunch with `HIFPS_NO_AUDIO_SLOWDOWN=1` (audio 2x fast)
    and count level entries until confident. If the kill-logic theory is right,
@@ -237,7 +237,7 @@ halves the DSP frame cadence relative to emulated time, so this ratio test
 chronically misfires and `forceStop()`s every sequenced BGM note at birth (the
 zero-writes seen in §8; callback status 3 = forced-stop). SFX survive on
 priority/positional paths. The `history[0]` baseline (only rewritten at full
-sync) makes the failure bistable → the per-load coin toss and sticky
+sync) makes the failure bistable: the per-load coin toss and sticky
 whole-session silence.
 
 **USA (GMSE01) addresses, all verified by disasm of `research/main.dol`:**
@@ -253,12 +253,12 @@ never kills. Harmless under emulation: HLE mixing is free on the host CPU, and
 the voice pool is capped at 64 anyway.
 
 - Verified LIVE: `mach_vm_write` of 0.0 into a running silent session (value was
-  1.1 pre-write, 0.0 readback). 
+  1.1 pre-write, 0.0 readback).
 - Permanent Gecko one-liner: `$BGMFix DSP voice-limiter (120fps music kill)`,
   code `0440CDB4 00000000` (04-write applies every frame). Added to the user
   GMSE01.ini after Dolphin quit.
 
-Superseded: §4's hypotheses (HLE/AI side) are all dead — the HLE was innocent;
+Superseded: §4's hypotheses (HLE/AI side) are all dead. The HLE was innocent;
 the §7 instrumentation + §8 vpbdump were the path to the answer. The
 `HIFPS_NO_AUDIO_SLOWDOWN` toggle and `[hifps]` logging remain in the build as
 diagnostics.
@@ -267,7 +267,7 @@ diagnostics.
 
 User report at 240 (PC, all §9 fixes verified applied): **music never plays;
 occasionally catches when re-entering Delfino Plaza.** Same VPB kill-at-birth
-signature as §8, but a DIFFERENT killer — `DSP_LIMIT_RATIO` read back 0.0 live.
+signature as §8, but a DIFFERENT killer: `DSP_LIMIT_RATIO` read back 0.0 live.
 
 **Live evidence (240fps session, `vpbdump.py` + a 60Hz sampler):**
 - Game side textbook-healthy (§2 profile): BGM slot active, sequencer advancing
@@ -275,7 +275,7 @@ signature as §8, but a DIFFERENT killer — `DSP_LIMIT_RATIO` read back 0.0 liv
 - DSP voice pool **pinned at 64/64** and churning: ~55 of 64 voices were a
   different sound instance 6s later.
 - **~306 SFX-bank voice births/sec** (stock plaza is a few dozen); BGM-bank
-  births ~30/sec and **every one had resampling_ratio == 0** — steal-killed at
+  births ~30/sec and **every one had resampling_ratio == 0**, steal-killed at
   birth (`getLogicalChannel`/`breakLower` → `forceStop`, prio ≤ 126).
 
 **Mechanism.** `MSound::mainLoop` (USA **0x80014DA8**, sole caller
@@ -284,10 +284,10 @@ frameLoopDyna set-sound refresh, `JAIBasic::startFrameInterfaceWork` (USA
 0x80301C1C → processFrameWork 0x80301C3C: SE request processing, continuous-SE
 life countdown, fades), MSModBgm. All native-30Hz work. Stock invariant: FOUR
 120Hz-substep SE requests collapse into every processed frame. At 240 the pump
-runs 240Hz vs 120Hz requests = **0.5 requests/frame** — every continuous SE hits
-a processed frame with no keep-alive, expires, restarts → the birth storm →
-pool saturation → every allocation steals → sequenced BGM (lowest prio) never
-survives its first frame. Plaza re-entry briefly quiets the storm = the
+runs 240Hz vs 120Hz requests = **0.5 requests/frame**: every continuous SE hits
+a processed frame with no keep-alive, expires, restarts, causing the birth storm,
+pool saturation, and steal-kills until sequenced BGM (lowest prio) never
+survives its first frame. Plaza re-entry briefly quiets the storm, hence the
 occasional catch. 180 survives at 0.67 requests/frame (half the flicker rate,
 under the 64-voice ceiling); the cogwheel rope-creak (fpspatch) was this same
 class patched per-site.
@@ -295,7 +295,7 @@ class patched per-site.
 **FIX: `audio_pump_gate` in fpspatch (default-on, FPS%30==0):** gate
 MSound::mainLoop to 1 rendered frame in FPS/30 = native 30Hz. C2 at the entry
 instruction (mflr r0); gated frames `blr` straight back to gameLoop (LR intact
-at entry — Noki-gate trick), pass frames re-exec mflr. Counter = low arena
+at entry, Noki-gate trick), pass frames re-exec mflr. Counter = low arena
 0x800016F8. Restores the stock 4-requests-per-processed-frame invariant at
 every G; direct startBGM/startSound calls don't route through mainLoop, so
 starts still land ≤33ms (stock latency). `--check` enforces divisor, counter,
@@ -303,12 +303,12 @@ blr and the mflr tail. Installed to all bare*.txt 2026-08-10.
 
 **VERIFIED LIVE post-fix (same evening, user's 240 session after relaunch):**
 counter 0x800016F8 ticking at exactly 240/s (hook live, gate 1-in-8); BGM-bank
-voice births went from 121/121 ratio==0 (all killed at birth) to **0/134** —
-dolby=0 voices now show real ratios, matching target/current channel volumes
+voice births went from 121/121 ratio==0 (all killed at birth) to **0/134**.
+Dolby=0 voices now show real ratios, matching target/current channel volumes
 (frontL/R + revU sends, proper stereo spread) and advancing ARAM cursors: the
 §8 healthy-VPB baseline. Sequenced BGM is mixing at 240fps.
 Residual observation, not chased: SFX births ~193/s (down from 306/s) with the
-pool still hovering near 64 in the plaza — possibly legitimate plaza ambience
+pool still hovering near 64 in the plaza. Possibly legitimate plaza ambience
 demand, possibly a per-rendered-frame requester (not substep-paced) still
-flooding. If SE dropouts/steal artifacts are ever audible, measure THAT with
+flooding. If SE dropouts/steal artifacts are ever audible, measure that with
 the vpb birth-rate sampler before touching anything.

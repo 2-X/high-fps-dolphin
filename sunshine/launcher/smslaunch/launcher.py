@@ -88,6 +88,12 @@ def widescreen_titles(ini: Ini, engine: str, aspect: str) -> list[str]:
     proj = codegen.WS_TITLE.get(aspect)      # exact title for this aspect
     if proj and proj in ini.titles():
         out.append(proj)
+    # 3D world projection aspect: aspects Dolphin's 16:9-only hack can't serve
+    # (16:10) drive it from the C_MTXPerspective override instead. See codegen.
+    if C.ASPECTS[aspect].get("world"):
+        world = codegen.WORLD_ASPECT_TITLE.get(aspect)
+        if world and world in ini.titles():
+            out.append(world)
     twod = codegen.WS2D_TITLE.get(aspect)    # the 4:3-leftovers fix (wipe/menu/grad/pane)
     if twod and twod in ini.titles():
         out.append(twod)
@@ -193,6 +199,37 @@ def _set_dolphin_mem1(enable: bool, log=_noop):
     log(f"MEM1 override {'ON (64MB)' if enable else 'off'}.")
 
 
+def _set_wshack(value: str, log=_noop):
+    """Set Dolphin's global Widescreen Hack (GFX.ini [Settings] wideScreenHack).
+    16:9 (`tv`) rides the hack for its 3D widening; 16:10/4:3 turn it OFF (16:10
+    drives the world from the `$World aspect` Gecko instead — the hack is
+    16:9-only). Applies at boot, so write it while Dolphin is quit."""
+    if not C.GFX_INI.exists():
+        return
+    import re
+    text = C.GFX_INI.read_text(encoding="utf-8", errors="replace")
+    lines = text.splitlines()
+    sect = next((i for i, l in enumerate(lines)
+                 if l.strip().lower() == "[settings]"), None)
+    if sect is None:
+        lines += ["[Settings]", f"wideScreenHack = {value}"]
+    else:
+        end = next((j for j in range(sect + 1, len(lines))
+                    if re.match(r"^\[.+\]\s*$", lines[j].strip())), len(lines))
+        pat = re.compile(r"^\s*wideScreenHack\s*=\s*(.*)$")
+        for k in range(sect + 1, end):
+            if pat.match(lines[k]):
+                if lines[k].split("=", 1)[1].strip() == value:
+                    return                          # already correct
+                lines[k] = f"wideScreenHack = {value}"
+                break
+        else:
+            lines.insert(end, f"wideScreenHack = {value}")
+    C.GFX_INI.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    log(f"Dolphin Widescreen Hack -> {value} (3D world = "
+        f"{'Dolphin 16:9 hack' if value == 'True' else 'Gecko/native'}).")
+
+
 # --------------------------------------------------------------------- apply
 def apply(profile: dict, *, log=_noop, force=False):
     """Configure the INI to satisfy `profile`. Returns nothing; raises on error."""
@@ -231,6 +268,13 @@ def apply(profile: dict, *, log=_noop, force=False):
             title, code = codegen.gen_widescreen(profile["aspect"])
             ini.add_code(title, code)
             log(f"Generating ${title} (aspect widescreen)…  + ${title}")
+        # the 3D world projection aspect override (drives the world when Dolphin's
+        # 16:9-only Widescreen Hack can't — i.e. 16:10). Regenerate+replace always:
+        # a hand-assembled C2 is cheap to rebuild and stale bodies bite silently.
+        if C.ASPECTS[profile["aspect"]].get("world"):
+            title, code = codegen.gen_world_aspect(profile["aspect"])
+            ini.add_code(title, code)          # replace=True refreshes the body
+            log(f"Generating ${title} (3D world aspect override)…  + ${title}")
         # the 2D-leftovers fix (level-wipe curtain + masks, shine-select menu
         # masks/gradient/root pane) that the classic $Widescreen leaves at 4:3.
         # Drop any superseded v1 body first so the vN title bump actually
@@ -326,6 +370,12 @@ def apply(profile: dict, *, log=_noop, force=False):
     video = dict(C.ASPECTS[profile["aspect"]]["video"])
     video.update(hdtextures.apply(bool(profile.get("hd_portals")), log=log))
     ini.set_video(video)
+
+    # 4b. Dolphin Widescreen Hack (global GFX.ini). BSE renders widescreen
+    #     natively so its hack is always OFF (else double-widen); offline follows
+    #     the aspect policy: 16:9 rides the hack, 16:10/4:3 turn it off.
+    wshack = "False" if engine == "bse" else C.ASPECTS[profile["aspect"]]["wshack"]
+    _set_wshack(wshack, log)
 
     ini.save(force=force)
     log(f"Wrote {C.LIVE_INI.name} (backup .bak). "

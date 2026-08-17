@@ -1,0 +1,21 @@
+# NEVER commit game files — dump your own disc, keep it to yourself.
+*.iso
+*.rvz
+*.gcm
+*.gci
+*.dol
+*.sav
+*.raw
+*.s0*
+*.dtm
+
+# Dolphin user data / build output
+Dolphin.exe
+*.app/
+build/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

@@ -1,14 +1,14 @@
 # HANDOFF: Blue coin timer fix (Super Mario Sunshine, GMSE01, 120fps)
 
-**Status:** ✅ **DONE — v6 CONFIRMED in-game.** Delfino Plaza statue coin measured
+**Status:** ✅ **DONE: v6 CONFIRMED in-game.** Delfino Plaza statue coin measured
 **19s** (target 20s stock; ~1s is stopwatch + rise-in phase). No crash, no instant
 death, spot behaves normally. Shipped code: `codes/bluecoin-timer-v6.txt`,
 installed + enabled as `$Blue coin timer fix v6 (120fps)`. v5 (½-rate, 30s) and
-the v1..v4 crash lineage are superseded — kept only as the debugging record.
+the v1..v4 crash lineage are superseded, kept only as the debugging record.
 
 **Date:** 2026-08-07
 **Agents:** GLM-5.2 (built v1/v2/v3a, all crashed; isolated the padding bug).
-Opus (2026-08-07): found the prior "v4" **still crashed** — it fixed the
+Opus (2026-08-07): found the prior "v4" **still crashed**: it fixed the
 fall-through but branched to the second-to-last `00000000` (one word before the
 handler's branch-back), i.e. still a live dead-zero. Corrected the true rule,
 rebuilt as v4 (ungated) + v5 (gated), added a static assert to the assembler and
@@ -29,7 +29,7 @@ the precise lesson to `dolphin-gecko/SKILL.md`. Installed v5.
   installed + enabled as `$Blue coin timer fix v5 (120fps)`. Self-disables unless
   the framerate global `0x804167B8 == 2.0f` (120fps). Uses r6/r7 (gate) + r5
   (parity); does NOT touch r4.
-- **v4 (ungated)** is `coinhook_assemble.py build_v4()` — the isolation fallback.
+- **v4 (ungated)** is `coinhook_assemble.py build_v4()`, the isolation fallback.
 - **Register-clobber bug (found on first in-game test, fixed):** the first v5 did
   the parity test as `andi. r0,r5,1`, which overwrote r0 (= oldTimer-1, the value
   STORE_DEC stores). On even substeps r0 became 0 → `stw r0` wrote 0 into
@@ -39,14 +39,14 @@ the precise lesson to `dolphin-gecko/SKILL.md`. Installed v5.
 - **Rate calibration → v6 (SHIPPED):** with the corrected ½-rate v5, the Delfino
   Plaza statue coin measured **30s** (full 600-tick spawn→vanish) vs the **20s**
   stock target (600 ticks / 30fps native; unk150=120 appear + unk14C=480 disappear).
-  So the substep runs ~40/sec at 120fps (≈1.33× stock — CPU-bound, not a clean 4×).
+  So the substep runs ~40/sec at 120fps (≈1.33× stock, CPU-bound, not a clean 4×).
   `time = 600/(40·keep)`: keep ½→30s, ¾→20s. Shipped **v6 = ¾-rate**: hold on 1 of
   every 4 substeps (`andi. r5,r5,3 ; beq HOLD`). Two words differ from v5:
   `70A50001`→`70A50003`, `bne`→`beq`. File: `codes/bluecoin-timer-v6.txt`;
   installed + enabled as `$Blue coin timer fix v6 (120fps)`. Assembler:
   `build_v5_gated(hold_1_of=4)`. **Awaiting final ~20s confirm.**
 
-### To test (save swap needed — user's call)
+### To test (save swap needed, user's call)
 The live Card A save (`.../Dolphin/GC/USA/Card A/01-GMSE-super_mario_sunshine.gci`,
 backup `.backup-20260806-234928`) has Ricco coins collected. The repo save
 `sunshine/saves/01-GMSE-super_mario_sunshine.gci` has Ricco uncollected. Back up
@@ -62,7 +62,7 @@ the live save, copy the repo save over it, test, then restore.
 3. v1/v2/v3a all crashed because of a **C2 block-layout bug**: a code path fell
    through into the trailing `00000000` pad, which the CPU executed as an
    instruction (`Unknown instruction 00000000`).
-4. **v4 fixes this** — every path ends with an explicit branch. It's in
+4. **v4 fixes this**: every path ends with an explicit branch. It's in
    `research/scripts/coinhook_assemble.py` (`build_v4()`).
 5. **Install v4, test.** If the coin lasts ~2x longer (no crash), add the
    fps-global gate (snippet below) and that's the final code.
@@ -99,7 +99,7 @@ if (isStateTimerEngaged()) {
 ```
 
 **USA main.dol addresses** (verified against BOTH `research/main.dol` AND the
-extracted dol from `Super Mario Sunshine (USA) [HD portals].iso` — byte-identical
+extracted dol from `Super Mario Sunshine (USA) [HD portals].iso`, byte-identical
 at the hook site; the dols differ in only 2 bytes total, elsewhere):
 
 - `TCoin::perform` function start: **`0x801BE7CC`** (mflr r0; stwu r1,-0x50(r1); ...)
@@ -120,7 +120,7 @@ at the hook site; the dols differ in only 2 bytes total, elsewhere):
 
 **Confirmation the anchor is `TCoin::perform`:** the branch target `0x801BE908`
 is `getColNum()` (`lhz r0,0x48(r29)`) followed by the `touchActor` collision loop
-— matches `Item.cpp:287-289` exactly.
+(matches `Item.cpp:287-289` exactly).
 
 ---
 
@@ -132,7 +132,7 @@ v1, v2, v3a all crashed with **`IntCPU: Unknown instruction 00000000 at PC = 800
 **The bug:** the SKILL.md rule says "the block MUST end with a `00000000` padding
 word; the handler overwrites the LAST word with its branch-back." I interpreted
 this as "pad with as many `00000000` as needed." But **every `00000000` in the
-block except the very last one is a real cave word** — and if execution *falls
+block except the very last one is a real cave word**, and if execution *falls
 through* into it, the CPU tries to execute `0x00000000`, which is not a valid PPC
 instruction → crash.
 
@@ -152,7 +152,7 @@ fall-through anywhere. See `build_v4()` in `coinhook_assemble.py`.
 ### Proof the site itself is safe
 
 A **no-op C2** at `0x801BE880` (just re-executes `stw r0,0x104(r29)`, count=1,
-2 words: the store + pad) **worked perfectly** — coin spawned fine, just fast.
+2 words: the store + pad) **worked perfectly**: coin spawned fine, just fast.
 This proved the hook address, the C2 mechanics at this site, and register state
 are all fine. The ONLY difference between "works" (no-op) and "crashes" (v1-v3a)
 was the added gate logic with the fall-through bug.
@@ -161,11 +161,11 @@ was the added gate logic with the fall-through bug.
 
 - **NOT a disc-revision mismatch:** extracted the dol from
   `Super Mario Sunshine (USA) [HD portals].iso` (the 1.47GB / "1.10 GiB" build
-  the user runs) — byte-identical at the hook site.
+  the user runs), byte-identical at the hook site.
 - **NOT a register-clobber:** r4, r5 both crash (tried both); r0/r3 are dead at
   the site (rewritten at 0x801BE908/0x801BE924 before any read). r5-r12 are
   caller-saved and unused in this function. (I initially blamed r4; that was
-  wrong — it was the padding bug all along.)
+  that was wrong; it was the padding bug all along.)
 - **NOT gpMarDirector being null:** the guard (`cmplwi/beq`) is correct, and the
   game's own code at `0x801BE810` uses the same `lwz r3,-0x6048(r13)` deref.
 - **NOT cave overflow:** reduced from 18→14 C2 hooks; still crashed.
@@ -174,7 +174,7 @@ was the added gate logic with the fall-through bug.
 
 ---
 
-## v4 — the fix (designed, NOT yet tested)
+## v4: the fix (designed, NOT yet tested)
 
 Assembled by `research/scripts/coinhook_assemble.py` (`build_v4()`). Every path
 ends in an explicit `b` to the pad:
@@ -189,7 +189,7 @@ C21BE880 00000006
 00000000 00000000    pad (handler overwrites last word with branch-back)
 ```
 
-**v4 is UNGATED** — it halves the decrement rate at ALL framerates (because
+**v4 is UNGATED**: it halves the decrement rate at ALL framerates (because
 `unk5C & 1` alternates every substep at any rate). At 120fps this is correct
 (coin lasts the right amount of time); at stock 30fps it'd make coins last 2x
 too long. For the final code, **add the fps-global gate** at the top (use r6/r7,
@@ -206,21 +206,20 @@ bne   storeR0            # not 120fps -> stock decrement
 
 This is the same gate idiom as `120v15-timer-fix.txt` (self-disables at stock
 where the global is 0.5f, and at 180/240 where it's 3.0f/4.0f). **Run the gate
-through the assembler** (`coinhook_assemble.py`) — don't hand-encode; the field
+through the assembler** (`coinhook_assemble.py`); don't hand-encode. The field
 orders are subtle (`andi.` is `rA,rS,imm`; `beq`=0x4182, `bne`=0x4082).
 
 ### Limitations of v4 (call these out to the user)
 
 - **Only halves the rate** (parity-by-1-bit). At 120fps this is exactly right.
-  For 180/240 you'd need modulo-3/4 instead of `&1` — the file's v1 TODO notes
-  this.
+  For 180/240 you'd need modulo-3/4 instead of `&1` (the file's v1 TODO notes this).
 - **Only hooks `TCoin::perform`.** The sibling state-timer site at `0x801AFCCC`
   (a different actor) is untouched. Red coins, shines, etc. are not affected.
 - **Parity relies on `unk5C`** (`gpMarDirector->unk5C`) being the substep counter.
   This is the same field the shipping emitter fix (`fpspatch.py _parity_block`)
   uses to advance emitters at exactly 60Hz, so it's well-established. If v4 makes
   the coin last the wrong amount (e.g. still 2x fast, or 2x too slow), `unk5C`'s
-  semantics at this exact call site may differ — re-verify by reading it at
+  semantics at this exact call site may differ; re-verify by reading it at
   runtime.
 
 ---
@@ -239,26 +238,26 @@ orders are subtle (`andi.` is `rA,rS,imm`; `beq`=0x4182, `bne`=0x4082).
   if it's gone).
 - **Gecko helper:** `python3 .claude/skills/dolphin-gecko/scripts/gecko.py`
   (from repo root). Takes body-only hex via `--code "$(...)"` or `--code-file`.
-  It REJECTS files with `$Title`/comment lines — extract body with
+  It REJECTS files with `$Title`/comment lines; extract body with
   `grep -E '^[0-9A-Fa-f]{8} [0-9A-Fa-f]{8}$'`. Refuses to write while Dolphin
   runs; quit Dolphin with `osascript -e 'quit app "Dolphin"'` (the confirmation
-  prompt often reports error -128 but still quits — verify with `pgrep -x Dolphin`).
+  prompt often reports error -128 but still quits; verify with `pgrep -x Dolphin`).
 - **Current INI state:** all blue-coin codes REMOVED. User's real save RESTORED
   (Ricco coins collected). To test blue coins in Ricco, the user has a repo save
-  at `sunshine/saves/01-GMSE-super_mario_sunshine.gci` (Ricco uncollected) —
+  at `sunshine/saves/01-GMSE-super_mario_sunshine.gci` (Ricco uncollected);
   backup the live save before swapping (see git log / prior conversation for the
   exact backup path used, `.backup-20260806-234928`).
 - **C2 budget:** user runs ~14 C2 hooks / 100 lines currently (Camera look-up v7
   was temporarily removed during debugging; user may want it back). SKILL.md
-  warns the cave is small — keep codes compact.
+  warns the cave is small; keep codes compact.
 
 ## Files saved during this investigation
 
-- `sunshine/research/codes/bluecoin-timer-v1.txt` — v1 code (CRASHES; header
+- `sunshine/research/codes/bluecoin-timer-v1.txt`: v1 code (CRASHES; header
   documents why). RE/mechanism comments are still accurate.
-- `sunshine/research/scripts/coinhook_assemble.py` — field-correct assembler
+- `sunshine/research/scripts/coinhook_assemble.py`: field-correct assembler
   with `build_v4()` (the fix), `build_noop()` (the probe), and PPC encoders.
-- `sunshine/HANDOFF-BLUECOIN-TIMER.md` — this file.
+- `sunshine/HANDOFF-BLUECOIN-TIMER.md`: this file.
 
 ## Suggested next steps
 

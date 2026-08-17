@@ -4,14 +4,14 @@ Source: `/Users/kbrethower/code/sms`  ·  symbols: `config/GMSJ01/symbols.txt`  
 
 Counts: **SUSPECT** 44, **MISUSE** 25, **REVIEW** 2, **CLEAN** 141
 
-JP addresses are hints — resolve USA (GMSE01) per-TU (USA = JP − k) before writing a Gecko fix.
+JP addresses are hints: resolve USA (GMSE01) per-TU (USA = JP − k) before writing a Gecko fix.
 
-## Actionable — raw rate setters (SUSPECT)
+## Actionable - raw rate setters (SUSPECT)
 
 | class | site | enclosing | JP addr (hint) | why | code |
 |---|---|---|---|---|---|
-| **SUSPECT** | Enemy/bossManta.cpp:368 | `TBossManta::startWalkAnim` | — | raw/computed rate () | `getMActor()->setFrameRate(` |
-| **SUSPECT** | Enemy/bossManta.cpp:375 | `TBossManta::startDamageAnim` | — | raw/computed rate () | `getMActor()->setFrameRate(` |
+| **SUSPECT** | Enemy/bossManta.cpp:368 | `TBossManta::startWalkAnim` | - | raw/computed rate () | `getMActor()->setFrameRate(` |
+| **SUSPECT** | Enemy/bossManta.cpp:375 | `TBossManta::startDamageAnim` | - | raw/computed rate () | `getMActor()->setFrameRate(` |
 | **SUSPECT** | Enemy/bosseel.cpp:902 | `TBossEelTooth::perform` | `0x802e8b84` | raw/computed rate () | `mSharedParts->getMActor()->setFrameRate(` |
 | **SUSPECT** | Enemy/bossgesso.cpp:1597 | `TBossGessoManager::load` | `0x802884c0` | raw literal rate 1.0f (4x fast at 120fps) | `ctrl4->setRate(1.0f);` |
 | **SUSPECT** | Enemy/hinokuri2.cpp:748 | `THinokuri2::changeBck` | `0x8026fc2c` | raw param rate (getSaveParam()->mSLWalkSpeedRateLv0.get()) | `pJVar7->setRate(getSaveParam()->mSLWalkSpeedRateLv0.get());` |
@@ -21,7 +21,7 @@ JP addresses are hints — resolve USA (GMSE01) per-TU (USA = JP − k) before w
 | **SUSPECT** | GC2D/Option.cpp:202 | `TPaneScalingControl::setupAnm` | `0x80247440` | raw/computed rate (speed) | `mFrameCtrl.setRate(speed);` |
 | **SUSPECT** | GC2D/Option.cpp:205 | `TPaneScalingControl::setupAnm` | `0x80247440` | raw literal rate 1.0f (4x fast at 120fps) | `void TPaneScalingControl::startAnm() { mFrameCtrl.setRate(1.0f); }` |
 | **SUSPECT** | GC2D/Option.cpp:261 | `TPatternAnmControl::setupAnm` | `0x80247440` | raw literal rate 1.0f (4x fast at 120fps) | `mFrameCtrl.setRate(1.0f);` |
-| **SUSPECT** | GC2D/Option.cpp:531 | `TOptionSoundUnit` | — | raw literal rate 1.0f (4x fast at 120fps) | `mMusicFrameCtrl.setRate(1.0f);` |
+| **SUSPECT** | GC2D/Option.cpp:531 | `TOptionSoundUnit` | - | raw literal rate 1.0f (4x fast at 120fps) | `mMusicFrameCtrl.setRate(1.0f);` |
 | **SUSPECT** | MoveBG/MapObjBase.cpp:341 | `TMapObjBase::makeObjAppeared` | `0x8018880c` | raw literal rate 1.0f (4x fast at 120fps) | `ctrl->setRate(1.0f);` |
 | **SUSPECT** | MoveBG/MapObjSirena.cpp:886 | `TDonchou::calcRootMatrix` | `0x801a154c` | raw/computed rate (0.5f * fc->getRate()) | `fc->setRate(0.5f * fc->getRate());` |
 | **SUSPECT** | NPC/NpcAnm.cpp:289 | `TBaseNPC::walkAnmRateChange_` | `0x80169a78` | raw/computed rate (unk1D0) | `mMActor->setFrameRate(unk1D0, 0);` |
@@ -55,7 +55,7 @@ JP addresses are hints — resolve USA (GMSE01) per-TU (USA = JP − k) before w
 | **SUSPECT** | Strategic/liveinterp.cpp:435 | `linSetAnmRate` | `0x80113938` | raw/computed rate (arg1.getDataFloat()) | `owner->getMActor()->setFrameRate(arg1.getDataFloat(), 3);` |
 | **SUSPECT** | System/MarDirectorSetup2.cpp:68 | `TMarDirector::setup2` | `0x800efc08` | raw literal rate 120.0f (4x fast at 120fps) | `unkDC->mRate = 120.0f;` |
 
-## Actionable — SMSGetAnmFrameRate timing misuse (MISUSE)
+## Actionable - SMSGetAnmFrameRate timing misuse (MISUSE)
 
 | class | site | enclosing | JP addr (hint) | why | code |
 |---|---|---|---|---|---|
@@ -66,8 +66,8 @@ JP addresses are hints — resolve USA (GMSE01) per-TU (USA = JP − k) before w
 | **MISUSE** | Animal/AnimalBase.cpp:283 | `TAnimalBase::execWalk` | `0x80365c6c` | arithmetic on rate: ...nSpeed    = waitSpeed * <<>>SMSGetAnmFrameRate();... | `mTurnSpeed    = waitSpeed * SMSGetAnmFrameRate();` |
 | **MISUSE** | Animal/AnimalBase.cpp:286 | `TAnimalBase::execWalk` | `0x80365c6c` | arithmetic on rate: ...nSpeed    = walkSpeed * <<>>SMSGetAnmFrameRate();... | `mTurnSpeed    = walkSpeed * SMSGetAnmFrameRate();` |
 | **MISUSE** | Enemy/bgtentacle.cpp:755 | `TBGTentacle::setAttackTarget` | `0x80313eac` | arithmetic on rate: ...ner->getAttackSpeed() * <<>>SMSGetAnmFrameRate());... | `ctrl->setRate(mOwner->getAttackSpeed() * SMSGetAnmFrameRate());` |
-| **MISUSE** | Enemy/bossManta.cpp:369 | `TBossManta::startWalkAnim` | — | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... | `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);` |
-| **MISUSE** | Enemy/bossManta.cpp:376 | `TBossManta::startDamageAnim` | — | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... | `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);` |
+| **MISUSE** | Enemy/bossManta.cpp:369 | `TBossManta::startWalkAnim` | - | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... | `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);` |
+| **MISUSE** | Enemy/bossManta.cpp:376 | `TBossManta::startDamageAnim` | - | arithmetic on rate: ...rameRate[mGeneration] * <<>>SMSGetAnmFrameRate(), 0);... | `TBossManta::sFrameRate[mGeneration] * SMSGetAnmFrameRate(), 0);` |
 | **MISUSE** | Enemy/bosseel.cpp:545 | `TBEelTears::getBasNameTable` | `0x802eb298` | arithmetic on rate: ...tFrameRate(-frameRate * <<>>SMSGetAnmFrameRate(), 0);... | `actor->setFrameRate(-frameRate * SMSGetAnmFrameRate(), 0);` |
 | **MISUSE** | Enemy/bosseel.cpp:550 | `TBEelTears::getBasNameTable` | `0x802eb298` | arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);... | `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);` |
 | **MISUSE** | Enemy/bosseel.cpp:602 | `TBEelTears::getBasNameTable` | `0x802eb298` | arithmetic on rate: ...etFrameRate(frameRate * <<>>SMSGetAnmFrameRate(), 0);... | `actor->setFrameRate(frameRate * SMSGetAnmFrameRate(), 0);` |
@@ -85,18 +85,18 @@ JP addresses are hints — resolve USA (GMSE01) per-TU (USA = JP − k) before w
 | **MISUSE** | System/MarioGamePad.cpp:8 | `TMarioGamePad::reset` | `0x800fc380` | arithmetic on rate: ...peat(0xf00000f, 20.0f / <<>>SMSGetAnmFrameRate(),... | `setButtonRepeat(0xf00000f, 20.0f / SMSGetAnmFrameRate(),` |
 | **MISUSE** | System/MarioGamePad.cpp:9 | `TMarioGamePad::reset` | `0x800fc380` | arithmetic on rate: ...6.0f / <<>>SMSGetAnmFrameRate());... | `6.0f / SMSGetAnmFrameRate());` |
 
-## Needs eyes — ambiguous AnmFrameRate use (REVIEW)
+## Needs eyes - ambiguous AnmFrameRate use (REVIEW)
 
 | class | site | enclosing | JP addr (hint) | why | code |
 |---|---|---|---|---|---|
 | **REVIEW** | Enemy/bosseel.cpp:903 | `TBossEelTooth::perform` | `0x802e8b84` | ...<<>>SMSGetAnmFrameRate(), 0);... | `SMSGetAnmFrameRate(), 0);` |
 | **REVIEW** | System/Application.cpp:92 | `SMSGetVSyncTimesPerSec` | `0x800fb64c` | ...f32 <<>>SMSGetAnmFrameRate() { return 60... | `f32 SMSGetAnmFrameRate() { return 60.0f / SMSGetVSyncTimesPerSec(); }` |
 
-## Clean (auto-compensated / pause) — 141 rows, see CSV
+## Clean (auto-compensated / pause) - 141 rows, see CSV
 
-## Blind spots — stub TUs the source audit CANNOT see
+## Blind spots - stub TUs the source audit CANNOT see
 
-These `.cpp` are empty stubs in the decomp, so any raw-rate setter they contain is invisible here and must be found via the binary-disasm path (disassemble `main.dol`, find `bl` sites to `MActor::setFrameRate` / `J3DFrameCtrl::setRate` inside each TU's address range). Poink v14 and Petey v16 both live in stub TUs — proof the disasm sweep is required, not optional.
+These `.cpp` are empty stubs in the decomp, so any raw-rate setter they contain is invisible here and must be found via the binary-disasm path (disassemble `main.dol`, find `bl` sites to `MActor::setFrameRate` / `J3DFrameCtrl::setRate` inside each TU's address range). Poink v14 and Petey v16 both live in stub TUs. Proof the disasm sweep is required, not optional.
 
 - `Animal/BeeHive.cpp`
 - `Animal/Bird.cpp`

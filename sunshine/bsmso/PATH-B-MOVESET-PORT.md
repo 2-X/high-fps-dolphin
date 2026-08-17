@@ -1,12 +1,12 @@
-# Path B — port BetterSunshineMoveset to native Gecko (stock fpspatch disc)
+# Path B: port BetterSunshineMoveset to native Gecko (stock fpspatch disc)
 
 **Goal:** run the moveset (Hover Burst, SMO Dive, …) on the *stock* GMSE01 disc
-with our fpspatch high-fps engine, as toggle-able C2 Gecko codes — no BSE/Kuribo
-runtime. Path A (solo BSE disc) already lets you play it today; Path B is the
+with our fpspatch high-fps engine, as toggle-able C2 Gecko codes (no BSE/Kuribo
+runtime). Path A (solo BSE disc) already lets you play it today; Path B is the
 "keep our own engine" version. This doc is the RE kickoff (2026-08-14).
 
 ## Tooling
-`tools/kxdump.py` (run with `venv/bin/python`) — parses the KXER module, lists
+`tools/kxdump.py` (run with `venv/bin/python`): parses the KXER module, lists
 imports, applies relocations symbolically, and disassembles with capstone.
 `kxdump.py <module.kxe> --asm out.asm` → full annotated disasm. Format spec:
 `tools/kuribo-src/source/LibKuribo/modules/kxer/Binary.hxx`.
@@ -18,9 +18,9 @@ imports, applies relocations symbolically, and disassembles with capstone.
 - Read-only constants live at the tail of the code section (~code+0x53c8+),
   since there's no data section.
 - Reloc operands target the instruction's immediate halfword (**addr+2**), not
-  the instruction start — account for this when correlating disasm to relocs.
+  the instruction start; account for this when correlating disasm to relocs.
 
-## ★ Architecture finding — it's NOT branch-patch hooks
+## ★ Architecture finding: it's NOT branch-patch hooks
 The moves are **not** installed as `PatchB/Patch32` at fixed game addresses.
 The module registers with **BSE's runtime extension framework** (the 15 imports
 are all `BetterSMS::…`). None of this framework exists on the stock disc, so a
@@ -34,8 +34,8 @@ Gecko port must re-implement the *moves*, not the framework. Registration
 | `Player::addInitCallback` | 2 | per-player setup on spawn |
 | `Player::addLoadAfterCallback` | 1 | post-load setup |
 | `Player::registerStateMachine(u32 id, bool(*)(TMario*))` | 4 | **new move states** |
-| `Player::registerData/getData/getRegisteredData` | — | per-player move state blob |
-| `Player::setAnimationData/isAnimationValid` | — | animation control |
+| `Player::registerData/getData/getRegisteredData` | - | per-player move state blob |
+| `Player::setAnimationData/isAnimationValid` | - | animation control |
 | `PowerPC::writeU32` | 19 | direct game-memory pokes (enable transitions) |
 
 ### Handler table (code offsets, from the ctor relocs)
@@ -57,13 +57,13 @@ mMultiJumpFSpeedMulti, mBaseJumpMultiplier, mSlideMultiplier`,
 `movement__turbo_nozzle_data`. So multi-jump/long-jump are param-driven; dives
 and Hover Burst are the state-machine moves.
 
-## Port strategy (don't port BSE — port each move)
+## Port strategy (don't port BSE; port each move)
 Re-implement per move as a self-contained C2, using the disassembled handler as
 the spec:
 1. **One per-frame hook** on TMario's player update (a single C2 at Mario's
-   update site) that runs the move checks — the Gecko stand-in for the 9
-   `addUpdateCallback`s.
-2. **Inline the state logic** — instead of BSE's `registerStateMachine`, read
+   update site) that runs the move checks (the Gecko stand-in for the 9
+   `addUpdateCallback`s).
+2. **Inline the state logic:** instead of BSE's `registerStateMachine`, read
    controller + `TMario` fields and drive `mario->mState` / velocity /
    animation directly (SMS already has the nozzle/dive/jump primitives; BSE's
    `setAnimationData` etc. are thin wrappers over SMS functions).
@@ -77,14 +77,14 @@ Tractable **one move at a time**; each handler is a few hundred bytes of PPC.
 Main unknowns: exact `TMario` field offsets and which raw SMS functions replace
 the BSE wrappers.
 
-**Milestone 1 (next):** fully disassemble **Hover Burst** (the favorite) — find
+**Milestone 1 (next):** fully disassemble **Hover Burst** (the favorite): find
 which handler/update-callback implements it (correlate to the "Hover Burst" /
 `_movement_params` strings + `getRegisteredData` name args), extract its trigger
 condition (nozzle == Hover + input), the `TMario` fields it writes, and the
 velocity/animation it applies. Produce a first C2 draft + test on the stock disc.
 Then Burst Cancel, then the dives.
 
-## ★ Milestone 1 — Hover Burst IDENTIFIED (2026-08-14)
+## ★ Milestone 1: Hover Burst IDENTIFIED (2026-08-14)
 Corrected registration order (each `bl`'s handler = the lis/addi HA/LO pair
 before it; reloc operands sit at instruction+2):
 - init#1 `0x0429c`, init#2 `0x02078`, loadAfter `0x033a4`
@@ -97,7 +97,7 @@ PU5 is the per-frame detector; on trigger it transitions Mario into the custom
 state 0xF00001C0 (id loaded from the constant at `code+0x53c8`) and kicks a
 velocity. Trigger logic (in order):
 1. `lwz r5,[0x8040E178]; lbz r5,0x64(r5); cmpwi r5,4` → **current nozzle == HOVER(4)**
-2. enabled-setting byte via `code+0x05428` (the "Hover Burst" toggle) — 0 ⇒ bail
+2. enabled-setting byte via `code+0x05428` (the "Hover Burst" toggle): 0 ⇒ bail
 3. Mario state whitelist on `mario->0x7c` (nerve/state id) + status bit `mario->0x77 & 8`
 4. float threshold: `mario->0xb0` vs const `@code+0x070b0` (bail if above)
 5. button gate: `ctrl = mario->0x4fc`, `btns = ctrl->0xd0`, mask from `sub_0x04704`
@@ -108,11 +108,11 @@ velocity. Trigger logic (in order):
 
 ### TMario field offsets discovered (GMSE01, to reuse in the C2)
 `+0x77` status flags (byte) · `+0x7c` current state/nerve id (u32) ·
-`+0xa4` velocity vector (TVec3f mSpeed — burst writes here) · `+0xb0` a float
+`+0xa4` velocity vector (TVec3f mSpeed, burst writes here) · `+0xb0` a float
 gate (speed/timer) · `+0x4fc` controller ptr; `ctrl+0xd0` button state ·
 `+0xe0` animation object ptr. Verify against decomp / our camera+FLUDD codes.
 
-**Next:** disassemble the state handler `0x013d4` (what runs *during* the burst —
+**Next:** disassemble the state handler `0x013d4` (what runs *during* the burst:
 rise curve, cancel window = "Burst Cancel") + `sub_0x04704` (button mask) +
 resolve `[0x8040E178]` and the nozzle enum, then draft a self-contained C2 that
 hooks Mario's per-frame update and reproduces steps 1–7. Test on the stock disc.

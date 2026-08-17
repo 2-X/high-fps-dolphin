@@ -214,6 +214,88 @@ def existing_widescreen_titles(ini: Ini) -> list[str]:
     return [t for t in ini.titles() if t in WS_TITLE.values()]
 
 
+# ---- World-aspect override (the REAL 3D projection aspect) -------------------
+# The classic `$Widescreen` code above does NOT widen the 3D world — every one of
+# its writes is 2D/HUD/ortho (800/700/-100) or the shine-select MENU aspect
+# (0x80412408, read only @0x80176E58). The 3D world's widescreen normally comes
+# from *Dolphin's* built-in Widescreen Hack, which is hardwired to 16:9 and
+# ignores the custom display aspect — so a 16:10 display gets a 16:9 world
+# stretched vertically (thin/tall). See [[sunshine-widescreen-2d-fix]].
+#
+# To render the world at a TRUE arbitrary aspect we drive it from a Gecko instead
+# of the hack (and turn the hack off — see launcher). The main-camera projection
+# is built by C_MTXPerspective @0x8034A404; its aspect arg (f2) is saved to the
+# non-volatile f29 at 0x8034A424 and consumed once at 0x8034A454
+#   fdivs f1,f4,f29   -> proj[0][0] = cot(fov/2)/aspect   (DOL-verified)
+# so overriding f29 for exactly the world callers sets the world aspect. We hook
+# 0x8034A424 (the `fmr f29,f2`) and, for the SAME caller allow-list the $FOV code
+# already validates (LR compared against the world-camera return addresses
+# 0x80023230/0x80025A08/0x80032D90/0x8003308C/0x80194014/0x8022BAA0/0x802F7260/
+# 0x802F76A0), load our aspect into f29; non-matching callers keep `fmr f29,f2`.
+# NTSC-U (GMSE01) only. Self-verified branch layout — see tests/build note below.
+#
+# f2 arg is dead after 0x8034A424 (only f29 is read downstream), so f29 is the
+# complete and sufficient override point. LR is intact here: the prologue
+# (0x8034A404..0x8034A424) contains no `bl`, and the $FOV C2 at the entry reads
+# LR the same way and works — so both hooks see the caller's return address.
+WORLD_ASPECT_WORD = {"tv": 0x3FE38E39, "mac": 0x3FCCCCCD}   # 16:9 / 16:10 as f32
+WORLD_ASPECT_TITLE = {"tv": "World aspect 16:9", "mac": "World aspect 16:10"}
+
+
+def gen_world_aspect(aspect_key: str) -> tuple[str, str]:
+    """Return (title, code) for the C2 that forces the 3D world projection aspect
+    for `aspect_key`. Pairs with Dolphin's Widescreen Hack turned OFF."""
+    val = WORLD_ASPECT_WORD[aspect_key]
+    hi, lo = (val >> 16) & 0xFFFF, val & 0xFFFF
+    words = [
+        0x7D8802A6, 0x3D6C7FFE,          # mflr r12 ; addis r11,r12,0x7FFE
+        0x2C0B3230, 0x4182004C,          # cmpwi r11,0x3230 ; beq MATCHED
+        0x2C0B5A08, 0x41820044,          # cmpwi 0x5A08     ; beq MATCHED
+        0x3D6C7FFD, 0x2C0B2D90,          # addis 0x7FFD     ; cmpwi 0x2D90
+        0x41820038, 0x2C0B308C,          # beq MATCHED      ; cmpwi 0x308C
+        0x41820030, 0x3D6C7FE7,          # beq MATCHED      ; addis 0x7FE7
+        0x2C0B4014, 0x41820024,          # cmpwi 0x4014     ; beq MATCHED
+        0x3D6C7FDD, 0x2C0BBAA0,          # addis 0x7FDD     ; cmpwi 0xBAA0
+        0x41820018, 0x3D6C7FD1,          # beq MATCHED      ; addis 0x7FD1
+        0x2C0B7260, 0x4182000C,          # cmpwi 0x7260     ; beq MATCHED
+        0x2C0B76A0, 0x40820018,          # cmpwi 0x76A0     ; bne NOTMATCHED
+        (0x3D400000 | hi), (0x614A0000 | lo),   # MATCHED: lis r10,hi ; ori r10,r10,lo
+        0x9141FFF8, 0xC3A1FFF8,          # stw r10,-8(r1) ; lfs f29,-8(r1)
+        0x48000008, 0xFFA01090,          # b DONE ; NOTMATCHED: fmr f29,f2
+        0x60000000, 0x00000000,          # nop ; <branch-back>
+    ]
+    _verify_world_aspect(words, val)
+    lines = [f"C234A424 {len(words) // 2:08X}"]
+    for i in range(0, len(words), 2):
+        lines.append(f"{words[i]:08X} {words[i + 1]:08X}")
+    return WORLD_ASPECT_TITLE[aspect_key], "\n".join(lines)
+
+
+def _verify_world_aspect(words, val):
+    """Fail loudly on any hand-assembly drift: branch targets + the f29 load."""
+    MATCHED, NOTMATCHED, DONE = 22 * 4, 27 * 4, 28 * 4
+    for i, w in enumerate(words):
+        byte, op = i * 4, w >> 26
+        if op == 16:                                   # bc (beq/bne)
+            bo = (w >> 21) & 0x1F
+            bd = (w & 0xFFFC) - 0x10000 if (w & 0x8000) else (w & 0xFFFC)
+            tgt, want = byte + bd, (MATCHED if bo == 12 else NOTMATCHED)
+            if tgt != want:
+                raise AssertionError(f"world-aspect branch @word{i} -> {tgt:#x}, want {want:#x}")
+        elif op == 18 and i == 26:                     # b DONE
+            if byte + (w & 0xFFFC) != DONE:
+                raise AssertionError("world-aspect b DONE mis-targeted")
+    loaded = ((words[22] & 0xFFFF) << 16) | (words[23] & 0xFFFF)
+    if loaded != val:
+        raise AssertionError(f"world-aspect f29 load {loaded:#x} != {val:#x}")
+    if words[27] != 0xFFA01090:
+        raise AssertionError("world-aspect NOTMATCHED must reproduce `fmr f29,f2`")
+
+
+def existing_world_aspect_titles(ini: Ini) -> list[str]:
+    return [t for t in ini.titles() if t in WORLD_ASPECT_TITLE.values()]
+
+
 # ---- Widescreen 2D fix (the four leftover 4:3 panes) -----------------------
 # The classic gamemasterplc `$Widescreen` widens 3D projection, the J2D ortho
 # graphs and the HUD panes, but leaves four things pillar-boxed at 4:3:
