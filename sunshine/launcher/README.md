@@ -7,6 +7,65 @@ offline — with a chosen FPS, FOV, and set of QOL fixes, saved as named profile
 sunshine/launcher/sms          # run it (bootstraps its own venv on first run)
 ```
 
+## Setup on your machine
+
+### Requirements
+
+- **macOS** (Mac-only; no Windows support).
+- **Python 3.10+** — the `sms` script checks and prints a clear error if older.
+  Install with `brew install python@3.12` if needed.
+- **Textual 8.2.8** — pinned in `requirements.txt`; installed automatically into
+  `.venv/` on first run of `sms`.
+
+### Path configuration
+
+The launcher ships with hardcoded default paths that match the original developer
+machine. On a different machine, override just the paths that differ — without
+touching this file.
+
+**Option 1 — `config.local.json`** (recommended; gitignored):
+
+```
+cp sunshine/launcher/config.local.json.example sunshine/launcher/config.local.json
+```
+
+Then edit the copy:
+
+```json
+{
+  "iso_offline":  "/path/to/Super Mario Sunshine (USA).rvz",
+  "iso_dir":      "/path/to/bsmso-work",
+  "dolphin_app":  "/path/to/repo/dolphin/build/Binaries/Dolphin.app",
+  "dolphin_user": "~/Library/Application Support/Dolphin"
+}
+```
+
+All keys are optional — only override what differs from the defaults.
+
+**Option 2 — environment variables** (highest priority; useful for CI / wrappers):
+
+| Variable            | What it overrides        |
+|---------------------|--------------------------|
+| `SMS_ISO_OFFLINE`   | Path to the SMS .rvz/.iso |
+| `SMS_ISO_DIR`       | Directory with BSE ISOs   |
+| `SMS_DOLPHIN_APP`   | Path to Dolphin.app       |
+| `SMS_DOLPHIN_USER`  | Dolphin user-data folder  |
+
+Precedence: **env var > config.local.json > built-in default**.
+
+If `ISO_OFFLINE` doesn't exist at startup the launcher prints an actionable error
+naming these two options and exits — no cryptic crash.
+
+### Profiles customization
+
+`profiles.json` is tracked in git with generic placeholder names (`player_name:
+"Player"`). To keep your personal profiles without dirtying git:
+
+1. Copy `profiles.json` to `profiles.local.json` (gitignored).
+2. Edit `profiles.local.json` freely — set your name, tweak defaults, add
+   profiles. The launcher auto-detects and loads it in place of `profiles.json`.
+3. Saves and edits from the TUI write back to whichever file was loaded.
+
 ## What it does
 
 - **Profiles** — save / load / edit / duplicate / delete named setups. The last

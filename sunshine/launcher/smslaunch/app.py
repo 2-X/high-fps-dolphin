@@ -287,6 +287,23 @@ class Launcher(App):
 
 
 def main():
+    # Fail fast with an actionable message if the offline ISO is missing.  The
+    # path comes from defaults or the local-override layer (config.local.json /
+    # env vars) — either way the user needs to know *how* to fix it.
+    if not C.ISO_OFFLINE.exists():
+        import sys
+        print(
+            f"\n[sms] ISO not found: {C.ISO_OFFLINE}\n"
+            "\nTo point the launcher at your disc, set the path one of two ways:\n"
+            "\n  1. Create sunshine/launcher/config.local.json  (gitignored):\n"
+            '       { "iso_offline": "/path/to/Super Mario Sunshine (USA).rvz",\n'
+            '         "iso_dir":     "/path/to/bsmso-work" }\n'
+            "     (copy config.local.json.example to get started)\n"
+            "\n  2. Set an environment variable:\n"
+            '       export SMS_ISO_OFFLINE="/path/to/Super Mario Sunshine (USA).rvz"\n',
+            file=sys.stderr,
+        )
+        sys.exit(1)
     Launcher().run()
 
 

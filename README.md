@@ -1,23 +1,44 @@
 # high-fps-dolphin — Super Mario Sunshine high-FPS project
 
-Everything lives in **[sunshine/README.md](sunshine/README.md)** — read that first.
-PC work has started: **[sunshine/HANDOFF-PC.md](sunshine/HANDOFF-PC.md)** has the current
-state, the perf findings, and what to do next.
-It has the full state, the Gecko codes, the address map, PC import steps, and the 360Hz roadmap.
+Play Super Mario Sunshine (NTSC-U, GMSE01) at 120fps+ with correct audio, correct
+timers, and correct animations — via a patched Dolphin fork, a curated Gecko code
+stack, and a Textual TUI launcher. Optional widescreen (16:9 / 16:10 including 2D
+screens), online multiplayer via BSMSO, and HD textures.
 
-Separate VR track: **[HANDOFF-VR-DIORAMA.md](HANDOFF-VR-DIORAMA.md)** — Quest 3 miniature
-third-person diorama via DolphinXR (independent of the high-FPS work).
+**No Nintendo game files are included or distributed. You must dump your own disc.**
 
-Two dependencies are NOT vendored here (reproduce on the PC):
+Full documentation, setup guide, and technical reference:
+**[sunshine/README.md](sunshine/README.md)**
+
+---
+
+### Quick orientation
+
+| Path | Contents |
+|---|---|
+| `sunshine/README.md` | Public-facing setup guide and technical reference — start here |
+| `sunshine/launcher/` | TUI launcher (`sunshine/launcher/sms` to run) |
+| `sunshine/dolphin-patches/` | `high-fps-dolphin.patch` + build instructions |
+| `sunshine/HIGH-FPS-CATALOG.md` | Master fix catalog (addresses, Gecko, root causes) |
+| `sunshine/HANDOFF-PC.md` | Windows / high-fps-PC reference |
+| `sunshine/HANDOFF-MAC.md` | Mac setup router |
+
+---
+
+### Dependencies not vendored here
 
 ```bash
-# custom Dolphin (required for correct audio at high fps)
+# patched Dolphin (required for correct audio and full Gecko code capacity)
 git clone https://github.com/dolphin-emu/dolphin
-cd dolphin && git checkout $(cut -d' ' -f1 ../sunshine/dolphin-patches/UPSTREAM_COMMIT.txt)
-git apply ../sunshine/dolphin-patches/high-fps-dolphin.patch
+cd dolphin
+git checkout $(cut -d' ' -f1 sunshine/dolphin-patches/UPSTREAM_COMMIT.txt)
+git apply sunshine/dolphin-patches/high-fps-dolphin.patch
+# then: mkdir build && cd build && cmake .. && make -j$(nproc)
 
-# SMS decomp (JP) — research reference
+# SMS decomp (JP) — research reference only
 git clone https://github.com/doldecomp/sms
 ```
 
-Texture pack zips are gitignored (GitHub 100MB limit) — transfer `sunshine/textures/*.zip` by direct copy.
+Texture pack zips are `.gitignored` (GitHub 100 MB limit). A curated subset
+(M-portal textures, HUD elements) is committed at `sunshine/textures/GMSE01-pruned/`.
+Full packs: see [sunshine/README.md §6](sunshine/README.md#6-hd-texture-packs-links-only).

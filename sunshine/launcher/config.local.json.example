@@ -1,0 +1,6 @@
+{
+  "iso_offline":  "/Applications/gamecube/Super Mario Sunshine (USA).rvz",
+  "iso_dir":      "/Applications/gamecube/bsmso-work",
+  "dolphin_app":  "/path/to/high-fps-dolphin/dolphin/build/Binaries/Dolphin.app",
+  "dolphin_user": "~/Library/Application Support/Dolphin"
+}

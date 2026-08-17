@@ -1,297 +1,358 @@
-# Super Mario Sunshine — High-FPS Project (Mac → PC migration)
+# Super Mario Sunshine — High-FPS Project
 
-> **💻 ON THE LAPTOP? Read [HANDOFF-LAPTOP.md](HANDOFF-LAPTOP.md) FIRST (2026-08-11).**
-> 120fps kit: `dolphin-config/GameSettings/GMSE01.ini.laptop120` — same fixes as the
-> desktop 240 setup (widescreen, FOV 60, FLUDD invert, QoL), speed 2.0, fresh save.
+Play Super Mario Sunshine (NTSC-U, GMSE01) at 120fps+ with correct audio tempo and
+pitch, correct timers, correct animations, and ~30 gameplay bug fixes — via a patched
+Dolphin build and a curated Gecko code stack managed by a Textual TUI launcher.
 
-> **🍎 ON THE MACBOOK? Read [HANDOFF-MAC.md](HANDOFF-MAC.md) FIRST (2026-08-04).**
-> It is the return-migration router: Mac setup, which Gecko bundle at 120fps
-> (⚠️ NOT `$180fps v12` — its input gate breaks at 120), the one-shot 180 attempt
-> protocol, and how to continue the Poink work at 120 (needs the gcmem.py macOS port).
+Optional: 16:9 / 16:10 widescreen including 2D screens (transitions, shine-select),
+camera look-up extension, QOL codes (SaveBox Continue-on-top, pause-while-jumping),
+and online multiplayer via Super Mario Sunshine Online (BSMSO) at up to 120fps.
 
-> **▶ ACTIVE TASK: [HANDOFF-POINK.md](HANDOFF-POINK.md)** — 180fps plays well (input fixed
-> v9, music fixed v12, both user-confirmed). Current bug: Bianco 5 Poinks fly ~1/8 the
-> distance to Petey. Actor fully RE'd (TPopo); next step is one instrumented gameplay
-> capture with `research/scripts/popolog.py`. That doc also carries the v13 backlog of
-> confirmed frame-rate bugs (splash gravity rate², truncation stall, …).
->
-> Previous task (done): [HANDOFF-INPUT-BUG.md](HANDOFF-INPUT-BUG.md) — dropped inputs at
-> 180fps + music freeze; keep for the scheduler mechanism, build paths, and launch command.
-> Remaining smaller issue tracked there: Bianco windmills extra loud (§13.3).
-
-> **⚠️ Read [HANDOFF-PC.md](HANDOFF-PC.md) first (2026-08-02).** Dolphin is now installed
-> and running on the PC. That session invalidated several assumptions in §6's roadmap below:
-> the bottleneck is Dolphin's **Video thread** (command-bound), not the PPC JIT and not the
-> GPU; graphics settings and emulated CPU overclock are both no-ops; and the framerate is
-> **not paced at all**, which is a correctness bug the Mac only masked by being CPU-limited.
-> Current state: 290–330 fps in Plaza on Vulkan.
-
-**Goal:** Super Mario Sunshine (USA, GMSE01) at high framerates with correct speed,
-working M portals, correct audio, and all effects. Achieved **120fps fully working**
-on the Mac (CPU-bound ceiling ~2x/120fps there). **Next frontier: 360fps on the PC.**
-
-**State at migration (2026-07-31):** `TRUE-FIX v2` confirmed working by hands-on play
-(M portals light on approach + enterable at full 120fps, normal speed, particles fixed).
-`TRUE-FIX v3` (story-lock-correct variant, drops ForceOpen) added and **pending one test**
-— see "Current test status" below.
+![launcher screenshot placeholder — replace with sunshine/docs/launcher-screenshot.png]
 
 ---
 
-## 1. Quick start on the PC
+## 1. Legal / what is NOT included
 
-> **✅ Kit refreshed 2026-08-11 — copy the table below and you're done.**
-> - `dolphin-config/GameSettings/GMSE01.ini` is now the **PC 240fps** config
->   (synced verbatim from the live desktop INI 2026-08-11): `EmulationSpeed = 4.0`,
->   enabled set = `$SMS 240fps bundle` + `$SaveBox` + `$Camera look-up v10` + `$FOV 60`
->   + `$Widescreen` + `$FLUDD Aim Invert v2`. All four fps bundles (120/180/240/360)
->   in the INI are regenerated with today's fpspatch (talk-fix + skid-turn fix included).
->   `GMSE01.ini.laptop120` is the same file at `EmulationSpeed = 2.0` with the 120fps
->   bundle enabled instead — see [HANDOFF-LAPTOP.md](HANDOFF-LAPTOP.md).
-> - Historical note (2026-08-09 kit): enabled set was the **PC 180fps** bundle
->   `$SMS 180fps bundle (fpspatch, no-ForceOpen)`
->   (fpspatch-generated, capstone-validated; absorbs TRUE-FIX/glow, BGM, StarFix v4,
->   game-clock v15, Poink v14, Petey v16/anmrate, Noki 30Hz gate + dedupe, cogwheel SE,
->   and — since 2026-08-09 — the v9 input pad-latch gate, now default-on in fpspatch at
->   G>=3: the first PC 180 session shipped a bundle without it and the dropped-inputs
->   bug returned instantly, ~6/10 edge presses; --check now flags a latch-less G>=3 bundle)
->   **plus** the rate-agnostic QoL codes `$SaveBox: Continue on top`,
->   `$Camera look-up extension v10`, `$FOV 62 [kris]`. Do NOT additionally enable the
->   individual 120fps-era codes — the bundle already contains them (duplicate C2 hooks
->   at the same address misbehave).
-> - Input configs at `dolphin-config/` root + `Profiles/GCPad/` are now the **Windows
->   dialect** (`DInput/0/Keyboard Mouse`, `WGInput/0/Xbox One Game Controller`) —
->   regenerated from the live Mac setup with `research/scripts/input_sync.py` (selftest
->   passed). Keyboard binds work as-is; if the Xbox pad enumerates under a different
->   device name, re-pick the Device in Dolphin and the bindings carry.
->   (`mac-originals/` keeps the Quartz versions — Mac only.)
-> - `saves/` `.gci` + `SRAM.raw` refreshed 2026-08-09.
-> - **Known 180 gaps to verify first play:** (1) blue-coin lifetime v6 is deliberately
->   NOT in the 180 bundle (calibrated at 120 on the Mac) — spray-coins will vanish
->   ~1.5× fast until recalibrated; (2) the anim-rate divisor open question (2G=6 vs
->   constant 4, see fpspatch memory) — check Petey's vomit window / anim speeds;
->   (3) cogwheel creak-gate cadence still ear-test pending.
-> - Audio still needs the patched Dolphin build (`dolphin-patches/high-fps-dolphin.patch`)
->   + `AudioPreservePitch = True` (already in the INI [Core]). **The patch grew on
->   2026-08-09** (expanded [hifps] DSP-HLE diagnostics) — re-apply and rebuild the PC
->   Dolphin if it was built before then.
->
-> **Updates 2026-08-09 (evening):**
-> - **FOV**: enabled code is now **`$FOV 60 [kris]`** — the gated unified variant
->   (LR allow-list, `fov73-unified.txt` lineage, value word `4270`). The previously
->   shipped `$FOV 62 [kris]` was the UNGATED C_MTXPerspective-entry sledgehammer,
->   which forces effect/screen-texture reprojections too and caused the heat-shimmer
->   misalignment seen on the PC. It stays defined but must remain unticked. Retune:
->   swap `4270` in the `3D404270` word (see `research/memory/sunshine-fov-mod.md`).
->   Residual known artifact: shimmer inside portal previews (needs a preview-pass gate).
-> - **Widescreen**: `$Widescreen [gamemasterplc]` + `$Widescreen wipe fix v2` are now
->   embedded in the kit INI and enabled. The old PC config enabled a bare `$Widescreen`
->   title that matched nothing in the user INI (same exact-match-phantom class as the
->   FOV 62 bug — Dolphin silently ignores enabled titles with no matching code; check
->   for this whenever a code "stops working").
->
-> **Update 2026-08-11 (the broken first-loading-screen wipe):** two changes.
-> (1) `$Widescreen wipe fix v2` is **unticked** (defined but disabled, kit + live INI):
-> its ortho stretch draws wipes ×4/3 wide while the EFB-copy wipes copy/clear at
-> unstretched coordinates — a real misalignment, but disabling it did NOT fix the
-> user-reported artifact, and it never fixed the wipe-bars bug it was written for
-> (`HANDOFF-WIPE-BARS.md`). Keep it unticked anyway.
-> (2) The actual fix: the fpspatch bundle now **redirects wipe ids 5/6 to Hx_Test4 at
-> G≥3** (`wipe5_swap`, default; `--no-wipe-swap` restores the old tile morph). The
-> wipe5_opt 128px half-scale tile morph was verified applying exactly as designed
-> (every cave word checked in live RAM) and still looked broken — wrong-scale chunks
-> + black slabs on the boot→plaza reveal — so plaza loads now use the door-style
-> Test4 wipe: zero EFB copies, no perf hit, clean at any fps. The authentic tile
-> dissolve can return later via the single-capture redesign sketched in
-> `research/memory/sunshine-wipe-morph-perf.md`.
-> - **`$GameHeap 7MB (HD portals)`** is defined but deliberately unticked — only needed
->   when running the HD-portal ISO; tick it if you switch back to that image.
-> - **Enabled sets trimmed on both machines** (Mac 120 / PC kit 180): bundle + SaveBox +
->   Camera v10 + FOV 60 (+ widescreen pair on PC). The individual 120-era fix codes were
->   double-enabled alongside the bundle that absorbs them — duplicate C2 hooks + cave
->   pressure; prime suspect for the Ricco-Harbor red-coins-not-appearing regression
->   (fix pending in-game confirmation; if still broken, regenerate the bundle with
->   `--no-bluecoin` and bisect).
+**No Nintendo game files are in this repository and none ever will be.** You must dump
+your own Super Mario Sunshine (NTSC-U, GMSE01) disc:
+<https://dolphin-emu.org/docs/guides/ripping-games/>
 
-Windows Dolphin user folder = `Documents\Dolphin Emulator\` (or the portable `User\` dir).
-Copy:
+Do not share ISOs, modified ISOs, savestates, or extracted game assets.
 
-| From this folder | To (Windows Dolphin) |
-|---|---|
-| `saves/01-GMSE-super_mario_sunshine.gci` | `GC\USA\Card A\` |
-| `saves/SRAM.raw` | `GC\` |
-| `dolphin-config/GameSettings/GMSE01.ini` | `GameSettings\` — **this contains ALL the Gecko codes** |
-| `dolphin-config/GFX.ini`, `Dolphin.ini`, `Hotkeys.ini`, `GCPadNew.ini`, `GCKeyNew.ini` | `Config\` (review before overwriting — paths inside are Mac-specific; safest is to copy `GFX.ini` settings `HiresTextures = True`, `CacheHiresTextures = True` manually) |
-| `dolphin-config/Profiles/GCPad/*.ini` | `Config\Profiles\GCPad\` |
-| `textures/SMS 4K 2.0c (4K).zip` → extract inner `Load/Textures/GMS/` | `Load\Textures\GMS\` (PC can afford the 4K pack; 1080p zip also included) |
-| `dolphin-patches/high-fps-dolphin.patch` | apply to Dolphin source & build — **required for correct audio**, see §4 |
+**Modified Dolphin:** GPLv2+. Complete source = this repository. The patch is at
+`dolphin-patches/high-fps-dolphin.patch`, applied against the upstream commit pinned
+in `dolphin-patches/UPSTREAM_COMMIT.txt`. See [dolphin-patches/README.md](dolphin-patches/README.md).
 
-- Controller: the profile **`Current Mac Setup (Elite+KBM dual).ini`** is the exact
-  dual Xbox-Elite + keyboard/mouse binding used during development. Device names
-  (`SDL/0/Xbox One Wireless Controller`, `Quartz/0/Keyboard & Mouse`) will differ on
-  Windows — load the profile, then re-pick the Device and the bindings carry over.
-  (`Quartz` = Mac keyboard backend; on Windows re-bind those to `DInput/XInput` devices.)
-- The game itself: `Super Mario Sunshine (USA).rvz` lives at
-  `/Applications/gamecube/Super Mario Sunshine (USA).rvz` on the Mac — transfer separately
-  (not in git).
-- Savestates (`saves/savestates/`) are **build-version-locked**; they probably won't load
-  on a different Dolphin build. The `.gci` memcard save is the portable one and is all you need.
+**Third-party credits:**
 
-## 2. Which Gecko code to use (all are in `GameSettings/GMSE01.ini`)
+| Project | License | URL |
+|---|---|---|
+| BetterSunshineEngine (BSE) — DotKuribo / JoshuaMKW | GPL-3.0 | <https://github.com/DotKuribo/BetterSunshineEngine> |
+| Better Super Mario Sunshine Online (BSMSO) | GPL-3.0 | <https://github.com/Daytendo64/Better-Super-Mario-Sunshine-Online-BSMSO-> |
+| JoshuaMKW SMS Gecko codes | GPL-3.0 | <https://github.com/JoshuaMKW/SMS-Gecko-Codes> |
+| Classic widescreen / misc Gecko codes | community | gamemasterplc / Ralf and community (attribution in each code header) |
 
-Enable **exactly one** of the `120fps + …` bundles at a time (they all write the
-framerate global and will fight).
+**Texture packs** are not bundled — no redistribution license permits it. See
+[section 6](#6-hd-texture-packs-links-only) for installation links.
 
-- **`$120fps + TRUE-FIX v3 (respects story locks, no ForceOpen)`** ← intended final.
-  120fps everywhere, normal speed, M portals glow on approach (~354u radius),
-  locked portals stay goop-covered. **Pending one confirmation test** (see below).
-- **`$120fps + TRUE-FIX v2 (proximity glow reimplemented, full speed)`** ← confirmed
-  working, but its ForceOpen part **opens story-locked portals too** (sequence-break risk:
-  the goop-covered Gelato M shows lit). Use only if v3 fails.
-- **`$120fps + M AUTO v2 + FX (400u radius + whirl state-hold)`** ← the earlier benchmark:
-  everything perfect except the game runs 4x within ~400u of a portal.
-- `$120fps + HOLD Dpad-Left to enter M portals` ← the original manual workaround.
-- Diagnostic/history codes (`PROBE *`, `Bisect-*`, `Diag-*`, `FIX R*`, `TEST *`) — keep for
-  reference, don't enable.
+---
 
-**Companion fixes (rate-agnostic, enable alongside the base — they don't touch the framerate
-global):** `$Game-clock fix v15`, `$Petey vomit-window fix v16`, `$Poink premature-explosion
-gate v14`, `$120fps + StarFix`, `$Blue coin timer fix v5`, `$SaveBox: Continue on top`,
-`$BGM music guard`, and **`$Noki pollution counting 30Hz gate`** (Noki Ep.1 perf — see
-`HANDOFF-NOKI-PERF.md`). These are independent and stack cleanly.
+## 2. What this is
 
-### Current test status (the one open question)
+The high-fps approach works by running the GameCube emulator faster than real time
+(`EmulationSpeed = G`; G=2 for 120fps, G=4 for 240fps) while NOPping one retrace
+wait so Dolphin renders every VI field. The Gecko bundle generated by `fpspatch.py`
+corrects the ~30 bugs that arise when the game's own per-frame logic runs G× faster
+than intended: animation frame rates, timers, particle emitters, sound effects, and
+more.
 
-v3 removes ForceOpen on the theory that the stage script actually *does* open the correct
-gates at 120fps and only the glow input was broken. **Test:** boot Delfino with v3 only;
-if Bianco/Ricco Ms light on approach → v3 is final. If nothing lights → re-add the
-"script window" (design in `research/memory/sunshine-portal-glow-bug.md`, bottom sections):
-C2 @0x801EB034, while gate closed and `gate->0xcc < 180`: increment 0xcc and write 0.5f to
-0x804167B8 — gives the script a stock-timing window during scene fade-in, flags respected.
+On top of that:
 
-### Anatomy of the TRUE-FIX bundle (for building the 360 version)
+- A **custom Dolphin build** (the patch) provides the audio tempo fix (correct
+  wall-clock speed regardless of `EmulationSpeed`) and lifts the Gecko code-line cap
+  so the full bundle fits without codes silently dropping.
+- A **Textual TUI launcher** (`sunshine/launcher/sms`) manages all config, generates
+  the correct bundle for your chosen FPS, and handles the online / offline mode switch.
 
-```
-044167B8 40000000   <- framerate global 0x804167B8 = 2.0 (120fps; 0.5=stock 30)
-042FCB24 60000000   <- NOP one retrace-wait (frame pacing)
-C20066EC 00000002   <- effect-loop fmuls hook (part of original mod)
-C2C28028 EC2105B2
-FEC00890 00000000
-[FX]     3x C2 at 0x802887A8 / 0x80288D30 / 0x80288DEC:  f1 += 0.5 before fctiwz
-         (fixes EmitterViewObj `for(i=(int)SMSGetAnmFrameRate();...)` truncating to 0 —
-          restores ALL small particle effects; stock-safe: 2.0+0.5 still truncates to 2)
-[GLOW]   C2 at 0x801EBA60 (inside TModelGate::perform, only reached when gate open):
-         XZ dist^2(player, gate) < threshold -> glow(this+0xD0)=1.0, lit-timer 0xCA=0xC8
-         else run original load (natural decay). Threshold built from pool floats:
-         500^2*0.5 = 125000 (~354u). Pool: 500.0 @ -0x2234(r2), 0.5 @ -0x7fd8(r2),
-         1.0 @ -0x2298(r2), 40000 @ -0x2270(r2). r2 = 0x80416BA0.
-[v2 only] ForceOpen C2 at 0x801EB034: guarded call to startOpen (0x801EBFD4) — REMOVE for
-         story-correctness (v3).
+Hardware ceiling: the sim-rate approach is CPU-bound. Apple Silicon laptops top out at
+~120fps (2x). Faster PCs can reach 180–240fps; see [HANDOFF-PC.md](HANDOFF-PC.md).
+
+---
+
+## 3. Quick start (macOS — the primary supported path)
+
+**Prerequisites:** Python 3.10+, Xcode Command Line Tools, CMake, git.
+
+### Step 1 — dump your disc
+
+Follow the Dolphin disc-dumping guide: <https://dolphin-emu.org/docs/guides/ripping-games/>.
+Keep your `.rvz` or `.iso` somewhere stable (e.g. `/Applications/gamecube/`).
+
+### Step 2 — clone this repo
+
+```bash
+git clone https://github.com/2-X/high-fps-dolphin
+cd high-fps-dolphin
 ```
 
-For **360fps**: framerate global value = fps/60 → `044167B8 40C00000` (6.0). EmulationSpeed
-and the pacing NOP interplay needs re-derivation (see `research/memory/sunshine-simrate-mechanism.md`
-and the untested `$180CO/$360CO co-scaled const` ladder codes in the ini — the 0x80414904
-const may need co-scaling: 0.01 x value). The FX fix generalizes: at 360, AnmFrameRate =
-60/360 = 0.1667 → +0.5 still yields (int)0.667 = 0 — **the FX hook must become
-`f1 = max(f1, ~1.0)` or the +constant raised (e.g. +0.9) for 360**. The GLOW hook is
-framerate-independent. All gate constants (rise/decay/timers) scale with fps — see the
-"rise/decay clock mismatch" section of the portal memory doc before chasing new symptoms.
+### Step 3 — build the patched Dolphin
 
-## 3. Key addresses (USA GMSE01) — hard-won, disasm-verified
+```bash
+git clone https://github.com/dolphin-emu/dolphin
+cd dolphin
+git checkout $(cut -d' ' -f1 ../sunshine/dolphin-patches/UPSTREAM_COMMIT.txt)
+git apply ../sunshine/dolphin-patches/high-fps-dolphin.patch
+mkdir build && cd build && cmake .. && make -j$(sysctl -n hw.logicalcpu)
+```
+
+Full build details and troubleshooting: [dolphin-patches/README.md](dolphin-patches/README.md).
+
+### Step 4 — CRITICAL: enable the MEM1 override
+
+**Without this setting, late-list Gecko codes (FOV, widescreen) silently never run.**
+
+In Dolphin: Config → Advanced → Enable Emulated Memory Size Override → MEM1 = 32 MiB.
+
+Or in `~/Library/Application Support/Dolphin/Config/Dolphin.ini` under `[Core]`:
+
+```ini
+RAMOverrideEnable = True
+MEM1Size = 0x02000000
+```
+
+When it is working you will see in the Dolphin log (ACTIONREPLAY category):
+`[hifps] Gecko code list relocated to 81800000…81840000`.
+
+Details: [dolphin-patches/README.md §3](dolphin-patches/README.md).
+
+### Step 5 — configure ISO paths
+
+Open `sunshine/launcher/smslaunch/config.py` and set `ISO_OFFLINE` to the path of
+your dumped disc. If you plan to use online mode, set `ISO_ONLINE` and `ISO_ONLINE_HIGHFPS`
+as well. See [launcher/README.md](launcher/README.md) for the full config reference.
+
+### Step 6 — run the launcher
+
+```bash
+sunshine/launcher/sms
+```
+
+The script creates its own virtualenv on first run (needs Python 3.10+). No separate
+install step.
+
+### Step 7 — pick a profile and launch
+
+The launcher ships a default offline-120fps profile. Select it, verify your FPS and
+aspect settings, and press `Ctrl+L` (Apply & Launch). The launcher generates the
+correct Gecko bundle, writes config, and boots Dolphin.
+
+---
+
+## 4. Feature matrix
+
+| Feature | Status | Notes |
+|---|---|---|
+| 120fps offline | Working | Audio tempo + pitch correct, timers correct, ~30 bug fixes |
+| 180 / 240fps offline | Working on capable PCs | See [HANDOFF-PC.md](HANDOFF-PC.md); Mac ceiling ~120fps |
+| Widescreen 16:9 | Working | Includes 2D screens (transitions, shine-select, HUD) |
+| Widescreen 16:10 | Working | Separate generated Gecko, same coverage |
+| Camera look-up extension | Working | Increases max upward pitch |
+| SaveBox Continue-on-top | Working | Reorders in-level save dialog |
+| Pause while jumping | Working (QOL toggle) | Default off in launcher |
+| HD M-portal previews | Working | Pruned qashto/razius UHD pack, in-repo |
+| Online play (BSMSO) | Experimental on Mac | See section 5 |
+
+Full fix list with addresses and root causes: [HIGH-FPS-CATALOG.md](HIGH-FPS-CATALOG.md).
+
+---
+
+## 5. Online play (Super Mario Sunshine Online)
+
+**Do not distribute the online ISO.**
+
+BSMSO is a separate GPL-3.0 project. Get it through official channels:
+
+- GitHub: <https://github.com/Daytendo64/Better-Super-Mario-Sunshine-Online-BSMSO->
+- Discord: <https://discord.com/invite/3WXB5c3TfY>
+- GameBanana: <https://www.gamebanana.com/mods/697699>
+
+The standard flow: BSE-patch your own vanilla GMSE01 ISO (BSE releases:
+<https://github.com/DotKuribo/BetterSunshineEngine/releases>), then inject the BSMSO
+`.kxe` module into that image. The official BSMSO launcher is Windows-only (WPF).
+
+Our Mac integration notes, the bridge script, and the server setup for local testing
+live in `sunshine/bsmso/`. Online-on-Mac is advanced / experimental; the server requires
+dotnet. See [HANDOFF-MAC.md](HANDOFF-MAC.md) for the Mac state and [HANDOFF-PC.md](HANDOFF-PC.md)
+for the reference Windows setup.
+
+---
+
+## 6. HD texture packs (links only, not bundled)
+
+No redistribution license permits bundling these. Install manually after downloading.
+
+| Pack | Size | Link |
+|---|---|---|
+| qashto / razius UHD (recommended) | ~2.4 GB DDS | <https://github.com/qashto/Super_Mario_Sunshine_UHD_Texture_Pack> · [forum thread](https://forums.dolphin-emu.org/thread-47392.html) |
+| cheatfreak47 Faithful | — | <https://github.com/cheatfreak47/sms_dolphin_faithful> |
+| Henriko Magnifico 4K | — | <https://www.henrikomagnifico.com/super-mario-sunshine-4k> |
+
+**Install:** unzip into Dolphin's `Load/Textures/GMS/` (follow each pack's own README
+for the exact folder name — the qashto pack specifies `GMS`).
+macOS path: `~/Library/Application Support/Dolphin/Load/Textures/GMS/`
+
+Then in Dolphin Graphics → Advanced: enable **Load Custom Textures** and
+**Prefetch Custom Textures**.
+
+A curated subset of the qashto pack (M-portal textures, HUD, digits, shine icons) is
+already vendored in `sunshine/textures/GMSE01-pruned/` and is what the launcher's
+"HD portals" toggle installs — no download needed for that subset. See
+[textures/README.md](textures/README.md).
+
+---
+
+## 7. Setup bottlenecks (honest list)
+
+- **Must build Dolphin from source.** No prebuilt binaries are distributed. Requires
+  CMake and Xcode Command Line Tools on Mac, Visual Studio on Windows.
+- **Must dump your own disc.** Required by law and by the project.
+- **MEM1 override must be enabled** or the FOV and widescreen Gecko codes silently do
+  not run. This is the most common "codes not working" report. Check it first.
+- **Launcher is macOS-first.** Windows users follow [HANDOFF-PC.md](HANDOFF-PC.md)
+  manually. Input INIs need dialect conversion (Quartz device names on Mac vs.
+  DInput/WGInput on Windows) — use `research/scripts/input_sync.py` or copy from
+  `dolphin-config/mac-originals/`.
+- **Online: Windows launcher only (officially).** The Mac path is experimental; the
+  BSMSO server requires dotnet.
+- **Gecko enabled-line trap:** Dolphin silently ignores enabled-lines that use the
+  `$Title [creator]` bracketed form. Write the stripped code name only. (This has
+  burned the project twice — see [dolphin-patches/README.md](dolphin-patches/README.md).)
+- **Hardware ceiling:** the sim-rate approach is CPU-bound. Apple Silicon laptops top
+  out at ~120fps. Higher rates require a fast desktop PC (see [HANDOFF-PC.md](HANDOFF-PC.md)).
+- **`profiles.json`:** set your own `player_name` before using online mode.
+
+---
+
+## 8. Repository map
+
+```
+sunshine/
+├── launcher/           TUI launcher (sunshine/launcher/sms to run)
+├── dolphin-patches/    high-fps-dolphin.patch + build instructions
+├── gecko/              Gecko code sources and the gecko.py skill
+├── research/           Scripts, disasm tools, PERF-PLAYBOOK.md, per-area notes
+│   ├── scripts/        fpspatch.py (bundle generator), capstone tools, gcmem.py
+│   ├── codes/          Gecko source .txt files
+│   └── memory/         Project knowledge base (one .md per topic)
+├── dolphin-config/     Dolphin INI files, input configs, mac-originals/
+├── bsmso/              Online mode integration (Mac bridge, server scripts)
+├── saves/              Portable .gci memcard save + SRAM.raw
+├── textures/           Pruned HD portal pack (in-repo); full pack zips gitignored
+├── HIGH-FPS-CATALOG.md Master bug/fix reference with addresses
+├── HANDOFF-MAC.md      Mac setup + state-of-the-world router
+├── HANDOFF-PC.md       Windows PC reference (perf findings, 180-240fps setup)
+├── HANDOFF-LAPTOP.md   Laptop-specific 120fps notes
+└── README.md           This file
+```
+
+---
+
+## Technical reference (research)
+
+The sections below preserve the detailed address map and Gecko documentation from the
+original development README. They are intended for contributors extending the project.
+
+---
+
+### Key addresses (USA GMSE01) — disasm-verified
 
 - SDA bases: **r2 = 0x80416BA0, r13 = 0x804141C0** (from `__init_registers` @0x8000536C).
-  An earlier wrong r2 caused a whole wrong root-cause theory; trust these.
-- Framerate global: **0x804167B8** (stock 0.5 = 30fps/60; readers = the 3 fns below)
-- `SMSGetVSyncTimesPerSec` = **0x802A7C48** ("reader3", 14 callers — enumerated & classified
-  in the portal memory doc); `SMSGetAnmFrameRate` = **0x802A7BD8** ("reader2", 215 callers);
-  reader1 = 0x802A5B44
-- `TMarDirector::direct` vsyncRate line: caller ret **0x80299854** (`600/(int)vsync` substep
-  budget — the 4x-speed lever, decomp `MarDirectorDirect.cpp:44`)
-- **ModelGate.cpp TU: 0x801EAC64–0x801EC8C0** — perform **0x801EB014** (0xAA8),
-  receiveMessage 0x801EBBDC, screenBlur 0x801EBD84, startOpen 0x801EBFD4, loadAfter 0x801EC048.
-  Gate fields: 0x70 flags (bit0=open master switch, bit1=glow-rise enable), 0x71 destination,
-  0x72 bone, 0x78 MActor, 0xC4 state, 0xC8/0xCA lit-timer seed/countdown (360), 0xD0 glow,
-  0xD4 rise (0.1), 0xD8/0xDC decays (0.02/0.025)
+- Framerate global: **0x804167B8** (stock value 0.5 = 30fps/60; set to `fps/60` by the
+  bundle). Readers: `SMSGetVSyncTimesPerSec` = 0x802A7C48 (14 callers),
+  `SMSGetAnmFrameRate` = 0x802A7BD8 (215 callers), reader1 = 0x802A5B44.
+- `TMarDirector::direct` vsyncRate line: caller ret **0x80299854** (`600/(int)vsync`
+  substep budget, decomp `MarDirectorDirect.cpp:44`).
+- **ModelGate TU: 0x801EAC64–0x801EC8C0** — `perform` 0x801EB014, `receiveMessage`
+  0x801EBBDC, `startOpen` 0x801EBFD4, `loadAfter` 0x801EC048. Gate fields: 0x70
+  flags (bit0=open, bit1=glow-rise), 0x71 dest, 0x72 bone, 0x78 MActor, 0xC4 state,
+  0xC8/0xCA lit-timer (360), 0xD0 glow, 0xD4 rise (0.1), 0xD8/0xDC decays (0.02/0.025).
 - EmitterViewObj truncation sites: **0x802887A8, 0x80288D30, 0x80288DEC**
-- Player/cam position vec for distance checks: `-0x60B4(r13)` = 0x8040E10C
-- **Pollution counting dispatch: `TPollutionManager::perform` = 0x8019D8C8** (obj-cue
-  `cue&0x01000000`→`countObjDegree`, tex-cue `cue&0x02000000`→`countTexDegree`, layer=`(cue>>16)&0xFF`,
-  else→`TJointModelManager::perform` draw). The per-frame goop **readback** here caps polluted
-  levels at high fps — 30Hz-gated by `$Noki pollution counting 30Hz gate`. See `HANDOFF-NOKI-PERF.md`.
-  Related: `TPollutionLayerWave::perform` 0x801A1E3C (goop *draw*, NOT the cost).
+- Player/cam position for distance checks: `-0x60B4(r13)` = 0x8040E10C
+- **Pollution dispatch: `TPollutionManager::perform` = 0x8019D8C8** — 30Hz-gated by
+  `$Noki pollution counting 30Hz gate` (see `HANDOFF-NOKI-PERF.md`).
 
-## 4. Custom Dolphin build (REQUIRED for correct audio)
+---
 
-`dolphin-patches/high-fps-dolphin.patch` applies to upstream dolphin-emu at the commit in
-`UPSTREAM_COMMIT.txt`. It contains:
-- `SystemTimers.cpp` — the **audio DMA tempo patch** (120fps-correct audio; pair with
-  `AudioPreservePitch = True`, already in the shipped configs). Stock Dolphin will have
-  chipmunk/wrong-tempo audio with the fps hack. Details: `research/memory/sunshine-audio-fix.md`.
-- `Present.cpp/.h`, `FramebufferShaderGen.*` — frame-interpolation experiments (Phase-2
-  exploration; rejected on Mac for latency/quality but source kept — may be revisited at 360
-  if the PC can't hold 360 logic Hz).
+### fpspatch bundle anatomy
+
+`research/scripts/fpspatch.py` generates the high-fps Gecko bundle for a given G value.
+Never hand-write the bundle — the generator handles the constants that scale with G and
+those that stay fixed. Key components:
 
 ```
-git clone https://github.com/dolphin-emu/dolphin
-cd dolphin && git checkout <hash from UPSTREAM_COMMIT.txt>
-git apply path/to/high-fps-dolphin.patch
-# then normal Windows Dolphin build (Visual Studio)
+044167B8 <fps/60 as float>   framerate global
+042FCB24 60000000             NOP one retrace-wait (frame pacing)
+C20066EC …                    effect-loop fmuls hook
+[FX]    C2 at 0x802887A8 / 0x80288D30 / 0x80288DEC:
+        f1 += 0.5 before fctiwz — fixes EmitterViewObj AnmFrameRate truncating
+        to 0 at high fps; restores all small particle effects
+[GLOW]  C2 at 0x801EBA60: XZ dist²(player, gate) < 125000 (~354u²) → glow=1.0
+        (rate-independent; uses pooled floats from r2)
 ```
 
-~~At 360Hz the audio patch's tempo factor may need generalizing — it was written for 2x.~~
-**Stale — the patch reads `Config::Get(Config::MAIN_EMULATION_SPEED)` at runtime and
-generalizes to any speed (verified in source; HANDOFF-PC §6).**
+For higher FPS (G > 2): the `+0.5` in the FX fix keeps particles correct up to 240fps
+(AnmFrameRate ≥ 0.25 + 0.5 still truncates to 0 at 360fps, so the threshold must be
+raised — see `research/memory/sunshine-simrate-mechanism.md`).
 
-## 5. Research toolkit (`research/`)
+---
 
-- **`PERF-PLAYBOOK.md` — read this to chase MORE frames.** The repeatable method for finding
-  and removing framerate bottlenecks (measure-first; the two instruments; the readback-stall
-  decision tree; the reusable "30Hz gate" fix). It's how Noki Ep.1 went 105→119.
-- `fpsprofile.sh` — "browser profiler for Dolphin": samples the running process and surfaces
-  the hot functions on the emulation thread + flags synchronous GPU→CPU readback stalls (the
-  #1 high-fps killer on Metal). Use in a slow area, compare to a fast one.
-- `main.dol` — USA executable, extracted from the RVZ (`dolphin-tool extract`)
-- `scripts/` — capstone-based disasm + Gecko-builder scripts. Setup:
-  `python3 -m venv venv && venv/bin/pip install capstone`. Key helpers: robust
-  function-start detection (naive `mflr;stw` prologue matching MERGES functions — cost us
-  a wrong TU identification once), annotated r2/r13 pool dumps, C2 builders with
-  per-word capstone verification (always verify: capstone can't decode fcmpo/fcmpu — treat
-  a "(pad)"-looking word as suspect and hand-check).
-- `memory/` — the full project knowledge base. **Read
-  `sunshine-portal-glow-bug.md` first** — it is the chronological root-cause history
-  (including the dead ends and why they were dead ends).
+### Gecko gotchas
 
-### Gecko gotchas that cost days (memorize these)
+1. **Dolphin rewrites `GameSettings/GMSE01.ini` on quit.** Edit only while Dolphin is
+   fully closed. The `gecko/skill/gecko.py` helper enforces this (`add`/`remove`/`enable`
+   with a `pgrep` guard + auto-backup).
+2. **C2 codes: the code handler overwrites the LAST word of the block with its
+   branch-back.** Every C2 block must end with a `00000000` pad word or your last
+   instruction is silently destroyed.
+3. **Boot-time `04` patches to constructor values are racy.** Patch the stored value
+   each frame (pointer-chase) or bake the fix into the DOL itself.
+4. **Enabled-lines must use the stripped code name** — never `$Title [creator]`. Dolphin
+   silently ignores bracketed enabled-lines.
+5. **`EmulationSpeed` in the per-game INI overrides `Dolphin.ini` and `-C` flags.** Both
+   must agree.
+6. Savestates restore the old Gecko list and patched instructions — always cold-boot
+   after changing codes.
+7. Verify hand-assembled PowerPC words with capstone; it cannot decode `fcmpo`/`fcmpu` —
+   a word that prints as `(pad)` may be a real instruction; hand-check those.
 
-1. **Dolphin rewrites the user `GameSettings/GMSE01.ini` from memory on quit.** Edit only
-   while Dolphin is fully closed. The helper `gecko/skill/gecko.py` enforces this
-   (`add`/`remove`/`enable` + auto-backup).
-2. **C2 codes: the code handler overwrites the LAST word of the block with its branch-back.**
-   Every C2 block must end with a `00000000` pad word or your last instruction is silently
-   destroyed (symptom: crash or mysterious no-op).
-3. **Boot-time code runs before the first Gecko application** — `04` patches to constructors
-   that run at boot are racy/void. Patch the stored value each frame (pointer-chase) instead.
-4. Cave size is NOT a practical limit (~200+ lines fine); historical "overflow" failures
-   were all gotcha #2.
+---
 
-## 6. The 360Hz roadmap
+### Research toolkit (`research/`)
 
-1. Port everything (this folder), verify 120fps parity on PC with `TRUE-FIX v3`.
-2. Resolve the v3-vs-script question (§2) so the base is story-correct.
-3. Bump to 240 (`044167B8 40800000` = 4.0) then 360 (`40C00000` = 6.0), EmulationSpeed to
-   match, and re-test the known fragile systems in order:
-   audio patch factor → FX truncation threshold (§2) → glow rise/decay balance →
-   sub-step scheduler behavior (`600/(int)vsync` = 1.67 at 360 → **integer division hits 1**,
-   watch for a new class of truncation bugs there — `600/360` truncates to 1, meaning
-   `unk54` accumulates remainder differently; read `MarDirectorDirect.cpp` first).
-4. The decomp (`doldecomp/sms`, JP) is the fastest root-cause tool — find the system in JP
-   source, then locate the USA address by function-size fingerprinting (scripts show how).
-5. **Per-area frame drops (not the global ceiling) are almost always a per-frame GPU→CPU
-   readback firing N× too often** (N = 4 at 120, 6 at 180, 12 at 360 — SMS is 30fps native).
-   Profile the slow area with `research/fpsprofile.sh`, and if a readback dominates, 30Hz-gate
-   the game code that triggers it (mask `3`→`5`→`11` for 120→180→360). Full method:
-   `research/PERF-PLAYBOOK.md`. First worked example: Noki Ep.1 (`HANDOFF-NOKI-PERF.md`).
-   Candidates to audit the same way: any `GXReadPixMetric`/`GXReadBoundingBox`/`GXCopyTex`-to-RAM
-   user (reflection buffers, heat-haze, boss screen-reads).
+- **`PERF-PLAYBOOK.md`** — repeatable method for finding and removing per-area frame-rate
+  bottlenecks (measure first; the two instruments; the readback-stall decision tree; the
+  30Hz gate fix). First worked example: Noki Ep.1 (105→119fps), documented in
+  `HANDOFF-NOKI-PERF.md`.
+- **`fpsprofile.sh`** — samples the running Dolphin process and surfaces hot functions on
+  the emulation thread; flags synchronous GPU→CPU readback stalls (the #1 high-fps killer
+  on Metal).
+- **`scripts/fpspatch.py`** — the bundle generator. Run with `--help` for options.
+  `--check` flags a G≥3 bundle that lacks the input latch gate.
+- **`scripts/capstone/`** — disasm + Gecko-builder scripts. Setup:
+  `python3 -m venv venv && venv/bin/pip install capstone`.
+- **`main.dol`** — USA DOL extracted from the RVZ (`dolphin-tool extract`), used by
+  the research scripts for signature matching.
+- **`memory/`** — full project knowledge base, one `.md` per topic.
+  `sunshine-portal-glow-bug.md` is the chronological root-cause history including
+  the dead ends.
 
-`GO GET 360. 🌴`
+---
+
+### Pacing model (settled)
+
+```
+real_fps        = 59.94 × EmulationSpeed    (hard ceiling; retrace-locked)
+game speed      = real_fps / (60 × framerate_global)
+correct speed iff host sustains the multiplier
+```
+
+The retrace gate is at `0x802FC9A4` (four `VIWaitForRetrace` calls, one NOPped by the
+bundle). The achievable ladder is exactly 120=2x, 180=3x, 240=4x, 360=6x. The 360fps
+target requires 6.0x; the measured Plaza ceiling on the current reference PC is 5.17x —
+not yet reachable as a stable logic rate.
+
+---
+
+### 360Hz roadmap
+
+1. Verify 120fps parity with TRUE-FIX v3 (story-correct glow, no ForceOpen).
+2. Bump to 240 (`044167B8 40800000` = 4.0) then 360 (`40C00000` = 6.0) with
+   matching `EmulationSpeed`, and re-test fragile systems in order: audio patch
+   factor → FX truncation threshold → glow rise/decay balance → substep scheduler
+   (`600/(int)vsync` = 1 at 360, integer truncation, new class of bugs).
+3. The decomp (`doldecomp/sms`, JP) is the fastest root-cause tool — find the system in
+   JP source, fingerprint to USA address by function size.
+4. Per-area drops at any FPS are almost always a GPU→CPU readback firing N× too often.
+   Profile with `research/fpsprofile.sh`; 30Hz-gate the triggering game code.
+   See `research/PERF-PLAYBOOK.md`.

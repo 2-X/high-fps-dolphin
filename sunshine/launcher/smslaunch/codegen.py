@@ -214,6 +214,191 @@ def existing_widescreen_titles(ini: Ini) -> list[str]:
     return [t for t in ini.titles() if t in WS_TITLE.values()]
 
 
+# ---- Widescreen 2D fix (the four leftover 4:3 panes) -----------------------
+# The classic gamemasterplc `$Widescreen` widens 3D projection, the J2D ortho
+# graphs and the HUD panes, but leaves four things pillar-boxed at 4:3:
+#   [A] the level-transition wipe "curtain" + its black side masks
+#       (TConsoleStr::mDemoWipeExPanes / mDemoMaskExPanes),
+#   [B] the shine-select menu's two side masks (TSelectMenu::mMask1/mMask2),
+#   [C] the shine-select gradient-background quad's left/right X extents, and
+#   [D] the shine-select root pane position.
+# This replicates BetterSunshineEngine's src/patches/widescreen.cpp fixes for
+# those four as Gecko C2 codes, parameterized by aspect. NTSC-U (GMSE01) only.
+#
+# All offsets/hook targets are verified against the vanilla main.dol disassembly
+# (SDA r2 = 0x80416BA0). Struct offsets (from lib/sms_interface headers, each
+# cross-checked against a vanilla load/store near the hook):
+#   TExPane:      mPane +0x00, mRect(JUTRect) +0x04 (mX1 +0x04, mX2 +0x0C)
+#   J2DPane:      mRect(JUTRect) +0x14 (mX1 +0x14, mX2 +0x1C),
+#                 mChildrenList(JSUPtrList).mFirst +0xD0; JSUPtrLink.mItemPtr +0
+#   TConsoleStr:  mDemoWipeExPanes[2] +0x28C, mDemoMaskExPanes[2] +0x294
+#   TSelectMenu:  mMask1 +0x24, mMask2 +0x28
+# Original hook instructions replaced (each a plain bl / lfs, dol-verified):
+#   0x801723F0  bl loadAfter (0x802FA6F8)       -> [A] demo wipe/mask panes
+#   0x80175F50  bl startMove__11TSelectMenuFv (0x8017443C) -> [B] menu masks
+#   0x8017586C  lfs f4,-0x482C(r2) (grad left X=0.0)   -> [C] left X = coverL
+#   0x80175884  lfs f1,-0x47DC(r2) (grad right X=600)  -> [C] right X = coverR
+#   0x8013F430  bl J2DScreen::draw (0x802CFDA8)  -> [D] root pane position
+# v2 calibration: cover blocks [A][B][C] span the classic code's effective
+# ortho X range [-100, 700] plus a 20u overshoot margin (see _ws2d_blocks);
+# only [D]'s content shift keeps BSE's per-aspect adjustX (16:9->98, 16:10->58).
+# Gradient X floats are stashed at scratch 0x800016C0 (unused low arena; the
+# fpspatch bundle's scratch starts at 0x800016E0, so no collision even if both
+# codes are enabled).
+
+_WS2D_SCRATCH = 0x800016C0
+_WS2D_LOADAFTER = 0x802FA6F8
+_WS2D_STARTMOVE = 0x8017443C
+_WS2D_J2DDRAW   = 0x802CFDA8
+
+
+def _ppc(mn, *a):
+    """Minimal PPC encoder for the handful of forms this generator emits."""
+    if mn == "lis":   rD, imm = a;        return (15 << 26) | (rD << 21) | (imm & 0xFFFF)
+    if mn == "ori":   rA, rS, imm = a;    return (24 << 26) | (rS << 21) | (rA << 16) | (imm & 0xFFFF)
+    if mn == "addi":  rD, rA, imm = a;    return (14 << 26) | (rD << 21) | (rA << 16) | (imm & 0xFFFF)
+    if mn == "lwz":   rD, rA, d = a;      return (32 << 26) | (rD << 21) | (rA << 16) | (d & 0xFFFF)
+    if mn == "stw":   rS, rA, d = a;      return (36 << 26) | (rS << 21) | (rA << 16) | (d & 0xFFFF)
+    if mn == "lfs":   fD, rA, d = a;      return (48 << 26) | (fD << 21) | (rA << 16) | (d & 0xFFFF)
+    if mn == "stfs":  fS, rA, d = a;      return (52 << 26) | (fS << 21) | (rA << 16) | (d & 0xFFFF)
+    if mn == "mflr":  (rD,) = a;          return 0x7C0802A6 | (rD << 21)
+    if mn == "mtlr":  (rS,) = a;          return 0x7C0803A6 | (rS << 21)
+    if mn == "mtctr": (rS,) = a;          return 0x7C0903A6 | (rS << 21)
+    if mn == "bctrl": return 0x4E800421
+    raise ValueError(mn)
+
+
+def _imm32(rD, val):
+    return [_ppc("lis", rD, (val >> 16) & 0xFFFF), _ppc("ori", rD, rD, val & 0xFFFF)]
+
+
+def _call(target):
+    # save lr in r12, bctrl to absolute target, restore lr. r12 is volatile and
+    # dead at every hook site here (verified: no post-call reader of r12).
+    return [_ppc("mflr", 12)] + _imm32(0, target) + [_ppc("mtctr", 0),
+                                                     _ppc("bctrl"), _ppc("mtlr", 12)]
+
+
+def _c2_block(addr, words):
+    words = list(words)
+    if len(words) % 2 == 0:
+        words.append(0x60000000)             # nop pad -> branch-back lands last
+    words.append(0x00000000)                 # handler branch-back word
+    out = [f"C2{addr & 0x01FFFFFF:06X} {len(words) // 2:08X}"]
+    for i in range(0, len(words), 2):
+        out.append(f"{words[i]:08X} {words[i + 1]:08X}")
+    return "\n".join(out)
+
+
+def _ws2d_blocks(aspect_key: str) -> str:
+    # CALIBRATION FIX (v2): the classic gamemasterplc `$Widescreen` we ship is
+    # NOT BSE's widescreen patch — it hardcodes an aspect-INDEPENDENT J2D ortho
+    # X range and our v1 sized these cover-fixes to BSE's per-aspect range
+    # instead, leaving gaps. DOL evidence (vanilla main.dol, r2=0x80416BA0):
+    #   The five J2D ctor sites 0x80176AA4 / 0x8029B974 / 0x80176C40 /
+    #   0x80176FF4 / 0x80177198 store an ortho box at fields
+    #   +0x30(left) +0x34(top) +0x38(right) +0x3C(bottom).  Vanilla site A:
+    #   {left=0, top=16, right=600, bottom=464} — the 4:3 ortho box.
+    #   Classic `$Widescreen` redirects the +0x30 (left) load to r2-0x47C4
+    #   (@0x804123DC = C2C80000 = -100.0) and overwrites the SDA slot feeding
+    #   +0x38 (right): @0x804123E8 / @0x80416620 := 442F0000 = 700.0.
+    #   -> effective visible ortho X = [-100, 700], width 800, ALL aspects.
+    # So the shine-select gradient/masks must cover [-100, 700], not BSE's
+    # per-aspect [-adjX, 600+adjX]. v1 gradient-left = -adjX (16:10 -> -58) sat
+    # 42u short of -100  == (-58 - -100)/800 = 5.25% black bar on the LEFT
+    # (matches screenshot); v1 relative masks reached 600+58=658, 42u short of
+    # 700 == 5.25% gap on the RIGHT (matches). Fix: size cover geometry to the
+    # classic ortho range plus an overshoot margin (overdraw is harmless for
+    # solid cover panes / the full-bleed gradient; undershoot is a visible gap).
+    # This is aspect-INDEPENDENT — both variant titles collapse to identical
+    # constants (the launcher still keys the two titles on aspect).
+    ORTHO_L, ORTHO_R = -100, 700                     # DOL-verified classic range
+    MARGIN = 20                                       # overshoot both edges
+    coverL = ORTHO_L - MARGIN                          # -120
+    coverR = ORTHO_R + MARGIN                          #  720
+    # block-D content shift stays BSE's per-aspect adjustX (see [D] note).
+    adjX = int(({"tv": 796, "mac": 716}[aspect_key] / 600.0 - 1.0) * 300.0)  # 98 / 58
+    left_bits = struct.unpack(">I", struct.pack(">f", float(coverL)))[0]
+    right_bits = struct.unpack(">I", struct.pack(">f", float(coverR)))[0]
+
+    # [A] demo wipe/mask panes @0x801723F0 (r31 = consoleStr, live post-call)
+    def copy4(dr, sr):                              # J2DPane.mRect(0x14) -> TExPane.mRect(0x04)
+        w = []
+        for k in range(4):
+            w += [_ppc("lwz", 0, sr, 0x14 + 4 * k), _ppc("stw", 0, dr, 0x04 + 4 * k)]
+        return w
+    a = _call(_WS2D_LOADAFTER)                       # loadAfter(consoleStr): r3=consoleStr at entry
+    for i in range(2):                               # wipe[0], wipe[1]: set mX1 & mX2
+        a += [_ppc("lwz", 10, 31, 0x28C + 4 * i), _ppc("lwz", 11, 10, 0)]
+        a += _imm32(0, coverL & 0xFFFFFFFF) + [_ppc("stw", 0, 11, 0x14)]
+        a += _imm32(0, coverR) + [_ppc("stw", 0, 11, 0x1C)]
+        a += copy4(10, 11)
+    a += [_ppc("lwz", 10, 31, 0x294), _ppc("lwz", 11, 10, 0)]     # mask[0]: only mX1
+    a += _imm32(0, coverL & 0xFFFFFFFF) + [_ppc("stw", 0, 11, 0x14)] + copy4(10, 11)
+    a += [_ppc("lwz", 10, 31, 0x298), _ppc("lwz", 11, 10, 0)]     # mask[1]: only mX2
+    a += _imm32(0, coverR) + [_ppc("stw", 0, 11, 0x1C)] + copy4(10, 11)
+
+    # [B] select-menu masks @0x80175F50 (r3 = menu; r30/r31 nonvol, untouched).
+    # v1 expanded each mask relative to its native 4:3 rect (X1-=adjX/X2+=adjX)
+    # -> reached only [-adjX, 600+adjX]. Set them to the absolute cover range
+    # so both bands span the full classic ortho width.
+    def do_mask(p):
+        return [_ppc("addi", 9, 0, coverL), _ppc("stw", 9, p, 0x04),   # li r9,coverL; mX1
+                _ppc("addi", 9, 0, coverR), _ppc("stw", 9, p, 0x0C),   # li r9,coverR; mX2
+                _ppc("lwz", 12, p, 0x00),
+                _ppc("lwz", 0, p, 0x04), _ppc("stw", 0, 12, 0x14),
+                _ppc("lwz", 0, p, 0x08), _ppc("stw", 0, 12, 0x18),
+                _ppc("lwz", 0, p, 0x0C), _ppc("stw", 0, 12, 0x1C),
+                _ppc("lwz", 0, p, 0x10), _ppc("stw", 0, 12, 0x20)]
+    b = [_ppc("ori", 11, 3, 0), _ppc("lwz", 10, 11, 0x24)] + do_mask(10)
+    b += [_ppc("lwz", 10, 11, 0x28)] + do_mask(10)
+    b += [_ppc("ori", 3, 11, 0)] + _call(_WS2D_STARTMOVE)
+
+    # [C] gradient X extents: stash float in scratch, lfs into the target FPR
+    sc_hi, sc_lo = (_WS2D_SCRATCH >> 16) & 0xFFFF, _WS2D_SCRATCH & 0xFFFF
+
+    def load_fpr(fD, bits):
+        head = [_ppc("lis", 0, (bits >> 16) & 0xFFFF)] if (bits & 0xFFFF) == 0 \
+            else _imm32(0, bits)
+        return head + [_ppc("lis", 11, sc_hi), _ppc("ori", 11, 11, sc_lo),
+                       _ppc("stw", 0, 11, 0), _ppc("lfs", fD, 11, 0)]
+    c_left = load_fpr(4, left_bits)                  # @0x8017586C  f4 = coverL (-120)
+    c_right = load_fpr(1, right_bits)                # @0x80175884  f1 = coverR (720)
+
+    # [D] root pane position @0x8013F430 (r3=screen,r4=x,r5=y,r6=ctx preserved).
+    # Content-centering shift, NOT a cover extent — keep BSE's per-aspect
+    # adjustX (BSE's patchLevelSelectPosition does move(adjustX,0)); the
+    # screenshot shows content centered, so do not regress it on the ortho
+    # range. Flagged for eye-test if content drifts off-center at 16:10.
+    d = [_ppc("lwz", 11, 3, 0xD0), _ppc("lwz", 11, 11, 0),        # firstChild = mFirst->mItemPtr
+         _ppc("lwz", 10, 11, 0x14), _ppc("addi", 10, 10, adjX), _ppc("stw", 10, 11, 0x14),
+         _ppc("lwz", 10, 11, 0x1C), _ppc("addi", 10, 10, adjX), _ppc("stw", 10, 11, 0x1C)]
+    d += _call(_WS2D_J2DDRAW)
+
+    return "\n".join([
+        _c2_block(0x801723F0, a),
+        _c2_block(0x80175F50, b),
+        _c2_block(0x8017586C, c_left),
+        _c2_block(0x80175884, c_right),
+        _c2_block(0x8013F430, d),
+    ])
+
+
+WS2D_TITLE = {"tv": "Widescreen 2D fix v2 16:9", "mac": "Widescreen 2D fix v2 16:10"}
+# stale v1 titles the launcher must remove/ignore when it deploys v2.
+WS2D_TITLE_STALE = ["Widescreen 2D fix 16:9", "Widescreen 2D fix 16:10"]
+
+
+def gen_widescreen_2d(aspect_key: str) -> tuple[str, str]:
+    """Return (title, code) for the widescreen 2D-leftovers fix at this aspect.
+    Replicates BSE's demo-mask / select-menu / gradient / root-pane fixes."""
+    return WS2D_TITLE[aspect_key], _ws2d_blocks(aspect_key)
+
+
+def existing_widescreen_2d_titles(ini: Ini) -> list[str]:
+    return [t for t in ini.titles() if t in WS2D_TITLE.values()]
+
+
 def gen_fps_bundle(fps: int, python=sys.executable) -> tuple[str, str]:
     """Run fpspatch.py <fps> --bare and return (title, hex-pairs)."""
     if fps % 60 or fps // 60 < 2:

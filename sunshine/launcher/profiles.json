@@ -1,5 +1,5 @@
 {
-  "last": "Offline 120",
+  "last": "Offline 30 Vanilla",
   "profiles": [
     {
       "name": "Moveset 120",
@@ -56,7 +56,7 @@
       "name": "Offline 120",
       "mode": "offline",
       "fps": 120,
-      "fov": 55,
+      "fov": 70,
       "aspect": "mac",
       "ghost": false,
       "hd_portals": true,
@@ -76,22 +76,22 @@
       "fov": 80,
       "aspect": "mac",
       "ghost": false,
-      "hd_portals": false,
+      "hd_portals": true,
       "player_name": "Kris",
       "qol": {
         "camera": true,
         "fludd": true,
         "savebox": true,
         "tank": false,
-        "pausejump": false
+        "pausejump": true
       }
     },
     {
       "name": "Offline 30 Vanilla",
       "mode": "offline",
       "fps": 60,
-      "fov": 70,
-      "aspect": "mac",
+      "fov": null,
+      "aspect": "none",
       "ghost": false,
       "hd_portals": false,
       "player_name": "Kris",

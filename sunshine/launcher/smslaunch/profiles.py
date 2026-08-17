@@ -21,7 +21,7 @@ def default_profile(name="Default") -> dict:
         "aspect": "mac",            # mac (16:10) | tv (16:9)
         "ghost": False,             # online only: also spawn the ghost bot
         "hd_portals": False,        # boot the HD-portal-previews variant disc (both modes)
-        "player_name": "Kris",      # online: name sent to the server
+        "player_name": "Player",    # online: name sent to the server
         "qol": {k: dflt for k, _lbl, dflt, _pats in C.QOL_CATALOG},
     }
 
@@ -56,12 +56,18 @@ class Store:
     def __init__(self):
         self.profiles: list[dict] = []
         self.last_name: str | None = None
+        self._src = C.PROFILES_JSON
         self.load()
 
     def load(self):
-        if C.PROFILES_JSON.exists():
+        # profiles.local.json (gitignored) shadows profiles.json when present —
+        # lets individual machines keep personal profiles without dirtying the
+        # tracked file. Saving always writes back to whichever file was loaded.
+        src = C.PROFILES_LOCAL_JSON if C.PROFILES_LOCAL_JSON.exists() else C.PROFILES_JSON
+        self._src = src
+        if src.exists():
             try:
-                raw = json.loads(C.PROFILES_JSON.read_text())
+                raw = json.loads(src.read_text())
                 self.profiles = [normalize(p) for p in raw.get("profiles", [])]
                 self.last_name = raw.get("last")
             except Exception:
@@ -76,8 +82,9 @@ class Store:
             self.save()
 
     def save(self):
-        C.PROFILES_JSON.parent.mkdir(parents=True, exist_ok=True)
-        C.PROFILES_JSON.write_text(json.dumps(
+        dest = getattr(self, "_src", C.PROFILES_JSON)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(json.dumps(
             {"last": self.last_name, "profiles": self.profiles}, indent=2))
 
     # ---- CRUD --------------------------------------------------------------

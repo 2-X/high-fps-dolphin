@@ -88,6 +88,9 @@ def widescreen_titles(ini: Ini, engine: str, aspect: str) -> list[str]:
     proj = codegen.WS_TITLE.get(aspect)      # exact title for this aspect
     if proj and proj in ini.titles():
         out.append(proj)
+    twod = codegen.WS2D_TITLE.get(aspect)    # the 4:3-leftovers fix (wipe/menu/grad/pane)
+    if twod and twod in ini.titles():
+        out.append(twod)
     wipe = ini.resolve(C.WIDESCREEN_WIPE_FIX)
     if wipe:
         out.append(wipe)
@@ -228,6 +231,20 @@ def apply(profile: dict, *, log=_noop, force=False):
             title, code = codegen.gen_widescreen(profile["aspect"])
             ini.add_code(title, code)
             log(f"Generating ${title} (aspect widescreen)…  + ${title}")
+        # the 2D-leftovers fix (level-wipe curtain + masks, shine-select menu
+        # masks/gradient/root pane) that the classic $Widescreen leaves at 4:3.
+        # Drop any superseded v1 body first so the vN title bump actually
+        # deploys (generate-if-missing would otherwise leave the stale v1 code
+        # in [Gecko]; set_enabled already keeps v1 out of [Gecko_Enabled]).
+        for stale in codegen.WS2D_TITLE_STALE:
+            if stale in ini.titles():
+                ini.remove_code(stale)
+                log(f"Removed stale ${stale} (superseded by v2 calibration).")
+        ws2d_title = codegen.WS2D_TITLE.get(profile["aspect"])
+        if ws2d_title and ws2d_title not in ini.titles():
+            title, code = codegen.gen_widescreen_2d(profile["aspect"])
+            ini.add_code(title, code)
+            log(f"Generating ${title} (widescreen 2D leftovers)…  + ${title}")
 
     # 1a3. QOL "Pause while jumping": a fixed one-line write shared by both discs
     #      (the air-pause gate at 0x80297AD8 is base-DOL code, identical offline/

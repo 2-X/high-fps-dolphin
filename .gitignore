@@ -30,3 +30,31 @@ sms-decomp/
 sunshine/research/scripts/*-ini-watcher.log
 # per-machine Claude settings
 .claude/settings.local.json
+
+# ── Legal: Nintendo-copyrighted or license-unverified binaries ──────────────
+# Extracted disc system files (GMSE01 = Super Mario Sunshine)
+work/disc/
+work/main.dol
+
+# Dolphin savestates = RAM snapshots of Nintendo code/data
+sunshine/saves/savestates/*.s0*
+# Memory card image (GCI) and SRAM — Nintendo game saves
+sunshine/saves/01-GMSE-super_mario_sunshine.gci
+sunshine/saves/SRAM.raw
+# Nintendo DOL executables extracted from disc
+sunshine/research/main.dol
+sunshine/research/main-hd.dol
+# DDS textures ripped from the disc
+sunshine/textures/GMSE01-pruned/
+# BSE upstream release dir (boot.bin + main.dol = Nintendo disc data;
+# KuriboKernel.bin = unverified license; BetterSunshineEngine.kxe = BSE upstream)
+sunshine/bsmso/bse-release/
+# Our GPL-3.0 BSE fork build — do not redistribute until bse-fork source is public
+sunshine/bsmso/BetterSunshineEngine-highfps-v400.kxe
+
+# ── Local per-machine files (never committed) ────────────────────────────────
+# Local-only Dolphin per-machine backup (auto-created by launcher)
+sunshine/dolphin-patches/_mac-local-backup-*/
+# Launcher per-machine overrides
+sunshine/launcher/config.local.json
+sunshine/launcher/profiles.local.json

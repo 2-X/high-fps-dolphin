@@ -144,6 +144,11 @@ class Ini:
         seg = self.text[s:e].rstrip("\n") + "\n" + block
         self.text = self.text[:s] + seg + self.text[e:]
 
+    def remove_code(self, title, section="Gecko"):
+        """Delete a `$title` block (and its body) from `section`. Returns True
+        if a block was removed. Used to evict superseded (vN-1) code bodies."""
+        return self._remove_block(title, section)
+
     def set_enabled(self, full_titles):
         """Replace [Gecko_Enabled] with exactly these titles (order kept),
         normalized to the name Dolphin matches on (bracket suffix stripped).

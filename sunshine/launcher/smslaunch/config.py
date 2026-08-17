@@ -12,9 +12,26 @@ Two engines are supported, because on this Mac two GMSE01 discs exist:
                rewrites the stock framerate global every frame, so the fpspatch
                Gecko bundle must NOT be enabled here. FOV is still a `$FOV N`
                Gecko code. Offline OR online (server + bridge).
+
+---- local overrides --------------------------------------------------------
+Machine-specific paths can be overridden without touching this file two ways:
+
+  1. sunshine/launcher/config.local.json  (gitignored; created from the .example)
+     {
+       "iso_offline":  "/path/to/Super Mario Sunshine (USA).rvz",
+       "iso_dir":      "/path/to/bsmso-work",
+       "dolphin_app":  "/path/to/Dolphin.app",
+       "dolphin_user": "/Users/you/Library/Application Support/Dolphin"
+     }
+
+  2. Environment variables (highest priority):
+       SMS_ISO_OFFLINE   SMS_ISO_DIR   SMS_DOLPHIN_APP   SMS_DOLPHIN_USER
+
+Precedence: env var > config.local.json > default (hardcoded below).
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 from pathlib import Path
@@ -32,23 +49,62 @@ BRIDGE = MAC_ONLINE / "bridge.py"
 GHOST = MAC_ONLINE / "ghost_bot.py"
 RUN_SERVER = MAC_ONLINE / "run_server.sh"
 
-DOLPHIN_APP = REPO / "dolphin" / "build" / "Binaries" / "Dolphin.app"
+# ---- local override layer --------------------------------------------------
+# Read config.local.json once at import time (file is optional / gitignored).
+_LOCAL_JSON = LAUNCHER_DIR / "config.local.json"
+_local: dict = {}
+if _LOCAL_JSON.exists():
+    try:
+        _local = json.loads(_LOCAL_JSON.read_text())
+    except Exception as _e:
+        import warnings
+        warnings.warn(f"[smslaunch] Could not parse {_LOCAL_JSON}: {_e}")
+
+
+def _path(env_var: str, local_key: str, default: Path) -> Path:
+    """Resolve a path constant: env > config.local.json > default."""
+    if env_var in os.environ:
+        return Path(os.environ[env_var]).expanduser()
+    if local_key in _local:
+        return Path(_local[local_key]).expanduser()
+    return default
+
+
+# ---- Dolphin paths (machine-specific — override via config.local.json) -----
+DOLPHIN_APP = _path(
+    "SMS_DOLPHIN_APP",
+    "dolphin_app",
+    REPO / "dolphin" / "build" / "Binaries" / "Dolphin.app",
+)
+DOLPHIN_USER = _path(
+    "SMS_DOLPHIN_USER",
+    "dolphin_user",
+    Path.home() / "Library" / "Application Support" / "Dolphin",
+)
 
 # ---- Dolphin user config ---------------------------------------------------
-DOLPHIN_USER = Path.home() / "Library" / "Application Support" / "Dolphin"
 LIVE_INI = DOLPHIN_USER / "GameSettings" / "GMSE01.ini"      # per-game Gecko/Core
 DOLPHIN_INI = DOLPHIN_USER / "Config" / "Dolphin.ini"        # global (MEM1 override)
 
 # ---- launcher state --------------------------------------------------------
 PROFILES_JSON = LAUNCHER_DIR / "profiles.json"
+PROFILES_LOCAL_JSON = LAUNCHER_DIR / "profiles.local.json"   # gitignored user copy
 LAST_JSON = LAUNCHER_DIR / "last.json"
 VENV_PY = LAUNCHER_DIR / ".venv" / "bin" / "python"
 
-# ---- discs -----------------------------------------------------------------
+# ---- discs (machine-specific — override via config.local.json) -------------
 # OFFLINE = the plain Super Mario Sunshine disc (GMSE01) + our stock high-fps
 # Gecko kit. ONLINE = the BSMSO / Better Sunshine Engine disc.
-ISO_OFFLINE = Path("/Applications/gamecube/Super Mario Sunshine (USA).rvz")
-ISO_DIR = Path("/Applications/gamecube/bsmso-work")
+ISO_OFFLINE = _path(
+    "SMS_ISO_OFFLINE",
+    "iso_offline",
+    Path("/Applications/gamecube/Super Mario Sunshine (USA).rvz"),
+)
+ISO_DIR = _path(
+    "SMS_ISO_DIR",
+    "iso_dir",
+    Path("/Applications/gamecube/bsmso-work"),
+)
 ISO_ONLINE = ISO_DIR / "BSMSO-GMSE01.iso"                 # BSE, FPS 30/60/120
 ISO_ONLINE_HIGHFPS = ISO_DIR / "BSMSO-GMSE01-highfps.iso"  # fork, adds 240/280/320
 
@@ -169,8 +225,14 @@ QOL_KEYS = [k for k, *_ in QOL_CATALOG]
 # ---- widescreen (driven by the Aspect dropdown, NOT a QOL toggle) -----------
 # Offline (stock disc) needs the projection widescreen Gecko for the chosen aspect
 # (`$Widescreen` = 16:9, `$Widescreen 16:10` = generated variant — see codegen)
-# PLUS the level-entry wipe fix that stretches the black "curtain" wipes to fill
-# the frame. Online = BSE renders widescreen natively, so no Gecko is used.
+# PLUS the level-entry wipe fix that stretches the black "curtain" fill to fill
+# the frame PLUS the `$Widescreen 2D fix <aspect>` code (codegen.gen_widescreen_2d)
+# that repositions the four things the classic code leaves 4:3: the demo wipe/mask
+# panes, the shine-select menu masks, its gradient background, and its root pane.
+# The 2D fix is COMPLEMENTARY to the wipe fix v2 — v2 scales the TSMSFader solid
+# fill (fade transitions); the 2D fix's demo-mask block scales the separate
+# TConsoleStr textured wipe curtain + side masks. Keep both.
+# Online = BSE renders widescreen natively, so no Gecko is used.
 WIDESCREEN_WIPE_FIX = r"Widescreen wipe fix v2"    # aspect-independent curtain fix
 
 # ---- baseline high-fps correctness fixes (always on, ONLINE/BSE only) --------
