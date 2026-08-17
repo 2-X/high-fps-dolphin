@@ -1,6 +1,7 @@
 #!/bin/zsh
 # Super Mario Sunshine launcher — one command.
 #   ./sms            launch the TUI
+#   ./sms setup      run the first-run setup wizard (ISO, Dolphin, config kit)
 # Bootstraps its own venv on first run; pins deps from requirements.txt.
 set -e
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -27,4 +28,9 @@ fi
 "$VENV/bin/pip" -q install -r "$DIR/requirements.txt"
 
 cd "$DIR"
+
+# `./sms setup` -> the first-run setup wizard. Everything else -> the TUI.
+if [ "$1" = "setup" ]; then
+  exec "$VENV/bin/python" -m smslaunch.setup_wizard
+fi
 exec "$VENV/bin/python" -m smslaunch

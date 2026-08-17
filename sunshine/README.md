@@ -62,7 +62,9 @@ Hardware ceiling: the sim-rate approach is CPU-bound. Apple Silicon laptops top 
 
 ## 3. Quick start (macOS — the primary supported path)
 
-**Prerequisites:** Python 3.10+, Xcode Command Line Tools, CMake, git.
+**Prerequisites:** Python 3.10+. (Building Dolphin from source additionally needs
+Xcode Command Line Tools, CMake, and git — but the setup wizard downloads a
+prebuilt binary by default, so most people don't need those.)
 
 ### Step 1 — dump your disc
 
@@ -76,7 +78,45 @@ git clone https://github.com/2-X/high-fps-dolphin
 cd high-fps-dolphin
 ```
 
-### Step 3 — build the patched Dolphin
+### Step 3 — run the setup wizard
+
+```bash
+cd sunshine/launcher
+./sms setup
+```
+
+The wizard (bootstraps its own virtualenv on first run) walks you through
+everything and is **safe to re-run** — anything already configured reports
+`[already OK]` and is left untouched; any file it would overwrite is backed up
+first. It will:
+
+1. Record the path to your dumped disc.
+2. Download the **prebuilt patched Dolphin** (macOS arm64) into
+   `~/Applications/SMS-Dolphin/`, or let you point at an existing build /
+   build from source. The app is unsigned; the wizard removes the Gatekeeper
+   quarantine for you so it launches without a right-click dance.
+3. Install the Dolphin config kit (input maps, GFX, Gecko codes) and
+   **guarantee the MEM1 override** (`RAMOverrideEnable` / `MEM1Size`) — without
+   it, late-list Gecko codes (FOV, widescreen) silently never run.
+4. Set your player name.
+5. Optionally install the full UHD texture pack.
+
+### Step 4 — play
+
+```bash
+./sms
+```
+
+Pick a profile, verify FPS / aspect, and press `Ctrl+L` (Apply & Launch). The
+launcher generates the correct Gecko bundle, writes config, and boots Dolphin.
+(If setup is incomplete, plain `./sms` offers to run the wizard for you.)
+
+---
+
+#### Fallback — build Dolphin from source
+
+If you don't want the prebuilt binary (or aren't on Apple Silicon), build it
+yourself and choose option **[2]** or **[3]** in the wizard's Dolphin step:
 
 ```bash
 git clone https://github.com/dolphin-emu/dolphin
@@ -86,46 +126,8 @@ git apply ../sunshine/dolphin-patches/high-fps-dolphin.patch
 mkdir build && cd build && cmake .. && make -j$(sysctl -n hw.logicalcpu)
 ```
 
-Full build details and troubleshooting: [dolphin-patches/README.md](dolphin-patches/README.md).
-
-### Step 4 — CRITICAL: enable the MEM1 override
-
-**Without this setting, late-list Gecko codes (FOV, widescreen) silently never run.**
-
-In Dolphin: Config → Advanced → Enable Emulated Memory Size Override → MEM1 = 32 MiB.
-
-Or in `~/Library/Application Support/Dolphin/Config/Dolphin.ini` under `[Core]`:
-
-```ini
-RAMOverrideEnable = True
-MEM1Size = 0x02000000
-```
-
-When it is working you will see in the Dolphin log (ACTIONREPLAY category):
-`[hifps] Gecko code list relocated to 81800000…81840000`.
-
-Details: [dolphin-patches/README.md §3](dolphin-patches/README.md).
-
-### Step 5 — configure ISO paths
-
-Open `sunshine/launcher/smslaunch/config.py` and set `ISO_OFFLINE` to the path of
-your dumped disc. If you plan to use online mode, set `ISO_ONLINE` and `ISO_ONLINE_HIGHFPS`
-as well. See [launcher/README.md](launcher/README.md) for the full config reference.
-
-### Step 6 — run the launcher
-
-```bash
-sunshine/launcher/sms
-```
-
-The script creates its own virtualenv on first run (needs Python 3.10+). No separate
-install step.
-
-### Step 7 — pick a profile and launch
-
-The launcher ships a default offline-120fps profile. Select it, verify your FPS and
-aspect settings, and press `Ctrl+L` (Apply & Launch). The launcher generates the
-correct Gecko bundle, writes config, and boots Dolphin.
+Result: `build/Binaries/Dolphin.app`. Full build details and the MEM1-override
+runtime setting: [dolphin-patches/README.md](dolphin-patches/README.md).
 
 ---
 

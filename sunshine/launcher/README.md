@@ -7,6 +7,30 @@ offline — with a chosen FPS, FOV, and set of QOL fixes, saved as named profile
 sunshine/launcher/sms          # run it (bootstraps its own venv on first run)
 ```
 
+## First-run setup (do this once)
+
+```
+cd sunshine/launcher
+./sms setup
+```
+
+The setup wizard gets a newcomer from a freshly-cloned repo to a working 120fps
+build with near-zero manual steps: it records your dumped disc, downloads the
+**prebuilt patched Dolphin** (macOS arm64) and de-quarantines it (the app is
+unsigned), installs the Dolphin config kit, **guarantees the MEM1 override**
+(`RAMOverrideEnable` / `MEM1Size` — without it the FOV/widescreen Gecko codes
+silently never run), sets your player name, and optionally installs the UHD
+texture pack.
+
+It is **idempotent and safe to re-run**: anything already configured reports
+`[already OK]` and is untouched, and any file it would overwrite is copied into a
+timestamped `sms-setup-backup-<ts>/` under your Dolphin user dir first. Plain
+`./sms` also offers to run the wizard if the ISO or Dolphin build is missing.
+
+Prefer to build Dolphin yourself? Choose option **[2]** (point at an existing
+build) or **[3]** (build-from-source instructions) in the wizard's Dolphin step —
+see [../dolphin-patches/README.md](../dolphin-patches/README.md).
+
 ## Setup on your machine
 
 ### Requirements

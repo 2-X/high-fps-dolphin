@@ -287,20 +287,50 @@ class Launcher(App):
 
 
 def main():
-    # Fail fast with an actionable message if the offline ISO is missing.  The
-    # path comes from defaults or the local-override layer (config.local.json /
-    # env vars) — either way the user needs to know *how* to fix it.
+    import sys
+    # A newcomer needs an ISO AND the patched Dolphin build before the launcher
+    # can do anything. If either is missing, offer the setup wizard on a TTY;
+    # otherwise print a clear, actionable, non-interactive error (CI / wrappers).
+    missing = []
     if not C.ISO_OFFLINE.exists():
-        import sys
+        missing.append(f"ISO not found: {C.ISO_OFFLINE}")
+    if not C.DOLPHIN_APP.exists():
+        missing.append(f"Dolphin.app not found: {C.DOLPHIN_APP}")
+
+    if missing:
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            print("\n[sms] Setup is incomplete:")
+            for m in missing:
+                print(f"      - {m}")
+            print()
+            try:
+                ans = input("Run the first-run setup wizard now? (Y/n): ").strip()
+            except EOFError:
+                ans = "n"
+            if ans == "" or ans[0].lower() == "y":
+                from .setup_wizard import run
+                run(interactive=True)
+                # config.py resolves paths at import time; a fresh process
+                # picks up whatever the wizard wrote. Ask the user to re-run
+                # rather than hot-reloading module-global constants in place.
+                print("\n[sms] Setup finished. Run  ./sms  again to launch.")
+                return
+            print("      Skipped. Re-run `./sms setup` when ready.")
+            sys.exit(1)
+        # Non-interactive: clear error, no prompt.
         print(
-            f"\n[sms] ISO not found: {C.ISO_OFFLINE}\n"
-            "\nTo point the launcher at your disc, set the path one of two ways:\n"
-            "\n  1. Create sunshine/launcher/config.local.json  (gitignored):\n"
+            "\n[sms] Setup is incomplete (non-interactive):\n"
+            + "".join(f"      - {m}\n" for m in missing)
+            + "\nRun the setup wizard interactively:\n"
+            "      ./sms setup\n"
+            "\nOr point the launcher at your files one of two ways:\n"
+            "\n  1. sunshine/launcher/config.local.json  (gitignored):\n"
             '       { "iso_offline": "/path/to/Super Mario Sunshine (USA).rvz",\n'
-            '         "iso_dir":     "/path/to/bsmso-work" }\n'
+            '         "dolphin_app": "/path/to/Dolphin.app" }\n'
             "     (copy config.local.json.example to get started)\n"
-            "\n  2. Set an environment variable:\n"
-            '       export SMS_ISO_OFFLINE="/path/to/Super Mario Sunshine (USA).rvz"\n',
+            "\n  2. Environment variables:\n"
+            '       export SMS_ISO_OFFLINE="/path/to/Super Mario Sunshine (USA).rvz"\n'
+            '       export SMS_DOLPHIN_APP="/path/to/Dolphin.app"\n',
             file=sys.stderr,
         )
         sys.exit(1)
