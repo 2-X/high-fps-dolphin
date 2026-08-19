@@ -64,6 +64,8 @@ Usage:
   fpspatch.py 180 --check          # validate structure, decoding and constants
   fpspatch.py 180 --emit-ini       # full GMSE01.ini fragment, ready to merge
   fpspatch.py 180 --bare -o c.txt  # hex only, for gecko.py add --code-file
+  fpspatch.py 240 --bse            # BSE companion bundle (120 or 240 only;
+                                   #   see bse_supported() for why not 280/320)
 """
 import argparse, struct, sys
 
@@ -1513,16 +1515,15 @@ ANMRATE_SITES = [
     # never confirmed — consistent with them being wrong.
 ]
 
-def _anmrate_block(addr, mode, orig):
+def _anmrate_block(addr, mode, orig, nmul=2):
     if mode == "store":
         rate = (orig >> 21) & 31                 # stfs source FPR
         s1, s2 = (1, 2) if rate < 2 else (0, 1)  # dead volatiles != rate (post-call)
         scale = [_lfs(s1, 2, ANMRATE_GLOBAL_DISP),   # G global
                  _lfs(s2, 2, HALF_DISP),             # 0.5f
                  _fcmpu(s1, s2),
-                 0x41820000 | 12,                    # beq -> orig (stock: no-op)
-                 _fmuls(rate, rate, s2),
-                 _fmuls(rate, rate, s2)]
+                 0x41820000 | ((nmul + 1) * 4),      # beq -> orig (stock: no-op)
+                 ] + [_fmuls(rate, rate, s2)] * nmul   # R * 0.5**nmul
         words = scale + [orig]                    # original store, now of scaled rate
     else:                                        # load-mode: scale f1 after the lfs
         rate, s1, s2 = 1, 0, 13
@@ -1530,13 +1531,16 @@ def _anmrate_block(addr, mode, orig):
                  _lfs(s1, 2, ANMRATE_GLOBAL_DISP),
                  _lfs(s2, 2, HALF_DISP),
                  _fcmpu(s1, s2),
-                 0x41820000 | 12,
-                 _fmuls(rate, rate, s2),
-                 _fmuls(rate, rate, s2)]
+                 0x41820000 | ((nmul + 1) * 4),
+                 ] + [_fmuls(rate, rate, s2)] * nmul
     return _c2(addr, words)
 
-def anmrate():
-    return "\n".join(_anmrate_block(a, m, o) for a, m, o in ANMRATE_SITES)
+def anmrate(nmul=2):
+    """`nmul` halvings of the raw rate.  The STOCK bundle always uses 2 (x0.25):
+    calc_anim is pinned at 120 Hz by substep_granularity() at every G, so the
+    scale is the constant 30/120.  The BSE companion has no substep retune and
+    passes log2(FPS/30) instead — see bse_anmrate()."""
+    return "\n".join(_anmrate_block(a, m, o, nmul) for a, m, o in ANMRATE_SITES)
 
 
 # ---- Animal movement-rate fix (birds fly at 1/4 speed) ----------------------
@@ -1739,10 +1743,25 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
 # entries have volatile r0/r11 at a function boundary. r12 is left free for the
 # block bodies that already use it as their counter base.
 BSE_FPS120_WORD = 0x40000000            # float 2.0f = *0x804167B8 at BSE FPS_120
+BSE_FPS240_WORD = 0x40800000            # float 4.0f = *0x804167B8 at BSE FPS_240
+                                        # (fork kxe FPS_240 — see HANDOFF-PC-240)
+
+def bse_fps_word(fps):
+    """The word BSE's updateFPS() writes to 0x804167B8 every gameplay frame:
+    float(FPS/60).  120 -> 0x40000000 (2.0f), 240 -> 0x40800000 (4.0f).
+    The guard materialises it with a bare `lis`, so the LOW half must be zero —
+    true for every G that is a power of two, which is exactly the set
+    bse_build() accepts.  A non-zero low half would need an extra `ori`, which
+    would shift GUARD_BNE_WORD and every target_word computed in this file."""
+    w = struct.unpack(">I", struct.pack(">f", fps / 60.0))[0]
+    if w & 0xFFFF:
+        raise SystemExit(f"BSE guard: float({fps / 60:g}) = {w:08X} has a non-zero "
+                         f"low half — the 1-instruction `lis` guard cannot hold it")
+    return w
 
 GUARD_BNE_WORD = 4                       # the bne is always the 5th guard word
 
-def _bse_guard(target_word, base=12, val=0, lit=11):
+def _bse_guard(target_word, base=12, val=0, lit=11, fps=120):
     """Guard prologue (5 words). `target_word` = the block-start word index of
     the run-stock convergence point (the block's re-executed original
     instruction, or the 'run the gated body' path). The bne at word 4 branches
@@ -1753,11 +1772,15 @@ def _bse_guard(target_word, base=12, val=0, lit=11):
     (the int->double 0x43300000 magic word set at 0x8000AB5C), so that block
     passes base=12, val=11, lit=12 to keep r0 untouched — both r11 and r12 are
     reloaded by the block body on the guard-pass path and are dead after the
-    hook on the guard-fail path."""
+    hook on the guard-fail path.
+
+    `fps` selects the compared literal: 120 -> `lis rLit,0x4000` (2.0f), 240 ->
+    `lis rLit,0x4080` (4.0f).  The guard is 5 words at EVERY rate, so all the
+    target_word arithmetic in the callers stays valid unchanged."""
     disp = ((target_word - GUARD_BNE_WORD) * 4) & 0xFFFC
     return [(15 << 26) | (base << 21) | 0x8041,       # lis   rBase,0x8041
             (32 << 26) | (val << 21) | (base << 16) | 0x67B8,  # lwz rVal,0x67B8(rBase)
-            (15 << 26) | (lit << 21) | 0x4000,        # lis   rLit,0x4000  (2.0f)
+            (15 << 26) | (lit << 21) | (bse_fps_word(fps) >> 16),  # lis rLit,hi16(G)
             (31 << 26) | (val << 16) | (lit << 11),   # cmpw  rVal,rLit
             0x40820000 | disp]                        # bne   -> run-stock
 
@@ -1765,11 +1788,14 @@ def _bse_guard(target_word, base=12, val=0, lit=11):
 # INI): three 8-pair guarded blocks, the guard folded into the proven cadence
 # body. Do NOT regenerate from particles()/_parity_block — those are the
 # UNGUARDED stock caves. Block bodies are identical apart from the hook addr.
-def _bse_parity_block(hook):
+def _bse_parity_block(hook, fps=120):
+    # Word 2 (`lis r4,hi16(float G)`) is the ONLY rate-dependent word here.
+    # Word 9 is `andi. r0,r3,1` = the CONSTANT 1-in-2 JPA parity, deliberately
+    # NOT scaled — see BSE_PARITY_DIVISOR below.
     return "\n".join([
         f"{hook} 00000008",
         "3C608041 800367B8",
-        "3C804000 7C002000",
+        f"3C80{bse_fps_word(fps) >> 16:04X} 7C002000",
         "40820024 806D9FB8",
         "28030000 41820010",
         "8063005C 70600001",
@@ -1778,8 +1804,38 @@ def _bse_parity_block(hook):
         "60000000 00000000",
     ])
 
-BSE_PARITY = "\n".join(_bse_parity_block(h) for h in
-                       ("C22887A8", "C2288D30", "C2288DEC"))
+PARITY_HOOK_WORDS = ("C22887A8", "C2288D30", "C2288DEC")
+
+# ---- the JPA parity divisor under BSE --------------------------------------
+# Held at the CONSTANT 2 at every rate, per HANDOFF-PC-240 ("parity stays
+# CONSTANT 2") and commit defbcff ("particle parity is the CONSTANT 1-in-2").
+#
+# OPEN QUESTION — flagged when generalising to 240, NOT acted on:
+#   The constant-2 argument is derived from the STOCK kit, where
+#   substep_granularity() pins CUE_CALC_ANIM at ~120 Hz at EVERY G, so 120/2 =
+#   the native 60 Hz JPA rate and the divisor genuinely cannot scale.  Under
+#   BSE that retune does not exist — every cue runs at the RENDER rate
+#   (HANDOFF-PC-240: "all the 30Hz-class bugs return at 8x" at 240;
+#   bse_bluecoin(): "TCoin::perform ticks at the full 120Hz render rate") — and
+#   this gate counts gpMarDirector+0x5C, the very counter bse_bluecoin reads
+#   1-in-(FPS/30) from.  If that counter advances once per RENDERED frame under
+#   BSE, the BSE parity divisor is G = FPS/60: 2 at 120 (so the shipping,
+#   in-game-confirmed BSE-120 block cannot distinguish the two theories) and 4
+#   at 240.  Emitting 2 at 240 would then run all JPA at 120 Hz instead of 60 —
+#   M-portal atoms decomposing 2x FAST.
+#   ONE WORD to flip if the 240 playtest shows fast particles: return
+#   `int(fps) // 60` here; that changes only word 9 of each parity block,
+#   70600001 -> 70600003.  Do not flip on theory alone — get the playtest.
+def BSE_PARITY_DIVISOR(fps):
+    return 2
+
+def bse_parity(fps=120):
+    n = BSE_PARITY_DIVISOR(fps)
+    if n & (n - 1) or n < 2:
+        raise SystemExit(f"BSE parity divisor {n} must be a power of two >= 2")
+    mask = f"7060{n - 1:04X}"
+    return "\n".join(
+        _bse_parity_block(h, fps).replace("70600001", mask) for h in PARITY_HOOK_WORDS)
 
 BSE_FORCE_120 = "0451E528 00000002"     # BSE mFPSValue = 2 (FPS_120)
 
@@ -1787,7 +1843,7 @@ BSE_FORCE_120 = "0451E528 00000002"     # BSE mFPSValue = 2 (FPS_120)
 def bse_noki_gate(fps=120):
     """noki_gate with a BSE guard on every block. Guard-fail => the gated call
     RUNS (stock: pollution counting every frame)."""
-    n = int(fps // 30)                                  # 4 at 120
+    n = int(fps // 30)                                  # 4 at 120, 8 at 240
     gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
     L = len(gate)
     def gated_call(hook, target, pre):
@@ -1798,13 +1854,13 @@ def bse_noki_gate(fps=120):
         # CALL index (from guard word 0): guard(5) + body + this bne is the last
         # of `body`; _call begins right after.
         i_call = 5 + len(body)                          # start of _call = run path
-        w = _bse_guard(i_call) + body + call
+        w = _bse_guard(i_call, fps=fps) + body + call
         return _c2(hook, w)
     def plain_call(hook, target, pre):
         # drain: no divisor. guard-fail -> the call (which is stock behavior).
         call = _call(target)
         i_call = 5 + len(pre)
-        w = _bse_guard(i_call) + pre + call
+        w = _bse_guard(i_call, fps=fps) + pre + call
         return _c2(hook, w)
     return "\n".join([
         gated_call(*NOKI_OBJ_CALL, pre=_tick(NOKI_OBJ_CTR)),
@@ -1826,7 +1882,7 @@ def bse_noki_copy_gate(fps=120):
     i_b = G + 7 + L
     i_load = G + 8 + L                                   # original lwz (run-stock)
     i_out = G + 9 + L                                    # branch-back slot
-    w = _bse_guard(i_load)                               # guard-fail -> orig lwz
+    w = _bse_guard(i_load, fps=fps)                      # guard-fail -> orig lwz
     w += [0x819D0030,                                    # lwz    r12,0x30(r29) mTexFmt
           0x280C0028,                                    # cmplwi r12,0x28
           0x40820000 | (((i_load - i_bne) * 4) & 0xFFFC),
@@ -1858,7 +1914,7 @@ def bse_se_frame_gate(fps=120):
                    _mullw(0, 0, 11), _subf_(0, 0, 12)]
         # [guard -> ORIG][body][beq CONT][blr][CONT: mflr r0 = ORIG]
         i_orig = 5 + len(w0) + 2                         # index of SE30_ORIG (mflr)
-        w = _bse_guard(i_orig) + w0 + [
+        w = _bse_guard(i_orig, fps=fps) + w0 + [
             0x41820008,                                  # beq +8 -> CONT (run)
             0x4E800020,                                  # blr — gated: skip fn
             SE30_ORIG]                                   # CONT: mflr r0 (orig)
@@ -1877,7 +1933,7 @@ def bse_wipe_pace(fps=120):
     # guard-fail -> straight to the original stfs (counter frozen, harmless: the
     # timer/motion gates run stock when the guard fails). The orig stfs is the
     # convergence word so both paths execute it exactly once.
-    tick = _c2(WIPE_TICK_HOOK, _bse_guard(G + 4) + [   # guard-fail -> orig stfs
+    tick = _c2(WIPE_TICK_HOOK, _bse_guard(G + 4, fps=fps) + [  # fail -> orig stfs
         0x3D808000,                                     # lis  r12,0x8000
         0x80000000 | (11 << 21) | (12 << 16) | WIPE_CTR,   # lwz r11,ctr
         0x396B0001,                                     # addi r11,r11,1
@@ -1895,7 +1951,7 @@ def bse_wipe_pace(fps=120):
                    0x38030000,                          # gated: r0 = r3 (hold)
                    0x48000000 | (((i_skip - (G + 4 + L)) * 4) & 0x03FFFFFC),  # b SKIP
                    0x3803FFFF]                           # PASS: addi r0,r3,-1 (orig)
-    timer = _c2(WIPE_TIMER_HOOK, _bse_guard(i_pass) + timer_body)
+    timer = _c2(WIPE_TIMER_HOOK, _bse_guard(i_pass, fps=fps) + timer_body)
     # motion: guard-fail -> the original lfs f0,0(r3), then branch-back.
     i_orig = G + 7 + L                                   # lfs f0,0(r3) (orig)
     motion_body = [0x3D808000,
@@ -1906,7 +1962,7 @@ def bse_wipe_pace(fps=120):
                     0x618C0000 | (WIPE_MOTION_TAIL & 0xFFFF),   # via the fn's own tail
                     0x7D8903A6, 0x4E800420,             # mtctr r12 ; bctr
                     0xC0030000]                          # lfs f0,0(r3) (orig)
-    motion = _c2(WIPE_MOTION_HOOK, _bse_guard(i_orig) + motion_body)
+    motion = _c2(WIPE_MOTION_HOOK, _bse_guard(i_orig, fps=fps) + motion_body)
     return "\n".join([tick, timer, motion])
 
 
@@ -1921,12 +1977,12 @@ def bse_wipe_pace(fps=120):
 # recomputed by each block's own compare.
 BSE_STARFIX_ORIG_WORD = {0x8014A850: 12, 0x80155D8C: 6, 0x80324EB8: 15}
 
-def bse_starfix():
+def bse_starfix(fps=120):
     out = []
     for kind, addr, body in _iter_codes(STARFIX):
         body = body[:-1]                        # drop the handler-clobbered 0 pad
         i_orig = BSE_STARFIX_ORIG_WORD[addr]
-        w = _bse_guard(5 + i_orig) + body       # guard-fail -> shifted original
+        w = _bse_guard(5 + i_orig, fps=fps) + body   # fail -> shifted original
         out.append(_c2(addr, w))
     return "\n".join(out)
 
@@ -1940,15 +1996,25 @@ def bse_timerfix(fps=120):
     return timerfix(fps)
 
 
-# ---- Raw anim-rate fixes under BSE — SELF-GATED, emitted VERBATIM -----------
+# ---- Raw anim-rate fixes under BSE — SELF-GATED, rate-SCALED ---------------
 # Each anmrate block reads the framerate global via lfs f_,-0x3E8(r2)
 # (0x804167B8) and compares it against native 0.5f; beq -> skip (stock no-op).
-# Under BSE the global is 2.0f != 0.5f, so the R*0.5*0.5 = R/4 scale fires —
-# correct at 120 in both engines (calc_anim is substep-pinned at ~120 Hz). No
-# BSE guard needed: the != 0.5f self-gate already activates the fix under BSE
-# and disables it at stock. (Verified: disp is -0x3E8, not the -0x3C8 60.0f slip.)
+# Under BSE the global is 2.0f (120) / 4.0f (240), never 0.5f, so the scale
+# always fires — no BSE guard needed, and the block self-disables at stock.
+# (Verified: disp is -0x3E8, not the -0x3C8 60.0f slip.)
+#
+# THE SCALE IS 1/(2G) HERE, NOT the stock bundle's constant 1/4.  Raw rate R is
+# consumed once per calc_anim, and native calc_anim is 30 Hz.  In the STOCK kit
+# substep_granularity() pins calc_anim at 120 Hz at every G -> constant 30/120.
+# BSE has NO substep retune: every cue runs at the render rate, so calc_anim is
+# FPS Hz and the correct scale is 30/FPS = 1/(2G) — 0.25 at 120 (byte-identical
+# to the shipping block) and 0.125 at 240.  Corroborated by HANDOFF-PC-240's
+# "anmrate anims (Petey/Gooper ~8x)" under bare BSE at 240: 8x fast needs /8.
+# Emitted as log2(FPS/30) successive `fmuls fR,fR,0.5f`, which is exact.
 def bse_anmrate(fps=120):
-    return anmrate()
+    n = int(fps // 30)
+    assert n & (n - 1) == 0, f"FPS/30 = {n} is not a power of two"
+    return anmrate(nmul=n.bit_length() - 1)
 
 
 # ---- Animal ×4 movement/duration under BSE — UNGATED, NEWLY GUARDED ---------
@@ -1973,7 +2039,7 @@ def bse_animal_speed(fps=120):
     for hook, orig in ANIMAL_SPEED_SITES:
         body = [_fadds(1, 1, 1), _fadds(1, 1, 1), orig]   # scale then original
         i_orig = 5 + 2                                     # guard-fail -> orig word
-        blocks.append(_c2(hook, _bse_guard(i_orig) + body))
+        blocks.append(_c2(hook, _bse_guard(i_orig, fps=fps) + body))
     return "\n".join(blocks)
 
 
@@ -2002,7 +2068,7 @@ def bse_animal_duration(fps=120):
     i_pad = G + len(body)                        # zero pad / branch-back
     body[5] = 0x40800000 | (((i_pad - (G + 5)) * 4) & 0xFFFC)          # bge  -> PAD
     body[9] = 0x48000000 | (((i_pad - (G + 9)) * 4) & 0x03FFFFFC)      # b    -> PAD
-    guard = _bse_guard(i_tail, base=12, val=11, lit=12)  # keep r0 intact
+    guard = _bse_guard(i_tail, base=12, val=11, lit=12, fps=fps)  # keep r0 intact
     return _c2(ANIMAL_DURATION_HOOK, guard + body)
 
 
@@ -2027,75 +2093,205 @@ def bse_animal_duration(fps=120):
 # 1/4 overall) -> walking/marching birds accelerate visibly slow while flying
 # birds look perfect. Fix: scale f1 by exactly 2 at the two accel-save sites
 # only ((2*0.5)^2 = 1.0 per frame x 120 = stock 4.0 x 30). Guarded on 2.0f.
+#
+# GENERALIZED (2026-08-19): the needed factor is k = sqrt(FPS/30) — under BSE
+# the rate is 1/G of stock and accel goes as rate^2 over FPS frames, so
+# k^2 * (30/FPS)^2 * (FPS/30) = 1 exactly when k^2 = FPS/30.  At 120 that is
+# k=2 (one fadds — byte-identical to the shipped bird-accel-x2-bse-v1.txt);
+# at 480, k=4 (two fadds).  240 has NO doubling chain (k = sqrt(8) = 2*sqrt(2)),
+# so it materialises float32(sqrt(8)) through the stack red zone into f30 and
+# fmuls — f30 is provably scratch HERE because the original instruction at both
+# hooks is `fmr f30,f1`: every path (guard-pass and guard-fail) overwrites f30
+# before anything can read it.  The red-zone stw/lfs at -8(r1) is the same
+# manoeuvre the long-shipped $FOV code and codegen.gen_world_aspect use.
 BIRD_ACCEL_SITES = [
     (0x80008060, 0xFFC00890),   # execWalk moving:   rate saved for accel (fmr f30,f1)
     (0x80008094, 0xFFC00890),   # execWalk stopping: rate saved for decel (fmr f30,f1)
 ]
 
-def bse_bird_accel():
+def bird_accel_factor(fps):
+    """(label, exact) for the accel scale k = sqrt(FPS/30): '2' when a fadds
+    chain hits it exactly, else the rounded decimal of the float32 literal."""
+    n = int(fps // 30)
+    d = n.bit_length() - 1                  # n = 2^d, guaranteed by bse_supported
+    if d % 2 == 0:
+        return str(2 ** (d // 2)), True
+    return f"{n ** 0.5:.2f}", False
+
+def bse_bird_accel(fps=120):
+    n = int(fps // 30)
+    d = n.bit_length() - 1
     blocks = []
     for hook, orig in BIRD_ACCEL_SITES:
-        body = [_fadds(1, 1, 1), orig]          # f1 *= 2, then original fmr f30,f1
-        blocks.append(_c2(hook, _bse_guard(5 + 1) + body))   # guard-fail -> orig
+        if d % 2 == 0:                       # FPS/30 = 4^(d/2): exact fadds chain
+            body = [_fadds(1, 1, 1)] * (d // 2) + [orig]
+        else:                                # exact-sqrt float32 literal via f30
+            k = struct.unpack(">I", struct.pack(">f", n ** 0.5))[0]
+            body = [0x3D600000 | (k >> 16),          # lis   r11,hi16(k)
+                    0x616B0000 | (k & 0xFFFF),       # ori   r11,r11,lo16(k)
+                    0x9161FFF8,                      # stw   r11,-8(r1)  (red zone)
+                    0xC3C1FFF8,                      # lfs   f30,-8(r1) (f30 scratch:
+                    _fmuls(1, 1, 30),                #   orig overwrites it anyway)
+                    orig]
+        # guard-fail -> the original fmr (stock accel); pass falls into the scale
+        blocks.append(_c2(hook, _bse_guard(5 + len(body) - 1, fps=fps) + body))
     return "\n".join(blocks)
 
 
-def bse_poink():
-    # POINK body without the trailing handler-zero pad.
+def bse_shimmer(fps=120):
+    """SHIMMER with its stored J3DFrameCtrl rate rescaled. TShimmer's private
+    ctrl is pinned at 1.0 by init and advances once per CUE_MOVE; native is
+    30 Hz, and under BSE CUE_MOVE runs at the RENDER rate, so the correct
+    stored rate is 30/FPS: 0.25f at 120 (byte-identical to the shipping
+    block), 0.125f at 240.  The value is materialised by a bare `lis
+    r12,hi16`, so it must have a zero low half — every 30/FPS with FPS/30
+    a power of two does.  The !=0.5f self-gate is unchanged and still fires
+    under BSE at every rate."""
+    val = struct.unpack(">I", struct.pack(">f", 30.0 / fps))[0]
+    assert val & 0xFFFF == 0, f"shimmer rate {30.0 / fps} needs more than a lis"
+    assert SHIMMER.count("3D803E80") == 1, "SHIMMER layout changed — re-derive"
+    return SHIMMER.replace("3D803E80", f"3D80{val >> 16:04X}")
+
+
+def bse_poink(fps=120):
+    # POINK body without the trailing handler-zero pad.  Rate-INDEPENDENT body:
+    # flyTimer is spine-tick paced, so the bare `cmpwi r0,40` keeps its stock
+    # meaning at every rate (see the POINK comment).  Only the guard scales.
     body = next(b for k, a, b in _iter_codes(POINK))[:-1]
     i_orig = len(body) - 1                        # the original lfs f1,-0x5ba0(r2)
-    return _c2(0x800E5E44, _bse_guard(5 + i_orig) + body)
+    return _c2(0x800E5E44, _bse_guard(5 + i_orig, fps=fps) + body)
 
 
-def bse_bluecoin():
-    """BLUECOIN recalibrated for BSE-120. Under BSE there is no substep
-    machinery: TCoin::perform ticks at the full 120Hz render rate, so the
-    correct gate is keep 1-of-4 decrements (30/s -> native 20s lifetime),
-    the INVERSE of the stock kit's keep 3-of-4 (which was calibrated to its
-    measured ~40 ticks/s). One-word change: the %4 branch flips beq->bne
-    (%4==0 -> decrement, else hold). Confirmed direction by live symptom
-    2026-08-13: spray coins vanished ~4x fast under BSE with the fix off.
-    Self-gates on *0x804167B8 == 2.0f like the stock block."""
-    assert BLUECOIN.count("4182000C") == 1, "BLUECOIN layout changed — re-derive"
-    return BLUECOIN.replace("4182000C", "4082000C")
+def bse_bluecoin(fps=120):
+    """BLUECOIN recalibrated for BSE. Under BSE there is no substep machinery:
+    TCoin::perform ticks at the full RENDER rate, so the correct gate is keep
+    1-of-(FPS/30) decrements (30/s -> native 20s lifetime) — 1-of-4 at 120,
+    1-of-8 at 240 — the INVERSE of the stock kit's keep 3-of-4 (which was
+    calibrated to its measured ~40 ticks/s). One-word change vs the stock
+    block: the modulo branch flips beq->bne (%N==0 -> decrement, else hold).
+    Confirmed direction by live symptom 2026-08-13: spray coins vanished ~4x
+    fast under BSE with the fix off.
+    Self-gates on *0x804167B8 == float(G) like the stock block.
+
+    Three rate-dependent words, each asserted unique before substitution:
+      3CE04000  lis   r7,0x4000   -> hi16(float G)     (the ==G self-gate)
+      70A50003  andi. r5,r5,3     -> mask FPS/30 - 1   (the keep ratio)
+      4182000C  beq               -> 4082000C bne      (keep-1-of-N)
+    """
+    n = int(fps // 30)
+    assert n & (n - 1) == 0, f"FPS/30 = {n} is not a power of two — no andi. mask"
+    out = BLUECOIN
+    for old, new in (("4182000C", "4082000C"),
+                     ("3CE04000", f"3CE0{bse_fps_word(fps) >> 16:04X}"),
+                     ("70A50003", f"70A5{n - 1:04X}")):
+        assert out.count(old) == 1, f"BLUECOIN layout changed ({old}) — re-derive"
+        out = out.replace(old, new)
+    return out
+
+
+def bse_supported(fps):
+    """(ok, reason). A rate is emittable as a BSE companion iff:
+      1. FPS % 60 == 0 and G = FPS/60 >= 2      — BSE writes float(G) to the
+         framerate global; every guard compares against it with a bare `lis`,
+         so float(G) must have a zero low half (true for every integer G).
+      2. N = FPS/30 is a POWER OF TWO           — the 30Hz-class divisors
+         (noki / wipe / SE / blue-coin keep ratio) are emitted as
+         `andi. rX,ctr,N-1`, and the anmrate scale is built from log2(N) exact
+         halvings.  A non-power-of-two N would need _rate_gate's 4-word modulo
+         form, which shifts every hand-computed target_word in the BSE
+         builders, AND an anmrate divisor with no exact fmuls chain.
+    That admits 120 and 240 (and 480).  It rejects 180 (N = 6), and it rejects
+    the fork kxe's 280 / 320 outright: 280/60 and 320/60 are not integers, so
+    280/30 = 9.33 and 320/30 = 10.67 — there is no integer frame divisor, the
+    game-clock fix has no exact shift (timerfix() already returns None), and
+    float(280/60) = 0x40955555 has a non-zero low half, so even the 5-word
+    guard prologue cannot be built with one `lis`.  Those two rates need a
+    different (reciprocal-multiply) design and are deliberately NOT emitted."""
+    f = int(fps)
+    if f != fps or f % 60 or f // 60 < 2:
+        return False, f"{fps:g} is not an integer multiple of 60 with G >= 2"
+    n = f // 30
+    if n & (n - 1):
+        return False, f"FPS/30 = {n} is not a power of two"
+    return True, ""
 
 
 def bse_build(fps):
-    """The BSE-120 companion bundle. Every guarded block runs only when the
-    framerate global holds exactly 2.0f (BSE FPS_120); otherwise it falls
-    through to stock behavior. BLUECOIN and SHIMMER self-gate and are emitted
-    as-is. Error if fps != 120 (BSE has no FPS_240; mFPSValue=3 is uninit)."""
-    if int(fps) != 120:
-        raise SystemExit(f"--bse only supports 120fps (BSE FPS_120 = mFPSValue=2); "
-                         f"{fps:g} has no defined framerate global write")
-    sections = [
-        ("$BSE Force 120 FPS", BSE_FORCE_120),
-        ("$Particle parity BSE-120 (JPA 60Hz gate, guarded)", BSE_PARITY),
-        ("$Noki pollution 30Hz gate BSE-120 (CRASHES Bianco Ep.1 under BSE — "
+    """The BSE companion bundle for `fps`. Every guarded block runs only when
+    the framerate global holds exactly float(FPS/60) — 2.0f at stock BSE
+    FPS_120, 4.0f at the fork kxe's FPS_240 — otherwise it falls through to
+    stock behavior. The blue-coin, game-clock, anmrate and shimmer blocks
+    self-gate on that same global instead of taking the guard prologue.
+
+    Rate-DEPENDENT: the guard / self-gate literal (float G), the 30Hz-class
+    divisors (FPS/30 — noki, wipe, SE frame-process, blue-coin keep ratio), the
+    game-clock shift (G), the anmrate scale (30/FPS) and the shimmer stored
+    rate (30/FPS).
+    Rate-INDEPENDENT by design: the particle parity divisor (CONSTANT 2 — see
+    BSE_PARITY_DIVISOR for the one open question), the Poink flyTimer<40
+    threshold (spine-tick paced), and the StarFix v4 blocks.
+
+    The Animal x4 speed / duration restores are NOT emitted (see the comment
+    at their slot in `sections`): under BSE linear animal movement
+    self-compensates, so the only animal term in the bundle is the bird
+    walk-accel scale, k = sqrt(FPS/30) per bird_accel_factor()."""
+    ok, why = bse_supported(fps)
+    if not ok:
+        raise SystemExit(f"--bse cannot emit {fps:g}fps: {why}.\n"
+                         f"Supported: 120 (stock BSE FPS_120) and 240 (fork kxe "
+                         f"FPS_240). 280/320 are NOT emittable — see bse_supported().")
+    fps = int(fps)
+    g, n = fps // 60, fps // 30
+    tag = f"BSE-{fps}"
+    # Both suffixes are empty at 120 so the shipping 120 titles stay byte-stable;
+    # Dolphin matches enabled codes by EXACT title, so 240 titles must differ.
+    sfx = "" if fps == 120 else f" {tag}"       # " BSE-240"
+    bsfx = "" if fps == 120 else f"-{fps}"      # "-240" (v6-BSE-240)
+    sections = []
+    if fps == 120:
+        # The mFPSValue poke is STOCK-KXE ONLY. The 240/280/320 fork kxe shifts
+        # its module data and 0x8051E528 is NOT mFPSValue there (catalog item
+        # 36; HANDOFF-PC-240 step 4) — a blind 04 write would corrupt some
+        # unrelated BSE setting. At 240 the rate is picked in BSE's own in-game
+        # settings menu (and persisted to memcard) instead.
+        sections.append(("$BSE Force 120 FPS", BSE_FORCE_120))
+    sections += [
+        (f"$Particle parity {tag} (JPA 60Hz gate, guarded)", bse_parity(fps)),
+        (f"$Noki pollution 30Hz gate {tag} (CRASHES Bianco Ep.1 under BSE — "
          "DISABLED pending root-cause, do not enable)",
-         bse_noki_gate(120) + "\n" + bse_noki_copy_gate(120)),
-        ("$HUD StarFix v4 BSE-120 (guarded)", bse_starfix()),
-        ("$Blue-coin lifetime v6-BSE (keep 1-of-4; self-gated 2.0f; "
-         "NEEDS-TEST ~20s)", bse_bluecoin()),
-        ("$Wipe pace 30Hz gate BSE-120 (guarded)", bse_wipe_pace(120)),
-        ("$SE frame-process 30Hz gate BSE-120 (guarded)", bse_se_frame_gate(120)),
-        ("$Game-clock fix v15 BSE-120 (self-gated on 2.0f; NEEDS-TEST)",
-         bse_timerfix(120)),
-        ("$Raw anim-rate x0.25 fixes BSE-120 (self-gated on !=0.5f; NEEDS-TEST)",
-         bse_anmrate(120)),
-        ("$Animal x4 movement speed BSE-120 (guarded; NEEDS-TEST)",
-         bse_animal_speed(120)),
-        ("$Animal x4 nerve duration BSE-120 (guarded; NEEDS-TEST)",
-         bse_animal_duration(120)),
-        ("$Poink premature-explosion gate v14 BSE-120 (guarded; NEEDS-TEST)",
-         bse_poink()),
-        ("$Heat-haze shimmer pace (self-gated; active under BSE 2.0f)", SHIMMER),
+         bse_noki_gate(fps) + "\n" + bse_noki_copy_gate(fps)),
+        (f"$HUD StarFix v4 {tag} (guarded)", bse_starfix(fps)),
+        (f"$Blue-coin lifetime v6-BSE{bsfx} (keep 1-of-{n}; self-gated {g:g}.0f; "
+         "NEEDS-TEST ~20s)", bse_bluecoin(fps)),
+        (f"$Wipe pace 30Hz gate {tag} (guarded)", bse_wipe_pace(fps)),
+        (f"$SE frame-process 30Hz gate {tag} (guarded)", bse_se_frame_gate(fps)),
+        (f"$Game-clock fix v15 {tag} (self-gated on {g:g}.0f; NEEDS-TEST)",
+         bse_timerfix(fps)),
+        (f"$Raw anim-rate x{30 / fps:g} fixes {tag} (self-gated on !=0.5f; "
+         "NEEDS-TEST)", bse_anmrate(fps)),
+        # Animal x4 movement speed / nerve duration are DELIBERATELY absent.
+        # Verdict from the Aug-12 kit chat, re-confirmed in-game 2026-08-14 and
+        # codified on the Mac (launcher BASELINE_FIXES): the stock-kit x4
+        # assumption is WRONG under BSE at every rate — linear speeds
+        # self-compensate (SMSGetAnmFrameRate returns 1/G), so x4 = "mach 10"
+        # birds.  The one term that does NOT self-compensate is the squared
+        # walk accel, restored by the bird-accel block below.  The builders
+        # (bse_animal_speed / bse_animal_duration) stay for the record.
+        (f"$Bird walk accel x{bird_accel_factor(fps)[0]} {tag} (guarded"
+         + ("" if bird_accel_factor(fps)[1] else "; sqrt literal, NEEDS-TEST")
+         + ")", bse_bird_accel(fps)),
+        (f"$Poink premature-explosion gate v14 {tag} (guarded; NEEDS-TEST)",
+         bse_poink(fps)),
+        (f"$Heat-haze shimmer pace{sfx} (self-gated; active under BSE {g:g}.0f)",
+         bse_shimmer(fps)),
     ]
     out = []
     for title, body in sections:
         out.append(title)
         out.append(body)
     return "\n".join(out)
+
+
 
 
 def emit_ini(fps, title, bundle):
@@ -2155,10 +2351,12 @@ PARTICLE_HOOKS = (0x802887A8, 0x80288D30, 0x80288DEC)
 SDA2 = 0x80416BA0              # r2, from __init_registers @0x8000536C
 FRAMERATE_GLOBAL = 0x804167B8  # = -0x3E8(r2)
 
-def _has_bse_guard(body):
+def _has_bse_guard(body, fps=120):
     """True iff `body` opens with the proven guard prologue: lwz of 0x67B8 off
-    a lis 0x8041 base, then a cmpw against a lis 0x4000 (2.0f). Tolerant of the
-    two register conventions used (r3 base in the parity blocks, r12 elsewhere)."""
+    a lis 0x8041 base, then a cmpw against a lis hi16(float FPS/60) - 0x4000
+    (2.0f) at 120, 0x4080 (4.0f) at 240. Tolerant of the two register
+    conventions used (r3 base in the parity blocks, r12 elsewhere)."""
+    lit_hi = bse_fps_word(fps) >> 16
     for j in range(len(body) - 4):
         w0, w1, w2, w3, w4 = body[j:j + 5]
         base = (w0 >> 21) & 31
@@ -2167,8 +2365,8 @@ def _has_bse_guard(body):
         if (w1 >> 26) != 32 or ((w1 >> 16) & 31) != base or (w1 & 0xFFFF) != 0x67B8:
             continue                                             # lwz rV,0x67B8(rB)
         val = (w1 >> 21) & 31
-        # w2 = lis rL,0x4000 ; w3 = cmpw rV,rL ; w4 = bne
-        if (w2 >> 26) != 15 or (w2 & 0xFFFF) != 0x4000:
+        # w2 = lis rL,hi16(float G) ; w3 = cmpw rV,rL ; w4 = bne
+        if (w2 >> 26) != 15 or (w2 & 0xFFFF) != lit_hi:
             continue
         lit = (w2 >> 21) & 31
         if (w3 >> 26) != 31 or ((w3 >> 1) & 0x3FF) != 0:         # cmp
@@ -2181,14 +2379,25 @@ def _has_bse_guard(body):
     return False
 
 
-def _check_bse(codes, n_c2, errs):
-    """BSE-120 companion validation: guard prologue per guarded block, divisor 4
-    for noki/wipe/se, parity + shimmer byte-identical, force-120 present, and no
-    stock 04 write to 0x804167B8 (which the guard cannot save from a C2 collision)."""
-    # a. Force 120 FPS
-    if codes.get(("04", 0x8051E528)) != 0x00000002:
-        errs.append("$BSE Force 120 FPS: 0451E528 00000002 missing/wrong "
-                    "(mFPSValue must be 2 = FPS_120)")
+def _check_bse(codes, n_c2, errs, fps=120):
+    """BSE companion validation: guard prologue (against float FPS/60) on every
+    guarded block, divisor FPS/30 for noki/wipe/SE/blue-coin, parity and shimmer
+    as emitted for this rate, the mFPSValue poke present at 120 and ABSENT
+    elsewhere, and no stock 04 write to 0x804167B8 (which the guard cannot save
+    from a C2 collision)."""
+    fps = int(fps)
+    N = fps // 30                    # 30Hz-class divisor: 4 at 120, 8 at 240
+    G = fps // 60                    # framerate-global multiplier
+    # a. mFPSValue poke - STOCK kxe only (the 240 fork shifts its module data,
+    #    so 0x8051E528 is not mFPSValue there; see bse_build).
+    if fps == 120:
+        if codes.get(("04", 0x8051E528)) != 0x00000002:
+            errs.append("$BSE Force 120 FPS: 0451E528 00000002 missing/wrong "
+                        "(mFPSValue must be 2 = FPS_120)")
+    elif ("04", 0x8051E528) in codes:
+        errs.append(f"04 write to 0x8051E528 present at {fps}fps: that address is "
+                    f"mFPSValue only in the STOCK kxe; the fork kxe shifts module "
+                    f"data, so a blind write corrupts an unrelated BSE setting")
     # The stock framerate-global 04 write must NOT appear — BSE owns 0x804167B8.
     if ("04", 0x804167B8) in codes:
         errs.append("stock 04 write to 0x804167B8 present in the BSE bundle — BSE "
@@ -2198,12 +2407,17 @@ def _check_bse(codes, n_c2, errs):
     for hook in PARTICLE_HOOKS:
         body = codes.get(("C2", hook))
         want = next(b for k, a, b in _iter_codes(
-            _bse_parity_block(f"C2{hook & 0x01FFFFFF:06X}")))
+            _bse_parity_block(f"C2{hook & 0x01FFFFFF:06X}", fps).replace(
+                "70600001", f"7060{BSE_PARITY_DIVISOR(fps) - 1:04X}")))
         if body != want:
             errs.append(f"BSE parity @{hook:08X}: not byte-identical to the proven "
-                        f"guarded parity block")
-        elif not _has_bse_guard(body):
+                        f"guarded parity block for {fps}fps")
+        elif not _has_bse_guard(body, fps):
             errs.append(f"BSE parity @{hook:08X}: guard prologue absent")
+        pn = _implied_divisor(body, ctr=3)
+        if pn != BSE_PARITY_DIVISOR(fps):
+            errs.append(f"BSE parity @{hook:08X}: encodes 1-in-{pn}, expected "
+                        f"1-in-{BSE_PARITY_DIVISOR(fps)}")
 
     # c. Noki gate + copy gate — guard on every block, divisor 4 on the gated ones.
     noki_hooks = [NOKI_OBJ_CALL[0], NOKI_DRAIN_CALL[0], NOKI_TEX_CALL[0],
@@ -2212,23 +2426,23 @@ def _check_bse(codes, n_c2, errs):
         body = codes.get(("C2", hook))
         if body is None:
             errs.append(f"BSE noki block @{hook:08X} missing"); continue
-        if not _has_bse_guard(body):
+        if not _has_bse_guard(body, fps):
             errs.append(f"BSE noki @{hook:08X}: guard prologue absent")
         n = _implied_divisor(body, ctr=11)
         if hook == NOKI_DRAIN_CALL[0]:
             if n is not None:
                 errs.append(f"BSE noki drain @{hook:08X}: carries a divisor (must "
                             f"run every frame)")
-        elif n != 4:
-            errs.append(f"BSE noki @{hook:08X}: encodes 1-in-{n}, expected 1-in-4")
+        elif n != N:
+            errs.append(f"BSE noki @{hook:08X}: encodes 1-in-{n}, expected 1-in-{N}")
     copy = codes.get(("C2", 0x802F8CF8))
     if copy is None:
         errs.append("BSE noki copy gate @0x802F8CF8 missing")
     else:
-        if not _has_bse_guard(copy):
+        if not _has_bse_guard(copy, fps):
             errs.append("BSE noki copy gate @0x802F8CF8: guard prologue absent")
-        if _implied_divisor(copy, ctr=11) != 4:
-            errs.append("BSE noki copy gate @0x802F8CF8: divisor != 4")
+        if _implied_divisor(copy, ctr=11) != N:
+            errs.append(f"BSE noki copy gate @0x802F8CF8: divisor != {N}")
         if copy[-2] != 0x801D002C:
             errs.append("BSE noki copy gate: last real word != orig lwz r0,0x2c(r29)")
 
@@ -2238,7 +2452,7 @@ def _check_bse(codes, n_c2, errs):
         body = codes.get(("C2", addr))
         if body is None:
             errs.append(f"BSE StarFix @{addr:08X} missing"); continue
-        if not _has_bse_guard(body):
+        if not _has_bse_guard(body, fps):
             errs.append(f"BSE StarFix @{addr:08X}: guard prologue absent")
 
     # e. Blue-coin — self-gated; BSE variant must carry the INVERTED %4 branch
@@ -2248,19 +2462,26 @@ def _check_bse(codes, n_c2, errs):
         errs.append("BSE bundle: blue-coin block @0x801BE880 missing")
     else:
         if 0x4082000C not in bc:
-            errs.append("BSE blue-coin: keep-1-of-4 bne (4082000C) absent")
+            errs.append(f"BSE blue-coin: keep-1-of-{N} bne (4082000C) absent")
+        if _implied_divisor(bc, ctr=5) != N:
+            errs.append(f"BSE blue-coin: encodes 1-in-{_implied_divisor(bc, ctr=5)}, "
+                        f"expected 1-in-{N} (FPS/30 - BSE ticks TCoin::perform at "
+                        f"the render rate)")
+        if (0x3CE00000 | (bse_fps_word(fps) >> 16)) not in bc:
+            errs.append(f"BSE blue-coin: self-gate literal is not lis r7,"
+                        f"{bse_fps_word(fps) >> 16:04X} (float {G:g}.0f)")
         if 0x4182000C in bc:
             errs.append("BSE blue-coin: stock keep-3-of-4 beq (4182000C) present — "
                         "wrong calibration for BSE")
 
     # f. Wipe pace — guard on all three, divisor 4 on timer + motion.
     for hook, ctr, want_n in ((WIPE_TICK_HOOK, None, None),
-                              (WIPE_TIMER_HOOK, 11, 4),
-                              (WIPE_MOTION_HOOK, 11, 4)):
+                              (WIPE_TIMER_HOOK, 11, N),
+                              (WIPE_MOTION_HOOK, 11, N)):
         body = codes.get(("C2", hook))
         if body is None:
             errs.append(f"BSE wipe block @{hook:08X} missing"); continue
-        if not _has_bse_guard(body):
+        if not _has_bse_guard(body, fps):
             errs.append(f"BSE wipe @{hook:08X}: guard prologue absent")
         if want_n is not None and _implied_divisor(body, ctr=ctr) != want_n:
             errs.append(f"BSE wipe @{hook:08X}: divisor "
@@ -2274,10 +2495,10 @@ def _check_bse(codes, n_c2, errs):
         body = codes.get(("C2", hook))
         if body is None:
             errs.append(f"BSE SE gate @{hook:08X} missing"); continue
-        if not _has_bse_guard(body):
+        if not _has_bse_guard(body, fps):
             errs.append(f"BSE SE gate @{hook:08X}: guard prologue absent")
-        if _implied_divisor(body, ctr=12) != 4:
-            errs.append(f"BSE SE gate @{hook:08X}: divisor != 4")
+        if _implied_divisor(body, ctr=12) != N:
+            errs.append(f"BSE SE gate @{hook:08X}: divisor != {N}")
         real = [w for w in body if w not in (0, NOP)]
         if not real or real[-1] != SE30_ORIG:
             errs.append(f"BSE SE gate @{hook:08X}: last real word != mflr r0")
@@ -2296,9 +2517,10 @@ def _check_bse(codes, n_c2, errs):
         if tfx[0] != 0x3CA08041 or tfx[1] != 0x80A567B8:
             errs.append("BSE timerfix @0x80348180: does not read the framerate "
                         "global via lis r5,0x8041 / lwz r5,0x67B8(r5)")
-        if 0x3CC04000 not in tfx:            # lis r6,0x4000 = float 2.0f
-            errs.append("BSE timerfix @0x80348180: missing the 2.0f self-gate "
-                        "literal (lis r6,0x4000) — would fire at stock too")
+        if (0x3CC00000 | (bse_fps_word(fps) >> 16)) not in tfx:  # lis r6,hi16(G)
+            errs.append(f"BSE timerfix @0x80348180: missing the {G:g}.0f self-gate "
+                        f"literal (lis r6,{bse_fps_word(fps) >> 16:04X}) - would "
+                        f"fire at the wrong rate")
         if 0x4E800020 not in tfx:            # blr (replaces the original)
             errs.append("BSE timerfix @0x80348180: missing the blr")
 
@@ -2325,43 +2547,66 @@ def _check_bse(codes, n_c2, errs):
         if not any((w >> 26) == 48 and ((w >> 16) & 31) == 2
                    and (w & 0xFFFF) == (HALF_DISP & 0xFFFF) for w in body):
             errs.append(f"BSE anmrate @{site:08X}: missing the 0.5f compare "
-                        f"constant (lfs f,-0x7FD8(r2)) — self-gate incomplete")
+                        f"constant (lfs f,-0x7FD8(r2)) - self-gate incomplete")
+        # The scale must be exactly log2(FPS/30) halvings = 30/FPS = 1/(2G).
+        want_mul = N.bit_length() - 1
+        got_mul = sum(1 for w in body
+                      if (w >> 26) == 59 and ((w >> 1) & 0x1F) == 25)   # fmuls
+        if got_mul != want_mul:
+            errs.append(f"BSE anmrate @{site:08X}: {got_mul} fmuls, expected "
+                        f"{want_mul} (scale 30/{fps} = {30 / fps:g}). Under BSE "
+                        f"calc_anim runs at the RENDER rate, not the stock "
+                        f"substep-pinned 120 Hz, so this scale is 1/(2G) and NOT "
+                        f"the stock bundle constant 1/4")
 
-    # j. Animal x4 speed — GUARDED. Guard on every block; guard-fail must land
-    #    on the re-executed original (the last real word).
-    for hook, orig in ANIMAL_SPEED_SITES:
+    # j. Animal x4 speed / duration — must be ABSENT. Verdict re-confirmed
+    #    2026-08-14 (codified in launcher BASELINE_FIXES): linear animal
+    #    movement self-compensates under BSE; the x4 restores mean "mach 10"
+    #    birds. Their presence in a bundle is a regression, not an option.
+    bird_hooks = {h for h, _ in BIRD_ACCEL_SITES}
+    for hook, _orig in ANIMAL_SPEED_SITES:
+        if hook in bird_hooks:
+            continue                # the two accel-save sites carry bird-accel now
+        if codes.get(("C2", hook)) is not None:
+            errs.append(f"BSE animal-speed @{hook:08X} PRESENT — never emit "
+                        f"Animal x4 under BSE (mach-10 birds; 2026-08-14 verdict)")
+    if codes.get(("C2", ANIMAL_DURATION_HOOK)) is not None:
+        errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X} PRESENT — "
+                    f"never emit Animal x4 under BSE (2026-08-14 verdict)")
+
+    # k. Bird walk accel — GUARDED at both accel-save sites; guard-fail lands on
+    #    the re-executed `fmr f30,f1`; the scale must square to exactly FPS/30:
+    #    d/2 fadds f1,f1,f1 when FPS/30 = 4^(d/2), else one fmuls f1,f1,f30 fed
+    #    by the float32(sqrt(FPS/30)) red-zone literal.
+    d = N.bit_length() - 1
+    want_k = struct.unpack(">I", struct.pack(">f", N ** 0.5))[0]
+    for hook, orig in BIRD_ACCEL_SITES:
         body = codes.get(("C2", hook))
         if body is None:
-            errs.append(f"BSE animal-speed @{hook:08X} missing"); continue
-        if not _has_bse_guard(body):
-            errs.append(f"BSE animal-speed @{hook:08X}: guard prologue absent")
+            errs.append(f"BSE bird-accel @{hook:08X} missing"); continue
+        if not _has_bse_guard(body, fps):
+            errs.append(f"BSE bird-accel @{hook:08X}: guard prologue absent")
         real = [w for w in body if w not in (0, NOP)]
         if not real or real[-1] != orig:
-            errs.append(f"BSE animal-speed @{hook:08X}: last real word "
+            errs.append(f"BSE bird-accel @{hook:08X}: last real word "
                         f"{real[-1] if real else 0:08X} != re-executed original "
-                        f"{orig:08X}")
-        # exactly two fadds f1,f1,f1 (the x4 scale)
-        if sum(1 for w in body if w == _fadds(1, 1, 1)) != 2:
-            errs.append(f"BSE animal-speed @{hook:08X}: x4 scale is not two "
-                        f"fadds f1,f1,f1")
-
-    # k. Animal x4 duration — GUARDED, r0-preserving guard (val=r11,lit=r12).
-    #    fdivs f0,f0,f1 must appear (once per path = twice total), and the guard
-    #    must NOT clobber r0 (its lwz target must be r11, not r0).
-    dur = codes.get(("C2", ANIMAL_DURATION_HOOK))
-    if dur is None:
-        errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X} missing")
-    else:
-        if not _has_bse_guard(dur):
-            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: guard absent")
-        # guard word 1 is lwz rVal,0x67B8(rBase): rVal must not be r0 (live spill)
-        if dur[1] == 0x800C67B8:                 # lwz r0,0x67B8(r12)
-            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: guard "
-                        f"clobbers r0, which is LIVE across the hook (0x43300000 "
-                        f"magic spilled at 0x8000AB64) — use the r11/r12 guard")
-        if sum(1 for w in dur if w == 0xEC000824) != 2:   # fdivs f0,f0,f1
-            errs.append(f"BSE animal-duration @{ANIMAL_DURATION_HOOK:08X}: fdivs "
-                        f"f0,f0,f1 must appear twice (one per guard path, run once each)")
+                        f"fmr f30,f1 ({orig:08X})")
+        n_fadds = sum(1 for w in body if w == _fadds(1, 1, 1))
+        n_fmuls = sum(1 for w in body if w == _fmuls(1, 1, 30))
+        if d % 2 == 0:
+            if n_fadds != d // 2 or n_fmuls:
+                errs.append(f"BSE bird-accel @{hook:08X}: scale must be exactly "
+                            f"{d // 2} fadds f1,f1,f1 (k = {2 ** (d // 2)})")
+        else:
+            got_k = None
+            for i, w in enumerate(body[:-1]):
+                if w == 0x3D600000 | (want_k >> 16) \
+                        and body[i + 1] == 0x616B0000 | (want_k & 0xFFFF):
+                    got_k = want_k
+            if n_fmuls != 1 or got_k != want_k:
+                errs.append(f"BSE bird-accel @{hook:08X}: expected the "
+                            f"float32(sqrt({N})) = {want_k:08X} literal + one "
+                            f"fmuls f1,f1,f30 (no exact fadds chain at G={G})")
 
     # l. Poink v14 — GUARDED. Guard-fail lands on the re-executed original lfs
     #    f1,-0x5ba0(r2); the mid-flight bctr epilogue path must survive intact.
@@ -2369,7 +2614,7 @@ def _check_bse(codes, n_c2, errs):
     if pk is None:
         errs.append("BSE bundle: Poink gate @0x800E5E44 missing")
     else:
-        if not _has_bse_guard(pk):
+        if not _has_bse_guard(pk, fps):
             errs.append("BSE Poink @0x800E5E44: guard prologue absent")
         real = [w for w in pk if w not in (0, NOP)]
         if not real or real[-1] != 0xC022A460:   # lfs f1,-0x5ba0(r2)
@@ -2385,11 +2630,12 @@ def _check_bse(codes, n_c2, errs):
 
     # 2. Shimmer — byte-identical to research/codes/shimmer-pace-v1.txt.
     shim = codes.get(("C2", 0x8019F89C))
-    want_shim = next(b for k, a, b in _iter_codes(SHIMMER))
+    want_shim = next(b for k, a, b in _iter_codes(bse_shimmer(fps)))
     if shim is None:
         errs.append("BSE bundle: shimmer block @0x8019F89C missing")
     elif shim != want_shim:
-        errs.append("BSE shimmer @0x8019F89C: not byte-identical to shimmer-pace-v1")
+        errs.append(f"BSE shimmer @0x8019F89C: not the {30 / fps:g}f-rate block "
+                    f"(shimmer-pace-v1 with its stored rate rescaled to 30/{fps})")
 
     return n_c2, errs
 
@@ -2437,7 +2683,7 @@ def check(bundle, fps=None, bse=False):
         return n_c2, errs
 
     if bse:
-        return _check_bse(codes, n_c2, errs)
+        return _check_bse(codes, n_c2, errs, fps)
 
     g = integer_g(fps)
     gate_g = g or 2
@@ -2949,7 +3195,7 @@ def main():
     ap.add_argument("--no-riccohook", action="store_true", help="omit the Ricco hook/gondola slide-clank SE cadence gate (the harbor clank retriggers at render rate: 'womp womp womp, staticy' near the cable hooks at 240fps)")
     ap.add_argument("--no-boidfix", action="store_true", help="omit the boid flocking 30Hz gate (fish schools/butterflies take fixed-size steps per rendered frame: the Gelato reef red-coin school swims and flees Mario at FPS/30 x speed)")
     ap.add_argument("--no-shimmer", action="store_true", help="omit the heat-haze shimmer pace fix (catalog item 28; self-gated on the framerate global != native 0.5f, safe to leave on)")
-    ap.add_argument("--bse", action="store_true", help="emit the BSE-120 companion bundle (guarded blocks for the Better Sunshine Engine online mod; requires fps=120)")
+    ap.add_argument("--bse", action="store_true", help="emit the BSE companion bundle (guarded blocks for the Better Sunshine Engine online mod; fps must be 120 or 240 - see bse_supported())")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
     ap.add_argument("--bare", action="store_true", help="emit hex pairs only, ready for gecko.py --code-file")
     ap.add_argument("--emit-ini", action="store_true", help="emit a full GMSE01.ini fragment ([Core] + [Gecko] + [Gecko_Enabled])")
@@ -2958,7 +3204,7 @@ def main():
 
     m = a.fps / 60.0
     if a.bse:
-        title = "$SMS BSE-120 companion bundle (fpspatch --bse)"
+        title = f"$SMS BSE-{int(a.fps)} companion bundle (fpspatch --bse)"
         bundle = bse_build(a.fps)
     else:
         title = f"$SMS {a.fps:g}fps bundle (fpspatch{'' if not a.no_forceopen else ', no-ForceOpen'})"
@@ -3004,7 +3250,12 @@ def main():
                   f"# ALSO set EmulationSpeed = {m:g} in BOTH Dolphin.ini and GMSE01.ini "
                   f"[Core] (per-game overrides).\n"
                   f"# framerate global 0x804167B8 = {framerate_word(a.fps)} (= float {m:g})\n")
-        text = f"{header}{title}\n{bundle}\n"
+        if a.bse:
+            # the BSE bundle carries its own per-section $titles — an outer
+            # title would just be an empty code to Dolphin
+            text = f"{header}{bundle}\n"
+        else:
+            text = f"{header}{title}\n{bundle}\n"
 
     if a.out:
         open(a.out, "w").write(text)

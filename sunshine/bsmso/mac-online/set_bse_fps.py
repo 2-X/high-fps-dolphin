@@ -15,7 +15,7 @@ import struct
 import sys
 import time
 
-from macmem import DolphinMem, find_dolphin_pid, MEM1_GUEST_BASE
+from gcmem import DolphinMem, find_dolphin_pid, MEM1_GUEST_BASE
 from bridge import locate_bse_settings, BSE_FPS_ENUM
 
 FRAMERATE_GLOBAL = 0x804167B8

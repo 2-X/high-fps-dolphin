@@ -34,7 +34,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from pathlib import Path
+
+WIN = sys.platform == "win32"
 
 # ---- repo layout -----------------------------------------------------------
 REPO = Path(__file__).resolve().parents[3]          # …/high-fps-dolphin
@@ -71,15 +74,21 @@ def _path(env_var: str, local_key: str, default: Path) -> Path:
 
 
 # ---- Dolphin paths (machine-specific — override via config.local.json) -----
+# Defaults are per-platform: the Mac runs the dolphin/ clone's .app bundle and
+# keeps user config under Application Support; the PC runs the dolphin-src
+# clone's Binary\x64 build and keeps user config under %APPDATA% (see
+# [[fludd-aim-invert]]: the live INI on the PC is the APPDATA one).
 DOLPHIN_APP = _path(
     "SMS_DOLPHIN_APP",
     "dolphin_app",
-    REPO / "dolphin" / "build" / "Binaries" / "Dolphin.app",
+    REPO / "dolphin-src" / "Binary" / "x64" / "Dolphin.exe" if WIN
+    else REPO / "dolphin" / "build" / "Binaries" / "Dolphin.app",
 )
 DOLPHIN_USER = _path(
     "SMS_DOLPHIN_USER",
     "dolphin_user",
-    Path.home() / "Library" / "Application Support" / "Dolphin",
+    Path(os.environ.get("APPDATA", Path.home())) / "Dolphin Emulator" if WIN
+    else Path.home() / "Library" / "Application Support" / "Dolphin",
 )
 
 # ---- Dolphin user config ---------------------------------------------------
@@ -91,7 +100,8 @@ GFX_INI = DOLPHIN_USER / "Config" / "GFX.ini"                # global (wideScree
 PROFILES_JSON = LAUNCHER_DIR / "profiles.json"
 PROFILES_LOCAL_JSON = LAUNCHER_DIR / "profiles.local.json"   # gitignored user copy
 LAST_JSON = LAUNCHER_DIR / "last.json"
-VENV_PY = LAUNCHER_DIR / ".venv" / "bin" / "python"
+VENV_PY = (LAUNCHER_DIR / ".venv" / "Scripts" / "python.exe" if WIN
+           else LAUNCHER_DIR / ".venv" / "bin" / "python")
 
 # ---- discs (machine-specific — override via config.local.json) -------------
 # OFFLINE = the plain Super Mario Sunshine disc (GMSE01) + our stock high-fps
@@ -99,12 +109,14 @@ VENV_PY = LAUNCHER_DIR / ".venv" / "bin" / "python"
 ISO_OFFLINE = _path(
     "SMS_ISO_OFFLINE",
     "iso_offline",
-    Path("/Applications/gamecube/Super Mario Sunshine (USA).rvz"),
+    Path(r"C:\Users\krisb\kris-documents\games\dolphin\Super Mario Sunshine (USA).rvz")
+    if WIN else Path("/Applications/gamecube/Super Mario Sunshine (USA).rvz"),
 )
 ISO_DIR = _path(
     "SMS_ISO_DIR",
     "iso_dir",
-    Path("/Applications/gamecube/bsmso-work"),
+    Path(r"C:\Users\krisb\kris-documents\games\dolphin\bsmso-work") if WIN
+    else Path("/Applications/gamecube/bsmso-work"),
 )
 ISO_ONLINE = ISO_DIR / "BSMSO-GMSE01.iso"                 # BSE, FPS 30/60/120
 ISO_ONLINE_HIGHFPS = ISO_DIR / "BSMSO-GMSE01-highfps.iso"  # fork, adds 240/280/320
@@ -268,14 +280,17 @@ BASELINE_FIXES = [
     ("se",        r"SE frame-process 30Hz gate BSE",         True),
     ("shimmer",   r"Heat-haze shimmer pace",                 True),
     ("gameclock", r"Game-clock fix v15 BSE",                 True),
-    ("anmrate",   r"Raw anim-rate x0.25 fixes BSE",          False),
+    # rate-suffixed scale in the title: x0.25 at 120, x0.125 at 240
+    ("anmrate",   r"Raw anim-rate x[\d.]+ fixes BSE",        False),
     ("poink",     r"Poink premature-explosion gate v14 BSE", True),
     # DO NOT wire the "Animal x4" codes here: verdict from the Aug-12 kit chat,
     # re-confirmed 2026-08-14 — the stock-kit x4 assumption is WRONG under BSE
     # (birds overshoot, "flying wayyyy too fast"). Linear bird speeds
     # self-compensate under BSE; only the SQUARED accel term lags (walking
     # birds slow, flying fine) — fixed by the x2 accel-site code below.
-    ("birdaccel", r"Bird walk accel x2 BSE",                  True),
+    # k = sqrt(FPS/30) in the title: x2 at 120, x2.83 at 240 (fpspatch
+    # bird_accel_factor)
+    ("birdaccel", r"Bird walk accel x[\d.]+ BSE",             True),
     # Dune Bud spray on the BSMSO disc: vanilla code creates the sand-dust
     # JPA emitter (resource 0x55) and stores scale fields through the result
     # with NO null check -> "Invalid write 0x154/0x158 PC 801d2bcc" every

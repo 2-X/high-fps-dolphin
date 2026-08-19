@@ -1,8 +1,10 @@
 """Post-launch verification: prove the Gecko codes actually installed.
 
-Run detached by launch() ~25s after boot (BSE modes). Attaches to the live
-Dolphin via the signed memhelper (sunshine/bsmso/mac-online/macmem.py), then
-checks, against the INI's [Gecko_Enabled] set:
+Run detached by launch() ~25s after boot (BSE modes) — or by play240.ps1 on
+the PC. Attaches to the live Dolphin via the platform memory backend
+(sunshine/bsmso/mac-online/gcmem.py: Mach memhelper on macOS, Win32
+ReadProcessMemory on Windows), then checks, against the INI's [Gecko_Enabled]
+set:
 
   * every enabled C2 hook site holds a branch (opcode 18) — i.e. the code
     handler processed that code (this is what catches the bracket-title bug,
@@ -19,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import struct
-import subprocess
 import sys
 import time
 
@@ -27,15 +28,13 @@ from . import config as C
 from .inieditor import Ini, dolphin_name
 
 sys.path.insert(0, str(C.MAC_ONLINE))
-from macmem import DolphinMem  # noqa: E402
+from gcmem import DolphinMem, find_dolphin_pid  # noqa: E402
 
 FRAMERATE_GLOBAL = 0x804167B8   # SMS framerate float: 0.5=30fps, 2.0=120fps
 
 
 def _dolphin_pid():
-    out = subprocess.run(["pgrep", "-x", "Dolphin"],
-                         capture_output=True, text=True).stdout.split()
-    return int(out[0]) if out else None
+    return find_dolphin_pid()
 
 
 def _locate(mem: DolphinMem) -> bool:

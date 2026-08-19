@@ -19,7 +19,7 @@ import threading
 import time
 from typing import Optional
 
-from macmem import DolphinMem, find_dolphin_pid
+from gcmem import DolphinMem, find_dolphin_pid
 from netclient import NetClient, JoinError
 from protocol import (
     PlayerSnapshot,
@@ -68,6 +68,9 @@ ROSTER_HUD_EVENT_SIZE        = 20    # Sequence u16 + Kind u8 + Slot u8 + Name[1
 BSE_SETTING_OBJ_SIZE   = 0x28
 BSE_SETTING_NAME_OFF   = 0x04   # mName (char*) relative to object start
 BSE_SETTING_VALUE_OFF  = 0x24   # trailing int value relative to object start
+# Settings values are small enums (FPS 0-5, aspect 0-4).  Anything larger is a
+# pointer or unrelated data, not a Setting value field.
+BSE_SETTING_VALUE_MAX  = 15
 
 # Name strings each Setting carries (must match bse-fork src/module.cpp).
 BSE_FPS_NAME    = b"Frame Rate\x00"
@@ -170,6 +173,13 @@ def _scan_settings_by_name(mem: DolphinMem, expected_name: bytes) -> Optional[in
         return None
 
     # Step 2: find a BE pointer to that string (the object's mName member).
+    #
+    # NOTE: _validate_setting_value_addr() cannot reject a false positive here --
+    # it derives obj from the same hit, so it only re-checks the assumption we
+    # just made and passes for ANY pointer-to-name.  MEM1 also holds pointer
+    # TABLES referencing these strings, whose "value" field is another pointer.
+    # Writing an enum into one of those corrupts a live mName.  So additionally
+    # require the value field to look like a settings enum (a small int).
     ptr_be = struct.pack(">I", name_guest).hex()
     for host_hit in mem._scan_region(host_base, mem1_size, ptr_be):
         mname_guest = _guest_of(mem, host_hit)
@@ -178,8 +188,15 @@ def _scan_settings_by_name(mem: DolphinMem, expected_name: bytes) -> Optional[in
         obj = mname_guest - BSE_SETTING_NAME_OFF
         value_addr = obj + BSE_SETTING_VALUE_OFF
         # Step 3: re-validate via the object's own name pointer.
-        if _validate_setting_value_addr(mem, value_addr, expected_name):
+        if not _validate_setting_value_addr(mem, value_addr, expected_name):
+            continue
+        raw = mem.read(value_addr, 4)
+        if raw is None:
+            continue
+        value = struct.unpack(">i", raw)[0]
+        if 0 <= value <= BSE_SETTING_VALUE_MAX:
             return value_addr
+    # Better to find nothing than to hand back a pointer table to write into.
     return None
 
 
