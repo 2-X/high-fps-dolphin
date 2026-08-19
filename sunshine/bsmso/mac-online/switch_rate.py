@@ -127,7 +127,76 @@ def gen_menu_repeat(fps):
 STATIC_BSE_CODES = [
     ("dunebud-null-guard-bse-v1.txt", True),
     ("dunebud-dust-v1.txt",           False),
+    # FLUDD aim invert, BSE dialect (v3 adds Mecha Bowser; the stock v2 misses
+    # BSE consumers -- same dialect split as the FOV code).
+    ("fludd-aim-invert-v3.txt",       True),
 ]
+
+# QOL titles that already live in the INI (both machines) and work under BSE:
+# enabled by title-regex match, never installed from here.
+QOL_ENABLE_PATTERNS = [
+    r"Camera look-up extension v10",
+]
+
+# Stock-dialect / stock-kit titles that FIGHT BSE if enabled (C2 collisions,
+# double-widescreen, shimmer-pass FOV mismatch).  Stripped from any preserved
+# enabled set.
+STOCK_ONLY_RE = re.compile(
+    r"^(SMS .*fps bundle|Widescreen|World aspect|FOV \d+$|FLUDD Aim Invert v2|"
+    r"\d+FPS$|\d+CO |TEST |FIX R|120fps \+|GameHeap|Noki pollution counting)")
+
+# Titles this script owns and always rewrites (never preserved blindly).
+MANAGED_RE = re.compile(
+    r"(BSE-\d+|BSE Force|Menu key-repeat BSE|DuneBud|FLUDD Aim Invert v3|"
+    r"FOV \d+ BSE|Camera look-up extension)")
+
+
+# ---- FOV, BSE dialect (mirror of smslaunch.codegen.gen_fov_bse; kept in ----
+# sync BY HAND like gen_menu_repeat).  The generic stock FOV template's
+# C_MTXPerspective caller allow-list misses the heat-haze shimmer pass under
+# BSMSO -> mismatched FOV; the BSE variant stores fovy at its source, the
+# mProjectionFovy store @0x80023218.  One rate-independent 3-line C2; the
+# fovy float rides a bare `lis r11`, so it must have a zero low half.
+def gen_fov_bse(fov):
+    import struct
+    u = struct.unpack(">I", struct.pack(">f", float(fov)))[0]
+    if u & 0xFFFF:
+        raise SystemExit(f"FOV {fov}: float has a nonzero low half "
+                         f"(needs more than the lis-only template)")
+    return (f"FOV {fov} BSE (mProjectionFovy)",
+            ["C2023218 00000002",
+             f"3D60{u >> 16:04X} 917D0048",
+             "C03D0048 00000000"])
+
+
+def ini_titles():
+    """All $ titles currently in the live INI's [Gecko] section."""
+    if not os.path.isfile(GAME_INI):
+        return []
+    out, in_gecko = [], False
+    with open(GAME_INI, encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            s = ln.strip()
+            if s.startswith("["):
+                in_gecko = s == "[Gecko]"
+            elif in_gecko and s.startswith("$"):
+                out.append(s[1:])
+    return out
+
+
+def enabled_titles():
+    """Titles currently in [Gecko_Enabled]."""
+    if not os.path.isfile(GAME_INI):
+        return []
+    out, in_en = [], False
+    with open(GAME_INI, encoding="utf-8", errors="replace") as fh:
+        for ln in fh:
+            s = ln.strip()
+            if s.startswith("["):
+                in_en = s == "[Gecko_Enabled]"
+            elif in_en and s.startswith("$"):
+                out.append(s[1:])
+    return out
 
 
 def set_enabled(titles_to_keep):
@@ -183,6 +252,8 @@ def main():
     ap.add_argument("--fps", type=int, required=True,
                     choices=[30, 60, 120, 240, 280, 320])
     ap.add_argument("--aspect", type=int, default=3)
+    ap.add_argument("--fov", type=int, default=60,
+                    help="vertical fovy for the BSE FOV code (0 = no FOV code)")
     ap.add_argument("--no-bundle", action="store_true",
                     help="force codes + EmulationSpeed only (bare BSE)")
     args = ap.parse_args()
@@ -233,6 +304,37 @@ def main():
                 enable.append(title)
             print(f"[switch] installed ${title}"
                   + ("" if want_enabled else " (NOT enabled - needs in-game pass)"))
+
+    # --- QOL: BSE FOV + already-installed QOL titles ------------------------
+    if args.fov:
+        title, lines = gen_fov_bse(args.fov)
+        _run([sys.executable, GECKO, "add", "--title", title,
+              "--code", "\n".join(lines)])
+        enable.append(title)
+        print(f"[switch] installed ${title}")
+    present = ini_titles()
+    for pat in QOL_ENABLE_PATTERNS:
+        rx = re.compile(pat)
+        hits = [t for t in present if rx.search(t)]
+        if hits:
+            enable.append(hits[0])
+            print(f"[switch] enabling QOL ${hits[0]}")
+        else:
+            print(f"[switch] QOL /{pat}/ not in [Gecko] - skipped")
+
+    # --- preserve user-enabled titles this script does not manage ----------
+    # (a previous version rewrote [Gecko_Enabled] to exactly its own list and
+    # silently dropped the user's QOL codes).  Stock-only titles are stripped:
+    # under BSE they collide with the companion or fight BSE-native features.
+    preserved = []
+    for t in enabled_titles():
+        if MANAGED_RE.search(t) or STOCK_ONLY_RE.search(t):
+            continue
+        preserved.append(t)
+    if preserved:
+        print("[switch] preserving user-enabled: "
+              + ", ".join("$" + t for t in preserved))
+    enable += preserved
 
     # --- force codes (must come first in [Gecko_Enabled] order-wise) ------
     r = _run([sys.executable, os.path.join(HERE, "bse_force.py"),

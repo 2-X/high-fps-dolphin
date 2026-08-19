@@ -1810,22 +1810,14 @@ PARITY_HOOK_WORDS = ("C22887A8", "C2288D30", "C2288DEC")
 # Held at the CONSTANT 2 at every rate, per HANDOFF-PC-240 ("parity stays
 # CONSTANT 2") and commit defbcff ("particle parity is the CONSTANT 1-in-2").
 #
-# OPEN QUESTION — flagged when generalising to 240, NOT acted on:
-#   The constant-2 argument is derived from the STOCK kit, where
-#   substep_granularity() pins CUE_CALC_ANIM at ~120 Hz at EVERY G, so 120/2 =
-#   the native 60 Hz JPA rate and the divisor genuinely cannot scale.  Under
-#   BSE that retune does not exist — every cue runs at the RENDER rate
-#   (HANDOFF-PC-240: "all the 30Hz-class bugs return at 8x" at 240;
-#   bse_bluecoin(): "TCoin::perform ticks at the full 120Hz render rate") — and
-#   this gate counts gpMarDirector+0x5C, the very counter bse_bluecoin reads
-#   1-in-(FPS/30) from.  If that counter advances once per RENDERED frame under
-#   BSE, the BSE parity divisor is G = FPS/60: 2 at 120 (so the shipping,
-#   in-game-confirmed BSE-120 block cannot distinguish the two theories) and 4
-#   at 240.  Emitting 2 at 240 would then run all JPA at 120 Hz instead of 60 —
-#   M-portal atoms decomposing 2x FAST.
-#   ONE WORD to flip if the 240 playtest shows fast particles: return
-#   `int(fps) // 60` here; that changes only word 9 of each parity block,
-#   70600001 -> 70600003.  Do not flip on theory alone — get the playtest.
+# RESOLVED 2026-08-19 (was the one open question of the 240 generalization):
+#   the gate counts gpMarDirector+0x5C, which ticks once per SUBSTEP.  The
+#   bse_substep() 120 Hz sim pin (mandatory at fps > 120 — without it the
+#   whole game runs fps/120 x fast, the PC playtest symptom) makes that
+#   counter 120 Hz at EVERY rate, exactly like the stock kit whose
+#   substep_granularity() the pin reuses.  120/2 = the native 60 Hz JPA rate,
+#   so the divisor genuinely cannot scale.  (Had the pin not existed, the
+#   divisor would have been fps/60 — moot now.)
 def BSE_PARITY_DIVISOR(fps):
     return 2
 
@@ -2094,61 +2086,39 @@ def bse_animal_duration(fps=120):
 # birds look perfect. Fix: scale f1 by exactly 2 at the two accel-save sites
 # only ((2*0.5)^2 = 1.0 per frame x 120 = stock 4.0 x 30). Guarded on 2.0f.
 #
-# GENERALIZED (2026-08-19): the needed factor is k = sqrt(FPS/30) — under BSE
-# the rate is 1/G of stock and accel goes as rate^2 over FPS frames, so
-# k^2 * (30/FPS)^2 * (FPS/30) = 1 exactly when k^2 = FPS/30.  At 120 that is
-# k=2 (one fadds — byte-identical to the shipped bird-accel-x2-bse-v1.txt);
-# at 480, k=4 (two fadds).  240 has NO doubling chain (k = sqrt(8) = 2*sqrt(2)),
-# so it materialises float32(sqrt(8)) through the stack red zone into f30 and
-# fmuls — f30 is provably scratch HERE because the original instruction at both
-# hooks is `fmr f30,f1`: every path (guard-pass and guard-fail) overwrites f30
-# before anything can read it.  The red-zone stw/lfs at -8(r1) is the same
-# manoeuvre the long-shipped $FOV code and codegen.gen_world_aspect use.
+# CADENCE (2026-08-19): the accel-save sites run on CUE_MOVE — SUBSTEP-paced.
+# With the bse_substep() 120 Hz sim pin (fps > 120) AND at plain BSE-120 the
+# MOVE cadence is 120 Hz at every emitted rate, and the v11 anmrate stub pins
+# SMSGetAnmFrameRate at the matching 0.5 — so the needed factor is the 120
+# calibration k = 2 UNIVERSALLY ((2*0.5)^2 * 120 = stock 4.0 * 30).  An earlier
+# generalization scaled k = sqrt(FPS/30) per rate (float32(sqrt 8) red-zone
+# literal at 240); that assumed a 240 Hz MOVE cadence, which the substep pin
+# deliberately removes — do not resurrect it while the pin ships.
 BIRD_ACCEL_SITES = [
     (0x80008060, 0xFFC00890),   # execWalk moving:   rate saved for accel (fmr f30,f1)
     (0x80008094, 0xFFC00890),   # execWalk stopping: rate saved for decel (fmr f30,f1)
 ]
 
-def bird_accel_factor(fps):
-    """(label, exact) for the accel scale k = sqrt(FPS/30): '2' when a fadds
-    chain hits it exactly, else the rounded decimal of the float32 literal."""
-    n = int(fps // 30)
-    d = n.bit_length() - 1                  # n = 2^d, guaranteed by bse_supported
-    if d % 2 == 0:
-        return str(2 ** (d // 2)), True
-    return f"{n ** 0.5:.2f}", False
-
 def bse_bird_accel(fps=120):
-    n = int(fps // 30)
-    d = n.bit_length() - 1
     blocks = []
     for hook, orig in BIRD_ACCEL_SITES:
-        if d % 2 == 0:                       # FPS/30 = 4^(d/2): exact fadds chain
-            body = [_fadds(1, 1, 1)] * (d // 2) + [orig]
-        else:                                # exact-sqrt float32 literal via f30
-            k = struct.unpack(">I", struct.pack(">f", n ** 0.5))[0]
-            body = [0x3D600000 | (k >> 16),          # lis   r11,hi16(k)
-                    0x616B0000 | (k & 0xFFFF),       # ori   r11,r11,lo16(k)
-                    0x9161FFF8,                      # stw   r11,-8(r1)  (red zone)
-                    0xC3C1FFF8,                      # lfs   f30,-8(r1) (f30 scratch:
-                    _fmuls(1, 1, 30),                #   orig overwrites it anyway)
-                    orig]
+        body = [_fadds(1, 1, 1), orig]       # f1 *= 2, then original fmr f30,f1
         # guard-fail -> the original fmr (stock accel); pass falls into the scale
-        blocks.append(_c2(hook, _bse_guard(5 + len(body) - 1, fps=fps) + body))
+        blocks.append(_c2(hook, _bse_guard(5 + 1, fps=fps) + body))
     return "\n".join(blocks)
 
 
 def bse_shimmer(fps=120):
     """SHIMMER with its stored J3DFrameCtrl rate rescaled. TShimmer's private
-    ctrl is pinned at 1.0 by init and advances once per CUE_MOVE; native is
-    30 Hz, and under BSE CUE_MOVE runs at the RENDER rate, so the correct
-    stored rate is 30/FPS: 0.25f at 120 (byte-identical to the shipping
-    block), 0.125f at 240.  The value is materialised by a bare `lis
-    r12,hi16`, so it must have a zero low half — every 30/FPS with FPS/30
-    a power of two does.  The !=0.5f self-gate is unchanged and still fires
-    under BSE at every rate."""
-    val = struct.unpack(">I", struct.pack(">f", 30.0 / fps))[0]
-    assert val & 0xFFFF == 0, f"shimmer rate {30.0 / fps} needs more than a lis"
+    ctrl is pinned at 1.0 by init and advances once per CUE_MOVE — SUBSTEP
+    cadence, 120 Hz at every emitted rate once the bse_substep() pin is in
+    (and natively at 120).  Native pace is 30 Hz, so the correct stored rate
+    is 30/SIM = 0.25f at EVERY rate — byte-identical to the shipping 120
+    block.  The value is materialised by a bare `lis r12,hi16`, so it must
+    have a zero low half — 0.25f (3E80) does.  The !=0.5f self-gate is
+    unchanged and still fires under BSE at every rate."""
+    val = struct.unpack(">I", struct.pack(">f", 30.0 / bse_sim_fps(fps)))[0]
+    assert val & 0xFFFF == 0, f"shimmer rate needs more than a lis"
     assert SHIMMER.count("3D803E80") == 1, "SHIMMER layout changed — re-derive"
     return SHIMMER.replace("3D803E80", f"3D80{val >> 16:04X}")
 
@@ -2163,23 +2133,25 @@ def bse_poink(fps=120):
 
 
 def bse_bluecoin(fps=120):
-    """BLUECOIN recalibrated for BSE. Under BSE there is no substep machinery:
-    TCoin::perform ticks at the full RENDER rate, so the correct gate is keep
-    1-of-(FPS/30) decrements (30/s -> native 20s lifetime) — 1-of-4 at 120,
-    1-of-8 at 240 — the INVERSE of the stock kit's keep 3-of-4 (which was
+    """BLUECOIN recalibrated for BSE. TCoin::perform ticks on the MOVE cue —
+    SUBSTEP cadence: the full render rate at plain BSE-120, and 120 Hz at
+    every higher rate once the bse_substep() pin is in.  So the correct gate
+    is keep 1-of-(SIM/30) = 1-of-4 at EVERY emitted rate (30/s -> native 20s
+    lifetime) — the INVERSE of the stock kit's keep 3-of-4 (which was
     calibrated to its measured ~40 ticks/s). One-word change vs the stock
     block: the modulo branch flips beq->bne (%N==0 -> decrement, else hold).
     Confirmed direction by live symptom 2026-08-13: spray coins vanished ~4x
     fast under BSE with the fix off.
-    Self-gates on *0x804167B8 == float(G) like the stock block.
+    Self-gates on *0x804167B8 == float(G) like the stock block — G from the
+    REAL fps (4.0f at 240), only the keep ratio is sim-derived.
 
     Three rate-dependent words, each asserted unique before substitution:
       3CE04000  lis   r7,0x4000   -> hi16(float G)     (the ==G self-gate)
-      70A50003  andi. r5,r5,3     -> mask FPS/30 - 1   (the keep ratio)
+      70A50003  andi. r5,r5,3     -> mask SIM/30 - 1   (the keep ratio)
       4182000C  beq               -> 4082000C bne      (keep-1-of-N)
     """
-    n = int(fps // 30)
-    assert n & (n - 1) == 0, f"FPS/30 = {n} is not a power of two — no andi. mask"
+    n = bse_sim_fps(fps) // 30
+    assert n & (n - 1) == 0, f"SIM/30 = {n} is not a power of two — no andi. mask"
     out = BLUECOIN
     for old, new in (("4182000C", "4082000C"),
                      ("3CE04000", f"3CE0{bse_fps_word(fps) >> 16:04X}"),
@@ -2216,6 +2188,46 @@ def bse_supported(fps):
     return True, ""
 
 
+def bse_sim_fps(fps):
+    """The SIM (substep) rate under the BSE companion. Vanilla's TMarDirector
+    scheduler integrates at 120 Hz MAX: budget = 600/int(60*G) per frame with
+    a 5-per-substep cost, but the FIRST substep of every frame is
+    UNCONDITIONAL in the DOL (there is no zero-substep path). 120 is therefore
+    the highest rate vanilla paces correctly — at 240 the sim rode the render
+    rate and the game ran exactly 2x fast (PC playtest 2026-08-19). Above 120
+    the bse_substep() section pins the sim at 120 Hz (stock-kit machinery),
+    so SUBSTEP-paced divisors derive from min(fps, 120) while render/audio/
+    timebase-paced ones keep deriving from fps."""
+    return min(int(fps), 120)
+
+
+def bse_substep(fps):
+    """The >120 game-speed fix: pin the SIM at 120 Hz. Three stock-kit pieces,
+    all in-game proven on the stock 240 desktop kit, reused VERBATIM:
+
+    - substep_granularity(2): numerator 1200 / quantum 10. budget =
+      1200/int(60*G): 40@30, 20@60, 10@120, 5@240 against quantum 10 —
+      exactly 120 Hz sim at EVERY rate — plus the zero-substep C2
+      @0x80299958 that vanilla lacks (without it the unconditional first
+      substep makes the sim ride the render rate -> 2x fast at 240).
+    - ANMRATE_STUB (v11): SMSGetAnmFrameRate returns a hard 0.5f — the
+      120 Hz-sim value, correct at every pinned rate (the stock formula
+      1/G would run substep-paced anims 2x slow at 240).
+    - input latch (v9 shape): at 240 only every 2nd frame runs a substep, so
+      pad edges on skip frames must be latched or ~half of all presses drop
+      (the G=3 lesson, confirmed in-game 2026-08-09). With budget 5 /
+      quantum 10 a frame substeps iff remainder >= 5; input_latch(3)'s
+      5G-10 formula lands on the same threshold 5 by arithmetic coincidence,
+      and its body (TMarDirector vtable check, trigger zeroing) is exactly
+      what we need — reused as-is.
+
+    At fps <= 120 the scheduler already lands on >= 1 substep per frame and
+    none of this is needed: return None."""
+    if fps <= 120:
+        return None
+    return "\n".join([substep_granularity(2), ANMRATE_STUB, input_latch(3)])
+
+
 def bse_build(fps):
     """The BSE companion bundle for `fps`. Every guarded block runs only when
     the framerate global holds exactly float(FPS/60) — 2.0f at stock BSE
@@ -2223,18 +2235,31 @@ def bse_build(fps):
     stock behavior. The blue-coin, game-clock, anmrate and shimmer blocks
     self-gate on that same global instead of taking the guard prologue.
 
-    Rate-DEPENDENT: the guard / self-gate literal (float G), the 30Hz-class
-    divisors (FPS/30 — noki, wipe, SE frame-process, blue-coin keep ratio), the
-    game-clock shift (G), the anmrate scale (30/FPS) and the shimmer stored
-    rate (30/FPS).
-    Rate-INDEPENDENT by design: the particle parity divisor (CONSTANT 2 — see
-    BSE_PARITY_DIVISOR for the one open question), the Poink flyTimer<40
+    Divisors are split by CADENCE CLASS (see bse_sim_fps):
+      SUBSTEP-paced  (blue-coin perform, shimmer ctrl, bird accel):
+        derive from bse_sim_fps(fps) — 120 at every rate once the substep
+        pin is active.
+      RENDER/AUDIO-paced (wipe Hx funcs, SE frame-process, menu key-repeat):
+        derive from fps.
+      TIMEBASE-paced (game clock — OSCheckStopwatch scales with
+        EmulationSpeed): derive from G = fps/60.
+      Noki: cadence class UNRESOLVED — the block is CRASHES-disabled anyway;
+        re-derive when the Bianco crash is root-caused.
+
+    Rate-DEPENDENT on the REAL fps: the guard / self-gate literal (float G),
+    the render-class divisors (FPS/30 — noki [unresolved, disabled], wipe, SE
+    frame-process) and the game-clock shift (G).
+    Rate-INDEPENDENT once the sim is pinned: the particle parity divisor
+    (CONSTANT 2 — it counts gpMarDirector+0x5C, one tick per SUBSTEP, so the
+    pin makes 1-in-2 = 60 Hz JPA exact at every rate, resolving the old
+    BSE_PARITY_DIVISOR open question), the blue-coin keep ratio (1-of-4), the
+    shimmer stored rate (0.25f), the bird accel k (2), the Poink flyTimer<40
     threshold (spine-tick paced), and the StarFix v4 blocks.
 
     The Animal x4 speed / duration restores are NOT emitted (see the comment
     at their slot in `sections`): under BSE linear animal movement
     self-compensates, so the only animal term in the bundle is the bird
-    walk-accel scale, k = sqrt(FPS/30) per bird_accel_factor()."""
+    walk-accel x2."""
     ok, why = bse_supported(fps)
     if not ok:
         raise SystemExit(f"--bse cannot emit {fps:g}fps: {why}.\n"
@@ -2242,6 +2267,7 @@ def bse_build(fps):
                          f"FPS_240). 280/320 are NOT emittable — see bse_supported().")
     fps = int(fps)
     g, n = fps // 60, fps // 30
+    nsim = bse_sim_fps(fps) // 30               # substep-class divisor: 4 always
     tag = f"BSE-{fps}"
     # Both suffixes are empty at 120 so the shipping 120 titles stay byte-stable;
     # Dolphin matches enabled codes by EXACT title, so 240 titles must differ.
@@ -2255,13 +2281,19 @@ def bse_build(fps):
         # unrelated BSE setting. At 240 the rate is picked in BSE's own in-game
         # settings menu (and persisted to memcard) instead.
         sections.append(("$BSE Force 120 FPS", BSE_FORCE_120))
+    else:
+        # The game-speed fix: without it the sim rides the render rate and the
+        # whole game runs fps/120 x fast (2x at 240 — PC playtest 2026-08-19).
+        sections.append((f"$Substep 120Hz sim pin {tag} (granularity(2) + "
+                         "anmrate stub + input latch; NEEDS-TEST)",
+                         bse_substep(fps)))
     sections += [
         (f"$Particle parity {tag} (JPA 60Hz gate, guarded)", bse_parity(fps)),
         (f"$Noki pollution 30Hz gate {tag} (CRASHES Bianco Ep.1 under BSE — "
          "DISABLED pending root-cause, do not enable)",
          bse_noki_gate(fps) + "\n" + bse_noki_copy_gate(fps)),
         (f"$HUD StarFix v4 {tag} (guarded)", bse_starfix(fps)),
-        (f"$Blue-coin lifetime v6-BSE{bsfx} (keep 1-of-{n}; self-gated {g:g}.0f; "
+        (f"$Blue-coin lifetime v6-BSE{bsfx} (keep 1-of-{nsim}; self-gated {g:g}.0f; "
          "NEEDS-TEST ~20s)", bse_bluecoin(fps)),
         (f"$Wipe pace 30Hz gate {tag} (guarded)", bse_wipe_pace(fps)),
         (f"$SE frame-process 30Hz gate {tag} (guarded)", bse_se_frame_gate(fps)),
@@ -2277,9 +2309,8 @@ def bse_build(fps):
         # birds.  The one term that does NOT self-compensate is the squared
         # walk accel, restored by the bird-accel block below.  The builders
         # (bse_animal_speed / bse_animal_duration) stay for the record.
-        (f"$Bird walk accel x{bird_accel_factor(fps)[0]} {tag} (guarded"
-         + ("" if bird_accel_factor(fps)[1] else "; sqrt literal, NEEDS-TEST")
-         + ")", bse_bird_accel(fps)),
+        (f"$Bird walk accel x2 {tag} (guarded"
+         + ("" if fps == 120 else "; NEEDS-TEST") + ")", bse_bird_accel(fps)),
         (f"$Poink premature-explosion gate v14 {tag} (guarded; NEEDS-TEST)",
          bse_poink(fps)),
         (f"$Heat-haze shimmer pace{sfx} (self-gated; active under BSE {g:g}.0f)",
@@ -2386,8 +2417,41 @@ def _check_bse(codes, n_c2, errs, fps=120):
     elsewhere, and no stock 04 write to 0x804167B8 (which the guard cannot save
     from a C2 collision)."""
     fps = int(fps)
-    N = fps // 30                    # 30Hz-class divisor: 4 at 120, 8 at 240
+    N = fps // 30                    # render-class divisor: 4 at 120, 8 at 240
+    NSIM = bse_sim_fps(fps) // 30    # substep-class divisor: 4 at every rate
     G = fps // 60                    # framerate-global multiplier
+
+    # a0. The substep 120 Hz sim pin — MANDATORY at fps > 120 (without it the
+    #     sim rides the render rate: whole game fps/120 x fast), and must be
+    #     ABSENT at 120 (the scheduler already lands on 1 substep per frame;
+    #     the anmrate stub would be a no-op but the latch would waste cave).
+    SUBSTEP_04S = {0x8029985C: 0x386004B0,   # li    r3,1200
+                   0x80299974: 0x3803FFF6,   # addi  r0,r3,-10
+                   0x80299980: 0x2C00000A,   # cmpwi r0,10
+                   0x802A7BD8: 0xC0228028,   # anmrate stub: lfs f1,-0x7FD8(r2)
+                   0x802A7BDC: 0x4E800020}   # blr
+    if fps > 120:
+        for addr, want in SUBSTEP_04S.items():
+            if codes.get(("04", addr)) != want:
+                errs.append(f"substep pin: 04 @{addr:08X} != {want:08X} "
+                            f"(granularity(2)/anmrate-stub constants)")
+        zs = codes.get(("C2", 0x80299958))
+        if zs is None:
+            errs.append("substep pin: zero-substep C2 @0x80299958 missing — "
+                        "the first substep is unconditional in the DOL, so "
+                        "without this the game runs fps/120 x fast")
+        elif 0x2C00000A not in zs or 0x4E800420 not in zs:
+            errs.append("substep pin C2 @0x80299958: expected cmpwi acc,10 + "
+                        "bctr to the direct() epilogue")
+        if codes.get(("C2", 0x802A600C)) is None:
+            errs.append("substep pin: input latch C2 @0x802A600C missing — "
+                        "~half of all pad edges drop on skip frames without it")
+    else:
+        for addr in SUBSTEP_04S:
+            if ("04", addr) in codes:
+                errs.append(f"substep pin 04 @{addr:08X} present at {fps}fps — "
+                            f"the pin is only emitted above 120")
+
     # a. mFPSValue poke - STOCK kxe only (the 240 fork shifts its module data,
     #    so 0x8051E528 is not mFPSValue there; see bse_build).
     if fps == 120:
@@ -2462,11 +2526,11 @@ def _check_bse(codes, n_c2, errs, fps=120):
         errs.append("BSE bundle: blue-coin block @0x801BE880 missing")
     else:
         if 0x4082000C not in bc:
-            errs.append(f"BSE blue-coin: keep-1-of-{N} bne (4082000C) absent")
-        if _implied_divisor(bc, ctr=5) != N:
+            errs.append(f"BSE blue-coin: keep-1-of-{NSIM} bne (4082000C) absent")
+        if _implied_divisor(bc, ctr=5) != NSIM:
             errs.append(f"BSE blue-coin: encodes 1-in-{_implied_divisor(bc, ctr=5)}, "
-                        f"expected 1-in-{N} (FPS/30 - BSE ticks TCoin::perform at "
-                        f"the render rate)")
+                        f"expected 1-in-{NSIM} (SIM/30 — TCoin::perform is "
+                        f"MOVE-paced, 120 Hz under the substep pin)")
         if (0x3CE00000 | (bse_fps_word(fps) >> 16)) not in bc:
             errs.append(f"BSE blue-coin: self-gate literal is not lis r7,"
                         f"{bse_fps_word(fps) >> 16:04X} (float {G:g}.0f)")
@@ -2575,11 +2639,9 @@ def _check_bse(codes, n_c2, errs, fps=120):
                     f"never emit Animal x4 under BSE (2026-08-14 verdict)")
 
     # k. Bird walk accel — GUARDED at both accel-save sites; guard-fail lands on
-    #    the re-executed `fmr f30,f1`; the scale must square to exactly FPS/30:
-    #    d/2 fadds f1,f1,f1 when FPS/30 = 4^(d/2), else one fmuls f1,f1,f30 fed
-    #    by the float32(sqrt(FPS/30)) red-zone literal.
-    d = N.bit_length() - 1
-    want_k = struct.unpack(">I", struct.pack(">f", N ** 0.5))[0]
+    #    the re-executed `fmr f30,f1`. The scale is the 120-sim calibration
+    #    k=2 (ONE fadds f1,f1,f1) at EVERY rate: the sites are CUE_MOVE-paced
+    #    and the substep pin holds that cadence at 120 Hz (see BIRD_ACCEL_SITES).
     for hook, orig in BIRD_ACCEL_SITES:
         body = codes.get(("C2", hook))
         if body is None:
@@ -2591,22 +2653,10 @@ def _check_bse(codes, n_c2, errs, fps=120):
             errs.append(f"BSE bird-accel @{hook:08X}: last real word "
                         f"{real[-1] if real else 0:08X} != re-executed original "
                         f"fmr f30,f1 ({orig:08X})")
-        n_fadds = sum(1 for w in body if w == _fadds(1, 1, 1))
-        n_fmuls = sum(1 for w in body if w == _fmuls(1, 1, 30))
-        if d % 2 == 0:
-            if n_fadds != d // 2 or n_fmuls:
-                errs.append(f"BSE bird-accel @{hook:08X}: scale must be exactly "
-                            f"{d // 2} fadds f1,f1,f1 (k = {2 ** (d // 2)})")
-        else:
-            got_k = None
-            for i, w in enumerate(body[:-1]):
-                if w == 0x3D600000 | (want_k >> 16) \
-                        and body[i + 1] == 0x616B0000 | (want_k & 0xFFFF):
-                    got_k = want_k
-            if n_fmuls != 1 or got_k != want_k:
-                errs.append(f"BSE bird-accel @{hook:08X}: expected the "
-                            f"float32(sqrt({N})) = {want_k:08X} literal + one "
-                            f"fmuls f1,f1,f30 (no exact fadds chain at G={G})")
+        if sum(1 for w in body if w == _fadds(1, 1, 1)) != 1:
+            errs.append(f"BSE bird-accel @{hook:08X}: scale must be exactly one "
+                        f"fadds f1,f1,f1 (k=2, the 120 Hz-sim calibration — "
+                        f"MOVE cadence is pinned at 120 at every rate)")
 
     # l. Poink v14 — GUARDED. Guard-fail lands on the re-executed original lfs
     #    f1,-0x5ba0(r2); the mid-flight bctr epilogue path must survive intact.

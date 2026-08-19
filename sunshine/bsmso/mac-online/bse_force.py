@@ -81,11 +81,23 @@ def discover_addresses():
         return FORK_ADDR_FPS, FORK_ADDR_ASPECT, f"fork defaults ({exc})"
 
     try:
-        views = [(b, s) for b, s in mem._regions()
-                 if s >= winmem._MEM1_MIN_SIZE and mem._raw_read(b, 6) == b"GMSE01"]
-        if not views:
+        # MEM1 host base: the disc header may sit at an offset INSIDE a bigger
+        # region on Windows (fastmem arena), so scan within regions and demand
+        # the DVD magic word at +0x20 — same locator smslaunch.verify uses.
+        base_found = None
+        for b, s in mem._regions():
+            if s < winmem._MEM1_MIN_SIZE:
+                continue
+            for hit in mem._scan_region(b, min(s, 0x4000000), b"GMSE01".hex()):
+                chk = mem._raw_read(hit + 0x20, 4)
+                if chk == b"\x0d\x15\xea\x5e":
+                    base_found = hit
+                    break
+            if base_found is not None:
+                break
+        if base_found is None:
             return FORK_ADDR_FPS, FORK_ADDR_ASPECT, "fork defaults (no game booted)"
-        mem._mem1_host_base = views[0][0]
+        mem._mem1_host_base = base_found
         fps_addr    = bridge._scan_settings_by_name(mem, bridge.BSE_FPS_NAME)
         aspect_addr = bridge._scan_settings_by_name(mem, bridge.BSE_ASPECT_NAME)
         if fps_addr is None or aspect_addr is None:
