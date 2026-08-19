@@ -169,7 +169,8 @@ def main():
         res = subprocess.run(
             [sys.executable, gecko, "add", "--title", title,
              "--code", "\n".join(lines), "--enable"],
-            capture_output=True, text=True)
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1"))
         sys.stdout.write(res.stdout)
         sys.stderr.write(res.stderr)
         if res.returncode != 0:

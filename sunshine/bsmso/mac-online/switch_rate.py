@@ -58,6 +58,15 @@ DOLPHIN_INI = os.path.join(APPDATA, "Dolphin Emulator", "Config", "Dolphin.ini")
 CODE_RE = re.compile(r"[0-9A-Fa-f]{8} [0-9A-Fa-f]{8}")
 
 
+def _run(cmd):
+    """subprocess.run with BOTH sides pinned to UTF-8.  Without this, a child
+    python on Windows emits cp1252 (the em-dashes in the code titles become
+    0x97), the utf-8 reader thread dies, and .stdout comes back None."""
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
+    return subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", env=env)
+
+
 def dolphin_running() -> bool:
     out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"],
                          capture_output=True, text=True).stdout.lower()
@@ -82,8 +91,7 @@ def generate_bundle(fps):
     truth -- a stored bundle bites silently when stale).  Returns (text, origin)
     or (None, reason) when the rate has no companion (fpspatch explains why:
     280/320 have no exact divisors; 30/60 are native rates)."""
-    r = subprocess.run([sys.executable, FPSPATCH, str(fps), "--bse"],
-                       capture_output=True, text=True, encoding="utf-8")
+    r = _run([sys.executable, FPSPATCH, str(fps), "--bse"])
     if r.returncode == 0 and r.stdout.strip():
         return r.stdout, "fpspatch --bse (fresh)"
     fallback = BUNDLE.format(fps=fps)
@@ -195,9 +203,8 @@ def main():
         else:
             n_installed = 0
             for title, lines in parse_bundle_text(text):
-                subprocess.run([sys.executable, GECKO, "add", "--title", title,
-                                "--code", "\n".join(lines)],
-                               capture_output=True, text=True, encoding="utf-8")
+                _run([sys.executable, GECKO, "add", "--title", title,
+                      "--code", "\n".join(lines)])
                 n_installed += 1
                 if any(marker in title for marker in NEVER_ENABLE):
                     continue                       # installed, never enabled
@@ -208,9 +215,8 @@ def main():
     # --- static per-rate + rate-independent codes (the launcher parity set) -
     if args.fps != 30:                             # 30 = native tick counts
         title, lines = gen_menu_repeat(args.fps)
-        subprocess.run([sys.executable, GECKO, "add", "--title", title,
-                        "--code", "\n".join(lines)],
-                       capture_output=True, text=True, encoding="utf-8")
+        _run([sys.executable, GECKO, "add", "--title", title,
+              "--code", "\n".join(lines)])
         enable.append(title)
         print(f"[switch] installed ${title}")
     for fname, want_enabled in STATIC_BSE_CODES:
@@ -221,19 +227,17 @@ def main():
         with open(path, encoding="utf-8") as fh:
             blocks = parse_bundle_text(fh.read())
         for title, lines in blocks:
-            subprocess.run([sys.executable, GECKO, "add", "--title", title,
-                            "--code", "\n".join(lines)],
-                           capture_output=True, text=True, encoding="utf-8")
+            _run([sys.executable, GECKO, "add", "--title", title,
+                  "--code", "\n".join(lines)])
             if want_enabled:
                 enable.append(title)
             print(f"[switch] installed ${title}"
                   + ("" if want_enabled else " (NOT enabled - needs in-game pass)"))
 
     # --- force codes (must come first in [Gecko_Enabled] order-wise) ------
-    r = subprocess.run([sys.executable, os.path.join(HERE, "bse_force.py"),
-                        "--fps", str(args.fps), "--aspect", str(args.aspect),
-                        "--install"],
-                       capture_output=True, text=True, encoding="utf-8")
+    r = _run([sys.executable, os.path.join(HERE, "bse_force.py"),
+              "--fps", str(args.fps), "--aspect", str(args.aspect),
+              "--install"])
     sys.stdout.write(r.stdout)
     if r.returncode != 0:
         sys.stderr.write(r.stderr)
