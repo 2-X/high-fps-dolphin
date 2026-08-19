@@ -45,3 +45,32 @@ unchanged: BSE parity divisor at 240 (constant 2 vs 4 — flip word 9 to
 70600003 if the playtest shows fast particles), Noki root-cause, bird accel +
 dunebudreg in-game verdicts. Next: boot `play240.ps1`, read the verify log,
 then the 240 online playtest.
+
+## 2026-08-19 PC - 240 RUNS AT CORRECT SPEED (substep pin); playtest verdicts
+
+First BSE-240 boot ran the whole game exactly 2x fast (FPS 240 = VPS 240,
+physics/anims 2x; A/B at 120 on the same pipeline was correct). Root cause,
+live-measured then DOL-confirmed: vanilla TMarDirector's substep scheduler
+(budget 600/int(60*G) per frame, 5/substep) runs the FIRST substep of every
+frame UNCONDITIONALLY — no zero-substep path exists, so 120 is the highest
+rate vanilla paces right (why bare BSE-120 works at all) and at 240 the sim
+rides the render rate.
+
+Fix (commit c18c827): "$Substep 120Hz sim pin" emitted by `fpspatch --bse`
+at fps > 120 — the stock-kit trio verbatim: substep_granularity(2) constants
+(1200/10 = 120 Hz sim at EVERY rate) + the zero-substep C2 + the v11
+SMSGetAnmFrameRate 0.5f stub + the v9 input latch. Divisors are now split by
+cadence class (`bse_sim_fps()`): substep-paced (blue-coin, shimmer, bird
+accel x2) use 120-sim values at every rate; render/audio (wipe, SE, menu
+repeat) and timebase (game clock) scale with the real rate. The v2 parity
+caveat is RESOLVED: the gate counts the substep counter, 120 Hz under the
+pin, so the constant 2 is exact.
+
+IN-GAME CONFIRMED at 240 on the PC: correct speed, 240/240, verify PASS.
+QOL now installed per-rate by switch_rate (FLUDD v3, $FOV 60 BSE, camera
+look-up; user-enabled titles preserved). OPEN: Bianco Hills caps ~170 —
+pollution readbacks 8x too often (item 13); the noki gate stays
+CRASHES-quarantined under BSE. NOTE the crash predates the substep pin —
+worth a guarded re-test with OSReport/panic logging armed. Birds feel slow
+to the user vs the (broken) 2x session; they are at the Mac-120 calibration
+— needs an eye-comparison against the Mac, not a code change, first.
