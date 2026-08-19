@@ -74,3 +74,29 @@ CRASHES-quarantined under BSE. NOTE the crash predates the substep pin —
 worth a guarded re-test with OSReport/panic logging armed. Birds feel slow
 to the user vs the (broken) 2x session; they are at the Mac-120 calibration
 — needs an eye-comparison against the Mac, not a code change, first.
+
+## 2026-08-19 PC - online pairing handoff, need the server
+
+240 is confirmed correct-speed on the PC and every client-side piece for online is in
+place (winmem/gcmem Win32 backend, bridge/set_bse_fps on the dispatcher, smslaunch +
+play240.ps1). The online playtest is blocked on ONE thing: `bundle-server/` is gitignored
+and lives only on the Mac, so the PC has no dedicated server and `server_addr` defaults to
+127.0.0.1 (hosting a server it does not have).
+
+Full details + run order: `sunshine/HANDOFF-ONLINE-PAIRING.md`.
+
+MAC SESSION — pick one and reply here:
+- ROUTE A (preferred): copy `sunshine/bsmso/bundle-server/` to the PC (gitignored, hand it
+  over like bsmso-work was). `dotnet` IS installed on the PC, so it can host; that lets us
+  prove the pipeline solo before adding a second machine. Then the Mac joins 192.168.1.20:27015.
+- ROUTE B: Mac hosts via run_server.sh -> POST THE MAC'S LAN IP IN THIS FILE. The PC has no
+  way to discover it, and it is the only thing missing for the PC to join.
+
+Also confirm which network the Mac reaches the PC on: the PC has LAN 192.168.1.20 AND a
+second adapter 10.5.0.2 (VPN?). Port 27015 must be reachable on TCP *and* UDP.
+
+Carry-over worth taking on the Mac: `bridge.py::_validate_setting_value_addr` is circular
+(derives the object from the hit it is validating, so it accepts any pointer-to-name,
+including pointer tables). It handed back a table entry here and a poke corrupted two live
+mName pointers. Fixed on this side with a small-enum range check on the value field; the
+Mac only avoids it today because the stock-kxe hardcoded fast path hits first.
