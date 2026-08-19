@@ -31,6 +31,12 @@ that assumption is exactly how the fixed 1-in-2 particle gate shipped at 180fps:
       FPS/30 rendered frames (se_frame_gate), exactly like the Noki gate —
       supersedes the old per-site cogwheel request gate, which starved the
       keep-alive window and chopped every repeating SE at 2x native rate
+  11. the boid flocking update TBoidLeader::perform → 1 frame in FPS/30
+      (boid_gate) — fish schools (and the Gelato red coin towed by one) and
+      butterflies take a fixed-size step per CALC_ANIM cue with no delta-time,
+      so the school swims, turns and applies its 400-unit flee-from-Mario
+      force FPS/30 x too often; keyed on the audio pump's frame counter like
+      the Ricco hook gate
 
 Rate-INDEPENDENT, and correct as-is at every G:
   * hooks that READ the framerate global and self-scale — the raw anim-rate
@@ -891,6 +897,55 @@ def riccohook_se_gate(fps):
     return _c2(RICCOHOOK_HOOK, words)
 
 
+# ---- Boid flocking gate (the Gelato reef red-coin fish flee at FPS/30 x) ----
+# TBoidLeader::perform (USA 0x80005D14, JP-size-identical 0x168) runs the whole
+# flocking update — inlined updateGoal + bl calcBoids @0x80005F60 — on the
+# CALC_ANIM cue, i.e. once per RENDERED frame. calcBoids moves every boid a
+# FIXED-size step (pos += dir * (speed + jitter) * |force|, boid.cpp) with no
+# delta-time anywhere, and calcForces replaces the steering force with a
+# straight away-from-Mario vector whenever a boid is inside the leader's flee
+# radius. TFishoid::load (USA 0x80006E88) sets that radius to 400 units with
+# flee strength 3.0 and tows a REAL red coin on the last boid — the "Red Coins
+# of the Coral Reef" coin. At FPS the update runs FPS/30 x too often, so the
+# school swims, re-aims AND applies the repellent at 4x (120fps): the coin
+# outruns Mario's swim speed (user-sighted 2026-08-18, Gelato reef). The same
+# leader drives butterfly clouds — gating fixes their 4x flutter drift too.
+#
+# FIX: hold the update at native 30 Hz. Hook the `cue & CALC_ANIM` test at
+# perform+8 (0x80005D1C: rlwinm. r0,r4,0,30,30, dol-verified) and on gated
+# frames force the test result to EQ (andi. r0,r4,0) so the function's own
+# guarding beq (+0x14, to its epilogue) exits before any flocking work; pass
+# frames re-execute the original test untouched. Keyed on the audio pump's
+# per-frame counter (AUDIO_PUMP_CTR) like the Ricco hook gate — a per-call
+# tick would divide the cadence by the number of live TBoidLeader instances
+# (fish schools + butterflies per scene), freezing some leaders entirely.
+# Clobbers r11/r12 (dol-verified dead: prologue mflr/stw only) and r0/cr0,
+# both redefined by the test instruction itself on either path. Fail-open:
+# without the pump cave the counter stays 0, the modulo passes every frame,
+# and behavior is exactly stock.
+BOID_HOOK = 0x80005D1C          # TBoidLeader::perform cue-test (entry + 8)
+BOID_ORIG = 0x548007BD          # rlwinm. r0,r4,0,30,30 (cue & CUE_CALC_ANIM)
+
+def boid_gate(fps):
+    """Hold the TBoidLeader flocking update (fish schools + the towed Gelato
+    red coin, butterflies) at native 30 Hz. None when FPS/30 is not integral
+    (no pump counter cadence to key on)."""
+    if fps % 30 or fps < 60:
+        return None
+    n = int(fps // 30)
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=12)
+    words = ([0x3D808000,                                       # lis  r12,0x8000
+              0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR]  # lwz r11,ctr
+             + gate                                             # cr0 <- ctr % n
+             + [0x4182000C,                                     # beq +0xC: pass frame
+                0x70800000,                                     # gated: andi. r0,r4,0
+                                                                #  -> cr0=EQ, perform's
+                                                                #  own beq exits
+                0x48000008,                                     # b -> branch-back slot
+                BOID_ORIG])                                     # pass: original rlwinm.
+    return _c2(BOID_HOOK, words)
+
+
 # ---- Test5 morph-wipe EFB-copy reduction (the decompose/recompose lag) ------
 # The scene-transition "decompose/recompose" effect is the Hx wipe module's
 # Hx_Test5 (USA 0x8017DF74; whole TU maps JP-0xC0388, verified against the fn
@@ -1567,7 +1622,7 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
           stars=True, sun_probe=False, noki=True, poink=True, bluecoin=True,
           cogwheel=True, input_latch_fix=True, select_fix=True, wipe_opt=True,
           turnfix=True, wipe_pace_fix=True, audio_pump=True, thp_pace_fix=True,
-          riccohook=True, wipe_swap=True, shimmer=True):
+          riccohook=True, wipe_swap=True, shimmer=True, boidfix=True):
     g = integer_g(fps)
     gate_g = g or 2                            # non-integer G: fall back to 1-in-2
     parts = [base(framerate_word(fps)), particles(gate_g), PROXIMITY_GLOW]
@@ -1624,6 +1679,10 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         rh = riccohook_se_gate(fps)            # render-rate class: FPS/30 divisor
         if rh:
             parts.append(rh)
+    if boidfix:
+        bg = boid_gate(fps)                    # render-rate class: FPS/30 divisor
+        if bg:
+            parts.append(bg)
     if noki:
         ng = noki_gate(fps)
         if ng:
@@ -2765,6 +2824,37 @@ def check(bundle, fps=None, bse=False):
                     f"harbor clank retriggers at render rate near the cable hooks "
                     f"(the 240fps 'womp womp womp' report, 2026-08-10)")
 
+    # Boid flocking gate: keys the audio pump's frame counter with the FPS/30
+    # render-rate divisor, forces the cue test to EQ on gated frames (so
+    # perform's own beq exits), and re-executes the original rlwinm. on pass
+    # frames.
+    body = codes.get(("C2", BOID_HOOK))
+    if body is not None:
+        n, want_n = _implied_divisor(body, ctr=11), int(fps // 30) if fps % 30 == 0 else None
+        if n != want_n:
+            errs.append(f"boid gate @{BOID_HOOK:08X}: encodes 1-in-{n}, "
+                        f"expected 1-in-{want_n} (FPS/30 = native 30 Hz)")
+        ctr_lwz = 0x80000000 | (11 << 21) | (12 << 16) | AUDIO_PUMP_CTR
+        if ctr_lwz not in body:
+            errs.append(f"boid gate does not read the pump frame counter "
+                        f"0x8000{AUDIO_PUMP_CTR:04X} — a per-call tick divides "
+                        f"the cadence by the number of live TBoidLeader "
+                        f"instances and freezes some schools outright")
+        if 0x70800000 not in body:
+            errs.append(f"boid gate @{BOID_HOOK:08X}: no force-fail "
+                        f"andi. r0,r4,0 — gated frames would fall through with "
+                        f"a stale cue test and still run the flocking update")
+        real = [w for w in body if w not in (0, NOP)]
+        if real[-1] != BOID_ORIG:
+            errs.append(f"boid gate @{BOID_HOOK:08X}: last real word "
+                        f"{real[-1]:08X} != the re-executed original "
+                        f"{BOID_ORIG:08X} (rlwinm. r0,r4,0,30,30)")
+    elif fps % 30 == 0 and fps >= 60:
+        errs.append(f"boid flocking gate MISSING at {fps:g}fps — fish schools "
+                    f"take fixed-size steps per rendered frame, so the Gelato "
+                    f"reef red-coin school swims and flees Mario at FPS/30 x "
+                    f"speed (user-sighted 2026-08-18)")
+
     # Audio pump gate: SE processing must not outrun the 120 Hz substep request
     # rate. The gate hooks MSound::mainLoop's ENTRY, so the gated path must be a
     # bare blr (LR still the caller's) and the pass path must end on the
@@ -2857,6 +2947,7 @@ def main():
     ap.add_argument("--no-audio-pump", action="store_true", help="omit the MSound::mainLoop 30Hz gate (SE processing at render rate flicker-restarts continuous SEs, thrashes the 64-voice pool and steal-kills every BGM note at birth — total music silence at 240fps)")
     ap.add_argument("--no-thp-pace", action="store_true", help="omit the THP movie repace (movies are VI-retrace-paced, so the M-portal previews play G x fast: fast shimmer/mirage churn plus G x JPEG decode load; audio movies are untouched either way)")
     ap.add_argument("--no-riccohook", action="store_true", help="omit the Ricco hook/gondola slide-clank SE cadence gate (the harbor clank retriggers at render rate: 'womp womp womp, staticy' near the cable hooks at 240fps)")
+    ap.add_argument("--no-boidfix", action="store_true", help="omit the boid flocking 30Hz gate (fish schools/butterflies take fixed-size steps per rendered frame: the Gelato reef red-coin school swims and flees Mario at FPS/30 x speed)")
     ap.add_argument("--no-shimmer", action="store_true", help="omit the heat-haze shimmer pace fix (catalog item 28; self-gated on the framerate global != native 0.5f, safe to leave on)")
     ap.add_argument("--bse", action="store_true", help="emit the BSE-120 companion bundle (guarded blocks for the Better Sunshine Engine online mod; requires fps=120)")
     ap.add_argument("--sun-probe", action="store_true", help="NOP the sun lens-flare EFB probe (measured no gain; breaks the flare)")
@@ -2881,7 +2972,7 @@ def main():
                        turnfix=not a.no_turnfix, wipe_pace_fix=not a.no_wipepace,
                        audio_pump=not a.no_audio_pump, thp_pace_fix=not a.no_thp_pace,
                        riccohook=not a.no_riccohook, wipe_swap=not a.no_wipe_swap,
-                       shimmer=not a.no_shimmer)
+                       shimmer=not a.no_shimmer, boidfix=not a.no_boidfix)
 
     if a.check:
         nblocks, errs = check(bundle, a.fps, bse=a.bse)
