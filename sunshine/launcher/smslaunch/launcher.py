@@ -10,8 +10,11 @@ Both take an optional `log` callback so the TUI can stream progress lines.
 """
 from __future__ import annotations
 
+import os
+import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -19,8 +22,24 @@ from . import config as C
 from . import codegen
 from .inieditor import Ini, dolphin_running
 
+WIN = sys.platform == "win32"
+TMP = tempfile.gettempdir()          # /tmp on the Mac, %TEMP% on Windows
+
 
 def _noop(_msg): pass
+
+
+def _pkill_f(pattern, log=_noop):
+    """Kill processes whose command line contains `pattern` (pkill -f shape)."""
+    if not WIN:
+        subprocess.run(["pkill", "-f", pattern], capture_output=True)
+        return
+    ps = ("Get-CimInstance Win32_Process | "
+          f"Where-Object {{ $_.CommandLine -like '*{pattern}*' -and "
+          f"$_.ProcessId -ne {os.getpid()} }} | "
+          "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }")
+    subprocess.run(["powershell", "-NoProfile", "-Command", ps],
+                   capture_output=True)
 
 
 # ---------------------------------------------------------------- inspection
@@ -53,18 +72,36 @@ def resolve_qol(ini: Ini, engine: str, qol: dict):
     return rows
 
 
-def baseline_titles(ini: Ini, engine: str, log=_noop) -> list[str]:
+def baseline_titles(ini: Ini, engine: str, log=_noop, fps=None) -> list[str]:
     """High-fps correctness codes auto-enabled for ONLINE/BSE. Offline gets its
     equivalents from inside the fpspatch bundle, so returns [].
 
     Only `verified` fixes are auto-enabled (unverified ports have burned us:
     see the anmrate note in config.BASELINE_FIXES). A verified fix whose regex
-    no longer resolves is a LOUD warning, never a silent drop."""
+    no longer resolves is a LOUD warning, never a silent drop.
+
+    RATE DISAMBIGUATION: since the PC 240 work, an INI can hold BOTH rate
+    variants of a companion code ("... BSE-120 ..." and "... BSE-240 ..." —
+    they guard on different framerate literals, so only the launched rate's
+    copy ever fires, but a bare regex matches both). Prefer the title carrying
+    the launched rate's BSE-<fps> tag; else the un-suffixed (120-era) title;
+    a residual multi-match is a loud warning."""
     if engine != "bse":
         return []
+    titles = ini.titles()
     out = []
     for key, pat, verified in C.BASELINE_FIXES:
-        t = ini.resolve(pat)
+        rx = re.compile(pat)
+        hits = [t for t in titles if rx.search(t)]
+        if len(hits) > 1 and fps is not None:
+            tagged = [t for t in hits if f"BSE-{fps}" in t]
+            hits = tagged or [t for t in hits if not re.search(r"BSE-\d+", t)] \
+                or hits
+        if len(hits) > 1:
+            log(f"  !! baseline '{key}' (/{pat}/) is AMBIGUOUS at {fps}fps: "
+                + ", ".join(hits) + " — enabling none; fix the titles")
+            continue
+        t = hits[0] if hits else None
         if not verified:
             if t:
                 log(f"  ! baseline '{key}' is UNVERIFIED — not auto-enabled "
@@ -72,6 +109,8 @@ def baseline_titles(ini: Ini, engine: str, log=_noop) -> list[str]:
             continue
         if t:
             out.append(t)
+        elif key == "substep" and (fps is None or fps <= 120):
+            pass          # only emitted above 120 — absence is correct there
         else:
             log(f"  !! baseline fix '{key}' (/{pat}/) matched NO [Gecko] code "
                 "— the online kit is missing a correctness fix!")
@@ -128,7 +167,7 @@ def enabled_set_for(ini: Ini, profile: dict, log=_noop) -> list[str]:
         titles.append(C.FPS_BUNDLE_TITLE.format(fps=profile["fps"]))
     if engine == "bse" and profile["fps"] != 30:      # 30 = native tick counts
         titles.append(C.MENU_REPEAT_TITLE_BSE.format(fps=profile["fps"]))
-    titles += baseline_titles(ini, engine, log)
+    titles += baseline_titles(ini, engine, log, fps=profile["fps"])
     titles += widescreen_titles(ini, engine, profile["aspect"])  # aspect dropdown
     for _key, _label, wanted, title, avail in resolve_qol(ini, engine, profile["qol"]):
         if wanted and avail:
@@ -161,7 +200,7 @@ def plan(profile: dict) -> dict:
         "fps_native": engine == "stock" and profile["fps"] < 120,   # 60 = native
         "fps_supported": engine == "stock" or profile["fps"] in C.BSE_FPS_VALUES,
         "enabled": enabled_set_for(ini, profile),
-        "baseline": baseline_titles(ini, engine),
+        "baseline": baseline_titles(ini, engine, fps=profile["fps"]),
         "widescreen": widescreen_titles(ini, engine, profile["aspect"]),
         "qol_rows": resolve_qol(ini, engine, profile["qol"]),
     }
@@ -172,14 +211,21 @@ def quit_dolphin(log=_noop):
     if not dolphin_running():
         return
     log("Quitting Dolphin (so it can't clobber the INI on exit)…")
-    subprocess.run(["pkill", "-x", "Dolphin"])
+    if WIN:
+        subprocess.run(["taskkill", "/IM", "Dolphin.exe"], capture_output=True)
+    else:
+        subprocess.run(["pkill", "-x", "Dolphin"])
     for _ in range(20):
         if not dolphin_running():
             break
         time.sleep(1)
     if dolphin_running():
         log("Dolphin still up — force killing.")
-        subprocess.run(["pkill", "-9", "-x", "Dolphin"])
+        if WIN:
+            subprocess.run(["taskkill", "/F", "/IM", "Dolphin.exe"],
+                           capture_output=True)
+        else:
+            subprocess.run(["pkill", "-9", "-x", "Dolphin"])
         time.sleep(2)
 
 
@@ -405,9 +451,10 @@ def _spawn_verify(profile: dict, log=_noop):
     """Detached post-launch verification (BSE modes): proves every enabled
     Gecko code actually installed and the native FPS poke landed. Without
     this, a silently-dead code list looks identical to a working one."""
+    vlog = os.path.join(TMP, "sms-verify.log")
     _spawn([sys.executable, "-m", "smslaunch.verify",
-            "--fps", str(profile["fps"])], C.LAUNCHER_DIR, "/tmp/sms-verify.log")
-    log("Post-launch verify scheduled (~30s) — result: /tmp/sms-verify.log")
+            "--fps", str(profile["fps"])], C.LAUNCHER_DIR, vlog)
+    log(f"Post-launch verify scheduled (~30s) — result: {vlog}")
 
 
 def launch(profile: dict, *, log=_noop):
@@ -419,11 +466,14 @@ def launch(profile: dict, *, log=_noop):
     # Always clear helpers from the PREVIOUS session. A lingering ghost_bot
     # otherwise reconnects even when the ghost box is unticked (and a stale
     # bridge would double-poke). They are respawned below only if wanted.
-    subprocess.run(["pkill", "-f", "ghost_bot.py"], capture_output=True)
-    subprocess.run(["pkill", "-f", "bridge.py"], capture_output=True)
+    _pkill_f("ghost_bot.py")
+    _pkill_f("bridge.py")
 
     log(f"Booting {iso.name} …")
-    subprocess.run(["open", "-a", str(C.DOLPHIN_APP), "--args", "-e", str(iso)])
+    if WIN:
+        subprocess.Popen([str(C.DOLPHIN_APP), "-e", str(iso)])
+    else:
+        subprocess.run(["open", "-a", str(C.DOLPHIN_APP), "--args", "-e", str(iso)])
 
     # OFFLINE = the stock SMS disc: the fpspatch Gecko bundle + EmulationSpeed
     # drive the framerate. Nothing to poke, no server.
@@ -442,55 +492,70 @@ def launch(profile: dict, *, log=_noop):
     if profile["mode"] == "solo":
         log(f"Solo BSE moveset: poking native FPS={profile['fps']} / "
             f"aspect={bse_aspect} (no server)…")
-        _spawn(["python3", str(C.SET_BSE_FPS), "--fps", str(profile["fps"]),
-                "--aspect", str(bse_aspect)], C.MAC_ONLINE, "/tmp/set_bse_fps.log")
+        _spawn([sys.executable, str(C.SET_BSE_FPS), "--fps", str(profile["fps"]),
+                "--aspect", str(bse_aspect)], C.MAC_ONLINE,
+               os.path.join(TMP, "set_bse_fps.log"))
         log("Full moveset (Hover Burst, SMO Dive, Rocket/Side Dive…) loads from "
             "BetterSunshineMoveset.kxe. FPS poke retries until BSE registers "
-            "(~seconds into boot) — log: /tmp/set_bse_fps.log. Play solo.")
+            f"(~seconds into boot) — log: {os.path.join(TMP, 'set_bse_fps.log')}. "
+            "Play solo.")
         _spawn_verify(profile, log)
         return
 
     # ONLINE = the BSE disc: framerate/aspect are native settings poked into RAM,
     # plus the server + bridge (+ ghost). The bridge re-pokes FPS/aspect each loop.
-    # A long-lived server degrades (busy-wait spin accumulates with every
-    # connect/disconnect; 300-600% CPU seen after hours up) and its world-sync
-    # reheal then wedges the client GUEST-side on stage entry — the 2026-08-14
-    # "freeze in Delfino / at Wiggler" class. Reuse only a healthy server;
-    # restart a spun-up one at session start.
-    sp = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
-                        capture_output=True, text=True).stdout.split()
-    if sp:
-        cpu = subprocess.run(["ps", "-p", sp[0], "-o", "pcpu="],
-                             capture_output=True, text=True).stdout.strip()
-        if float(cpu or 0) > 150:
-            log(f"Server degraded ({cpu.strip()}% CPU) — restarting it fresh.")
-            subprocess.run(["pkill", "-f", "SMSO.ServerHost"])
-            time.sleep(2)
-            sp = []
-        else:
-            log(f"Server already running (healthy, {cpu.strip()}% CPU).")
-    if not sp:
-        log("Starting BSMSO server…")
-        _spawn(["/bin/zsh", str(C.RUN_SERVER)], C.MAC_ONLINE, "/tmp/smso-server.log")
-        time.sleep(3)
-    # The server busy-waits (600%+ CPU with clients attached) and starves
-    # Dolphin below the target FPS. Until the spin is fixed at source, pin it
-    # to lowest priority so the emulator always wins the CPU fight.
-    pids = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
-                          capture_output=True, text=True).stdout.split()
-    for pid in pids:
-        subprocess.run(["renice", "19", "-p", pid], capture_output=True)
-    if pids:
-        log("Server deprioritized (nice 19) so Dolphin keeps its FPS.")
-    time.sleep(1)
+    server = C.SERVER_ADDR
+    if server in ("127.0.0.1", "localhost"):
+        # This machine hosts. A long-lived server degrades (busy-wait spin
+        # accumulates with every connect/disconnect; 300-600% CPU seen after
+        # hours up) and its world-sync reheal then wedges the client
+        # GUEST-side on stage entry — the 2026-08-14 "freeze in Delfino / at
+        # Wiggler" class. Reuse only a healthy server; restart a spun-up one.
+        if WIN:
+            raise RuntimeError(
+                "This machine has no server bundle (SMSO.ServerHost lives on "
+                "the Mac). Set server_addr in config.local.json (or SMS_SERVER) "
+                "to the host's LAN IP to join its game.")
+        sp = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
+                            capture_output=True, text=True).stdout.split()
+        if sp:
+            cpu = subprocess.run(["ps", "-p", sp[0], "-o", "pcpu="],
+                                 capture_output=True, text=True).stdout.strip()
+            if float(cpu or 0) > 150:
+                log(f"Server degraded ({cpu.strip()}% CPU) — restarting it fresh.")
+                subprocess.run(["pkill", "-f", "SMSO.ServerHost"])
+                time.sleep(2)
+                sp = []
+            else:
+                log(f"Server already running (healthy, {cpu.strip()}% CPU).")
+        if not sp:
+            log("Starting BSMSO server…")
+            _spawn(["/bin/zsh", str(C.RUN_SERVER)], C.MAC_ONLINE,
+                   os.path.join(TMP, "smso-server.log"))
+            time.sleep(3)
+        # The server busy-waits (600%+ CPU with clients attached) and starves
+        # Dolphin below the target FPS. Until the spin is fixed at source, pin
+        # it to lowest priority so the emulator always wins the CPU fight.
+        pids = subprocess.run(["pgrep", "-f", "SMSO.ServerHost"],
+                              capture_output=True, text=True).stdout.split()
+        for pid in pids:
+            subprocess.run(["renice", "19", "-p", pid], capture_output=True)
+        if pids:
+            log("Server deprioritized (nice 19) so Dolphin keeps its FPS.")
+        time.sleep(1)
+    else:
+        log(f"Joining remote server at {server}:{C.SERVER_PORT} (no local "
+            f"server spawn — make sure the host machine's game is up).")
     log(f"Starting bridge (name={profile['player_name']}, fps={profile['fps']})…")
-    _spawn(["python3", str(C.BRIDGE), "--server", "127.0.0.1",
+    _spawn([sys.executable, str(C.BRIDGE), "--server", server,
             "--name", profile["player_name"], "--fps", str(profile["fps"]),
-            "--aspect", str(bse_aspect)], C.MAC_ONLINE, "/tmp/bridge.log")
+            "--aspect", str(bse_aspect)], C.MAC_ONLINE,
+           os.path.join(TMP, "bridge.log"))
     if profile["ghost"]:
         log("Starting ghost bot…")
-        _spawn(["python3", str(C.GHOST), "--server", "127.0.0.1", "--name", "Ghost"],
-               C.MAC_ONLINE, "/tmp/ghost.log")
+        _spawn([sys.executable, str(C.GHOST), "--server", server,
+                "--name", "Ghost"], C.MAC_ONLINE, os.path.join(TMP, "ghost.log"))
     log("Online up. Enter a stage (Delfino) — bridge attaches once the session "
-        "is active. Logs: /tmp/bridge.log, /tmp/smso-server.log.")
+        f"is active. Logs: {os.path.join(TMP, 'bridge.log')}, "
+        f"{os.path.join(TMP, 'smso-server.log')}.")
     _spawn_verify(profile, log)

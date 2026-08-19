@@ -1,6 +1,13 @@
 {
+  "//": "Copy to config.local.json (gitignored) and edit. Every key is optional;",
+  "//2": "env vars SMS_ISO_OFFLINE / SMS_ISO_DIR / SMS_DOLPHIN_APP / SMS_DOLPHIN_USER / SMS_SERVER win over this file.",
+  "//3": "Mac example paths below; Windows example: C:\\Users\\you\\games\\dolphin\\bsmso-work etc.",
   "iso_offline":  "/Applications/gamecube/Super Mario Sunshine (USA).rvz",
   "iso_dir":      "/Applications/gamecube/bsmso-work",
   "dolphin_app":  "/path/to/high-fps-dolphin/dolphin/build/Binaries/Dolphin.app",
-  "dolphin_user": "~/Library/Application Support/Dolphin"
+  "dolphin_user": "~/Library/Application Support/Dolphin",
+  "//4": "server_addr: 127.0.0.1 = host the BSMSO server on THIS machine (needs the",
+  "//5": "bundle-server dir, Mac only today). Set to the host's LAN IP to JOIN its game",
+  "//6": "(port 27015 TCP+UDP must be reachable).",
+  "server_addr": "127.0.0.1"
 }

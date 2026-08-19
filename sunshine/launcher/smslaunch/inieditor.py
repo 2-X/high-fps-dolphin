@@ -38,6 +38,11 @@ def dolphin_name(title: str) -> str:
 def dolphin_running() -> bool:
     # Exact process-name match — helpers launched from this repo (bridge.py,
     # ghost_bot.py, this launcher) would false-match a `pgrep -f dolphin`.
+    import sys
+    if sys.platform == "win32":
+        out = subprocess.run(["tasklist", "/FO", "CSV", "/NH"],
+                             capture_output=True, text=True).stdout.lower()
+        return "dolphin.exe" in out
     return subprocess.run(["pgrep", "-x", "Dolphin"],
                           capture_output=True, text=True).returncode == 0
 

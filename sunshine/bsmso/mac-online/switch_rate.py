@@ -150,6 +150,17 @@ MANAGED_RE = re.compile(
     r"(BSE-\d+|BSE Force|Menu key-repeat BSE|DuneBud|FLUDD Aim Invert v3|"
     r"FOV \d+ BSE|Camera look-up extension)")
 
+# Superseded titles removed from [Gecko] on every run: leftovers from earlier
+# same-day iterations break the launcher's title-regex resolution (two "Bird
+# walk accel" candidates = ambiguous = enabled NONE). Same pattern as the
+# launcher's WS2D_TITLE_STALE.
+STALE_TITLES = [
+    # pre-substep-pin 240 shapes (superseded by the 120 Hz-sim calibration)
+    "Bird walk accel x2.83 BSE-240 (guarded; sqrt literal, NEEDS-TEST)",
+    "Blue-coin lifetime v6-BSE-240 (keep 1-of-8; self-gated 4.0f; "
+    "NEEDS-TEST ~20s)",
+]
+
 
 # ---- FOV, BSE dialect (mirror of smslaunch.codegen.gen_fov_bse; kept in ----
 # sync BY HAND like gen_menu_repeat).  The generic stock FOV template's
@@ -264,6 +275,13 @@ def main():
         return 1
 
     enable = []
+
+    # --- drop superseded titles (they break title-regex resolution) --------
+    present0 = set(ini_titles())
+    for stale in STALE_TITLES:
+        if stale in present0:
+            _run([sys.executable, GECKO, "remove", "--title", stale])
+            print(f"[switch] removed stale ${stale[:60]}…")
 
     # --- companion bundle (generated fresh; see generate_bundle) ----------
     if not args.no_bundle:

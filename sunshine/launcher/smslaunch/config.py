@@ -103,6 +103,16 @@ LAST_JSON = LAUNCHER_DIR / "last.json"
 VENV_PY = (LAUNCHER_DIR / ".venv" / "Scripts" / "python.exe" if WIN
            else LAUNCHER_DIR / ".venv" / "bin" / "python")
 
+# ---- online server ----------------------------------------------------------
+# Where the BSMSO dedicated server lives. 127.0.0.1 = this machine hosts (the
+# Mac's default: launch() spawns/reuses SMSO.ServerHost locally). Any other
+# address = JOIN a remote host over LAN (the PC's default posture: the server
+# bundle only exists on the Mac) — launch() then skips the server spawn/health
+# checks and points the bridge at it. Override via config.local.json
+# ("server_addr") or SMS_SERVER, e.g. the Mac's LAN IP.
+SERVER_ADDR = os.environ.get("SMS_SERVER") or _local.get("server_addr") or "127.0.0.1"
+SERVER_PORT = 27015                              # TCP + UDP (protocol.py)
+
 # ---- discs (machine-specific — override via config.local.json) -------------
 # OFFLINE = the plain Super Mario Sunshine disc (GMSE01) + our stock high-fps
 # Gecko kit. ONLINE = the BSMSO / Better Sunshine Engine disc.
@@ -274,6 +284,13 @@ WIDESCREEN_WIPE_FIX = r"Widescreen wipe fix v2"    # aspect-independent curtain 
 # time (bracket-title fix) — all effects verified correct in-game.
 #   key, regex, verified
 BASELINE_FIXES = [
+    # The >120 game-speed fix: vanilla's substep scheduler runs the first
+    # substep of every frame unconditionally, so above 120 the sim rides the
+    # render rate (2x fast at 240 — PC 2026-08-19). Emitted by fpspatch --bse
+    # only at fps > 120; its constants are 120Hz-sim-correct at every BSE
+    # rate, so enabling it at 120 (where the title resolves because the 240
+    # companion is installed alongside) is harmless-correct.
+    ("substep",   r"Substep 120Hz sim pin BSE",              True),
     ("particle",  r"Particle parity BSE",                    True),
     ("starfix",   r"HUD StarFix v4 BSE",                     True),
     ("wipe",      r"Wipe pace 30Hz gate BSE",                True),
