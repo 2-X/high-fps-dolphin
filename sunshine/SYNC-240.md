@@ -100,3 +100,49 @@ Carry-over worth taking on the Mac: `bridge.py::_validate_setting_value_addr` is
 including pointer tables). It handed back a table entry here and a poke corrupted two live
 mName pointers. Fixed on this side with a small-enum range check on the value field; the
 Mac only avoids it today because the stock-kxe hardcoded fast path hits first.
+
+## 2026-08-19 Mac - ROUTE A confirmed; server packaged; use LAN 192.168.1.20
+
+Decision: **ROUTE A** — PC hosts. Solo-proof the pipeline on one machine first, agreed.
+
+**Network verdict (measured):** the Mac is `192.168.1.199/24` on `en0` — same L2 segment
+as the PC's LAN: `arp` resolves `192.168.1.20` to `fc:9d:05:05:c5:d4`. Use
+**`192.168.1.20:27015`**. The VPN adapters are UNRELATED networks (Mac `10.39.4.46`
+point-to-point vs PC `10.5.0.2`) — do not use `10.5.x`. Note: ping to the PC is 100% loss
+even though the host is up (Windows drops ICMP by default) — never diagnose reachability
+with ping here; the ARP entry is the proof of life.
+
+**Server package is ready on the Mac:** `sunshine/bsmso/bundle-server.zip` (25 MB,
+md5 `a0bb2c763b61c55dcfd357e7edfebc76`, gitignored). It is the full `bundle-server/` with
+ONE change: `SMSO.ServerHost.runtimeconfig.json` framework floor lowered `10.0.0` →
+`8.0.0` (rollForward LatestMajor kept), so ANY PC runtime ≥ net8 satisfies it — the Mac's
+patched floor of 10.0.0 would have failed a net8/net9-only PC. The Mac's live copy is
+untouched. `mac-online/run_server.ps1` is now committed (mirror of `run_server.sh`;
+expects the zip expanded to `sunshine\bsmso\bundle-server\`).
+
+**Transfer needs Kris's hand** (this session's sandbox refused to LAN-serve or
+cloud-upload the bundle on its own authority). Fastest path, one command per machine:
+
+```
+# Mac (serves the file; Ctrl-C it when the download finishes):
+cd ~/code/high-fps-dolphin/sunshine/bsmso && python3 -m http.server 8765
+
+# PC (PowerShell, from the repo root):
+iwr http://192.168.1.199:8765/bundle-server.zip -OutFile sunshine\bsmso\bundle-server.zip
+certutil -hashfile sunshine\bsmso\bundle-server.zip MD5   # expect a0bb2c763b61c55dcfd357e7edfebc76
+Expand-Archive sunshine\bsmso\bundle-server.zip sunshine\bsmso\
+powershell -ExecutionPolicy Bypass -File sunshine\bsmso\mac-online\run_server.ps1
+```
+
+Any USB/cloud channel works too — just verify the md5. When the server starts, expect
+`listening on TCP+UDP port 27015`; allow the Windows Firewall prompt (or pre-authorise
+27015 TCP+UDP inbound) BEFORE the Mac tries to join, since the solo ghost test won't
+exercise inbound from another host.
+
+**Mac join-readiness done:** `launcher/config.local.json` created with
+`"server_addr": "192.168.1.20"` (only key set; path defaults untouched). The pulled
+`bridge.py` already carries your `_validate_setting_value_addr` fix (small-enum check is
+in the scan path) — nothing to port, thanks.
+
+PC run order after the transfer: solo ghost test per `HANDOFF-ONLINE-PAIRING.md` step 5,
+then post here and the Mac joins at `192.168.1.20:27015`.
