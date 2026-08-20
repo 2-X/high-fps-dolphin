@@ -19,14 +19,15 @@ git apply ../sunshine/dolphin-patches/high-fps-dolphin.patch
 Pinned upstream base: see [`UPSTREAM_COMMIT.txt`](UPSTREAM_COMMIT.txt)
 (`b6d8bc299e…`, the `master` HEAD this patch was cut against).
 
-## 1. What the patch changes (14 files, 4 independent features)
+## 1. What the patch changes (23 files, 5 independent features)
 
 | Feature | Files | Why it's needed |
 |---|---|---|
 | **Gecko code-limit relocation** ⭐ | `Core/GeckoCode.cpp`, `PowerPC/MMU.cpp` | Stock Dolphin holds the whole code list in the cramped `0x80001800`–`0x80003000` window → **~406 code lines max**, silently *skipping* codes past that with only a `NOTICE` log. This patch relocates the list into over-provisioned MEM1 (`0x81800000`, capped 256 KB → **thousands** of lines) and BAT-maps it via spare pair 4. **Requires the MEM1 override (§3).** |
 | **>4.4× throttle fix** ⭐ | `Core/CoreTiming.cpp`, `Core/CoreTiming.h` | `std::lround` returns a 32-bit `long` on Windows (LLP64); the GC clock × 6 (for 360 fps) overflows it, silently disabling the speed limit. Switched to `llround` + lazy throttle-clock init. Without this, **360 fps has no working throttle at all.** |
 | **Route-A audio tempo** | `Core/HW/SystemTimers.cpp`, `Core/HW/DSPHLE/UCodes/Zelda.*` | When the console runs at `EmulationSpeed = G` to render high fps, scale the audio DMA period by G so DSP/AI audio plays at correct wall-clock tempo instead of G× fast. Plus DSP-desync instrumentation. |
-| **Frame interpolation + overlay QoL** | `VideoCommon/Present.*`, `VideoCommon/FramebufferShaderGen.*`, `VideoCommon/Statistics.cpp`, `Core/Config/GraphicsSettings.*` | Optional XFB blend interpolation (`DOLPHIN_FRAME_INTERP=N`) and a collapsible stats overlay. |
+| **Frame interpolation + overlay QoL** | `VideoCommon/Present.*`, `VideoCommon/FramebufferShaderGen.*`, `VideoCommon/Statistics.cpp`, `Core/Config/GraphicsSettings.*` | Optional XFB blend interpolation (`DOLPHIN_FRAME_INTERP=N`) and a collapsible stats overlay. 2026-08-20: pacing feedback loop fixed (floor-tracking estimator); NOT play-viable yet — see `sunshine/HOWTO-INTERPOLATION-360.md` §FIRST PLAYTEST. |
+| **Non-blocking readbacks (experimental, default OFF)** | `VideoBackends/Vulkan/VKPerfQuery.cpp`, `VKTexture.*`, `VideoCommon/AbstractStagingTexture.h`, `FramebufferManager.*`, `VideoBackendBase.cpp`, `VideoConfig.*`, `Core/Config/GraphicsSettings.*` | `GFX.ini [Settings] HiFpsNonBlockingReadbacks` / per-game `[Video_Settings]`: stale-tolerant PerfQuery + EFB-peek paths without GPU fence waits. 2026-08-20 in-game A/B: slightly SLOWER at 360-target (submit overhead outweighs the fences) — keep OFF pending a submit-batching rework. |
 
 ⭐ = the two features that make the high-fps Gecko bundles function. They were
 **missing from earlier revisions of this patch.** If you cloned this repo before

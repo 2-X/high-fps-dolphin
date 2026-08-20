@@ -1,5 +1,5 @@
-diff --git a/Source/Core/Core/Config/GraphicsSettings.cpp b/Source/Core/Core/Config/GraphicsSettings.cpp
-index f91b87e490..a5beac8638 100644
+﻿diff --git a/Source/Core/Core/Config/GraphicsSettings.cpp b/Source/Core/Core/Config/GraphicsSettings.cpp
+index f91b87e..5db0764 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.cpp
 +++ b/Source/Core/Core/Config/GraphicsSettings.cpp
 @@ -57,6 +57,8 @@ const Info<bool> GFX_SHOW_NETPLAY_MESSAGES{{System::GFX, "Settings", "ShowNetPla
@@ -11,8 +11,20 @@ index f91b87e490..a5beac8638 100644
  const Info<bool> GFX_OVERLAY_PROJ_STATS{{System::GFX, "Settings", "OverlayProjStats"}, false};
  const Info<bool> GFX_OVERLAY_SCISSOR_STATS{{System::GFX, "Settings", "OverlayScissorStats"}, false};
  const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION{{System::GFX, "Settings", "ShowInternalResolution"},
+@@ -132,6 +134,11 @@ const Info<bool> GFX_PREFER_GLES{{System::GFX, "Settings", "PreferGLES"}, false}
+ 
+ const Info<bool> GFX_MODS_ENABLE{{System::GFX, "Settings", "EnableMods"}, false};
+ 
++// [hifps] Serve perf-query results and EFB peeks from the last completed GPU readback
++// instead of blocking on fences. Results lag by up to one emulated frame.
++const Info<bool> GFX_HIFPS_NON_BLOCKING_READBACKS{
++    {System::GFX, "Settings", "HiFpsNonBlockingReadbacks"}, false};
++
+ const Info<std::string> GFX_DRIVER_LIB_NAME{{System::GFX, "Settings", "DriverLibName"}, ""};
+ 
+ const Info<VertexLoaderType> GFX_VERTEX_LOADER_TYPE{{System::GFX, "Settings", "VertexLoaderType"},
 diff --git a/Source/Core/Core/Config/GraphicsSettings.h b/Source/Core/Core/Config/GraphicsSettings.h
-index 502d2f0764..324064c3b6 100644
+index 502d2f0..40d5d30 100644
 --- a/Source/Core/Core/Config/GraphicsSettings.h
 +++ b/Source/Core/Core/Config/GraphicsSettings.h
 @@ -59,6 +59,7 @@ extern const Info<bool> GFX_SHOW_NETPLAY_PING;
@@ -23,8 +35,18 @@ index 502d2f0764..324064c3b6 100644
  extern const Info<bool> GFX_OVERLAY_PROJ_STATS;
  extern const Info<bool> GFX_OVERLAY_SCISSOR_STATS;
  extern const Info<bool> GFX_SHOW_INTERNAL_RESOLUTION;
+@@ -115,6 +116,9 @@ extern const Info<bool> GFX_PREFER_GLES;
+ 
+ extern const Info<bool> GFX_MODS_ENABLE;
+ 
++// [hifps]
++extern const Info<bool> GFX_HIFPS_NON_BLOCKING_READBACKS;
++
+ // Graphics.Enhancements
+ 
+ extern const Info<TextureFilteringMode> GFX_ENHANCE_FORCE_TEXTURE_FILTERING;
 diff --git a/Source/Core/Core/CoreTiming.cpp b/Source/Core/Core/CoreTiming.cpp
-index 1fa39d7448..e918246dc6 100644
+index 1fa39d7..e918246 100644
 --- a/Source/Core/Core/CoreTiming.cpp
 +++ b/Source/Core/Core/CoreTiming.cpp
 @@ -456,12 +456,40 @@ void CoreTimingManager::Throttle(const s64 target_cycle)
@@ -83,7 +105,7 @@ index 1fa39d7448..e918246dc6 100644
    const bool was_limited = m_throttle_adj_clock_per_sec != 0;
    if (was_limited)
 diff --git a/Source/Core/Core/CoreTiming.h b/Source/Core/Core/CoreTiming.h
-index 29d636e433..3e4179269a 100644
+index 29d636e..3e41792 100644
 --- a/Source/Core/Core/CoreTiming.h
 +++ b/Source/Core/Core/CoreTiming.h
 @@ -215,6 +215,7 @@ private:
@@ -95,7 +117,7 @@ index 29d636e433..3e4179269a 100644
    DT m_max_fallback = {};
    DT m_max_variance = {};
 diff --git a/Source/Core/Core/GeckoCode.cpp b/Source/Core/Core/GeckoCode.cpp
-index 79b8449e92..debddb0636 100644
+index 79b8449..1dcf203 100644
 --- a/Source/Core/Core/GeckoCode.cpp
 +++ b/Source/Core/Core/GeckoCode.cpp
 @@ -17,6 +17,7 @@
@@ -106,7 +128,7 @@ index 79b8449e92..debddb0636 100644
  #include "Core/Host.h"
  #include "Core/PowerPC/MMU.h"
  #include "Core/PowerPC/PowerPC.h"
-@@ -152,9 +153,84 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+@@ -152,9 +153,77 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
      }
    }
  
@@ -125,16 +147,9 @@ index 79b8449e92..debddb0636 100644
 +  const u32 mem1_size = guard.GetSystem().GetMemory().GetRamSizeReal();
 +  if (mem1_size > Memory::MEM1_SIZE_RETAIL)
 +  {
-+    // [hifps] Anchor the relocated code list at the first over-provisioned page
-+    // (0x81800000, just past retail's 24MB). It MUST stay within ±32MB of the game
-+    // code so the handler's relative branches into it don't overflow (a farther base
-+    // like 0x83800000 wraps the 26-bit branch field and crashes). BSMSO's online
-+    // puppet arena starts at 0x81810000, deliberately leaving a 64KB gap at
-+    // 0x81800000; the real list is only a few KB, so cap the reserved window at
-+    // that 64KB so it never runs into (and gets stomped by) the arena.
 +    const u32 extended_base = 0x80000000 + Memory::MEM1_SIZE_RETAIL;
 +    const u32 extended_end =
-+        std::min(0x80000000 + mem1_size, extended_base + 0x10000);  // cap the list at 64KB (pre-arena)
++        std::min(0x80000000 + mem1_size, extended_base + 0x40000);  // cap the list at 256KB
 +    bool patched = false;
 +    for (u32 h = 0; h + 4 < data.length(); h += 4)
 +    {
@@ -164,7 +179,7 @@ index 79b8449e92..debddb0636 100644
 +      // translation and drop silently. Map it (data + instruction — C2 caves execute
 +      // from the list) through the spare BAT pair 4, which GC games never program.
 +      auto& ppc = guard.GetSystem().GetPPCState();
-+      const u32 ext_size = 0x00800000;  // 8MB block covers the relocated list region
++      const u32 ext_size = 0x00800000;  // 8MB block covers the whole extended region
 +      const u32 bl = (ext_size >> 17) - 1;
 +      const u32 batu = (extended_base & 0xFFFE0000) | (bl << 2) | 0x3;            // Vs|Vp
 +      const u32 batl = ((extended_base - 0x80000000) & 0xFFFE0000) | 0x2;         // PP=RW
@@ -193,7 +208,7 @@ index 79b8449e92..debddb0636 100644
  
    // Write a magic value to 'gameid' (codehandleronly does not actually read this).
    // This value will be read back and modified over time by HLE_Misc::GeckoCodeHandlerICacheFlush.
-@@ -210,6 +286,15 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
+@@ -210,6 +279,15 @@ static Installation InstallCodeHandlerLocked(const Core::CPUThreadGuard& guard)
    {
      ppc_state.iCache.Invalidate(memory, jit_interface, INSTALLER_BASE_ADDRESS + j);
    }
@@ -210,7 +225,7 @@ index 79b8449e92..debddb0636 100644
    return Installation::Installed;
  }
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
-index 5db3c55aa8..1694ce8432 100644
+index 5db3c55..1694ce8 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.cpp
 @@ -250,6 +250,17 @@ void ZeldaUCode::HandleMailDefault(u32 mail)
@@ -285,7 +300,7 @@ index 5db3c55aa8..1694ce8432 100644
  
    if (!(m_flags & LIGHT_PROTOCOL))
 diff --git a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
-index ce712519d5..0cea573793 100644
+index ce71251..0cea573 100644
 --- a/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 +++ b/Source/Core/Core/HW/DSPHLE/UCodes/Zelda.h
 @@ -293,6 +293,14 @@ private:
@@ -304,7 +319,7 @@ index ce712519d5..0cea573793 100644
    ZeldaAudioRenderer m_renderer;
  };
 diff --git a/Source/Core/Core/HW/SystemTimers.cpp b/Source/Core/Core/HW/SystemTimers.cpp
-index 1790a97f05..2426c5a81d 100644
+index 1790a97..2426c5a 100644
 --- a/Source/Core/Core/HW/SystemTimers.cpp
 +++ b/Source/Core/Core/HW/SystemTimers.cpp
 @@ -44,6 +44,8 @@ IPC_HLE_PERIOD: For the Wii Remote this is the call schedule:
@@ -338,7 +353,7 @@ index 1790a97f05..2426c5a81d 100644
  
  void SystemTimersManager::AudioDMACallback(Core::System& system, u64 userdata, s64 cycles_late)
 diff --git a/Source/Core/Core/PowerPC/MMU.cpp b/Source/Core/Core/PowerPC/MMU.cpp
-index 940e93c7ea..91582c0b50 100644
+index 940e93c..91582c0 100644
 --- a/Source/Core/Core/PowerPC/MMU.cpp
 +++ b/Source/Core/Core/PowerPC/MMU.cpp
 @@ -2002,7 +2002,10 @@ void MMU::DBATUpdated()
@@ -363,79 +378,263 @@ index 940e93c7ea..91582c0b50 100644
    if (extended_bats)
      UpdateBATs(m_ibat_table, SPR_IBAT4U);
    if (m_memory.GetFakeVMEM())
-diff --git a/Source/Core/VideoBackends/Metal/MTLStateTracker.mm b/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
-index a9fb4e63fb..67cbd864ec 100644
---- a/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
-+++ b/Source/Core/VideoBackends/Metal/MTLStateTracker.mm
-@@ -9,6 +9,7 @@
+diff --git a/Source/Core/VideoBackends/Vulkan/VKPerfQuery.cpp b/Source/Core/VideoBackends/Vulkan/VKPerfQuery.cpp
+index 9949535..6a36a06 100644
+--- a/Source/Core/VideoBackends/Vulkan/VKPerfQuery.cpp
++++ b/Source/Core/VideoBackends/Vulkan/VKPerfQuery.cpp
+@@ -85,6 +85,18 @@ void PerfQuery::DisableQuery(PerfQueryGroup group)
  
- #include "Common/Align.h"
- #include "Common/Assert.h"
-+#include "Common/Logging/Log.h"
- 
- #include "Core/System.h"
- 
-@@ -193,6 +194,15 @@ explicit Backref(StateTracker* tracker) : state_tracker(tracker) {}
-     size_t newsize = std::max<size_t>(buffer.usage.Size() * 2, 4096);
-     while (newsize < amt)
-       newsize *= 2;
-+    // [hifps] catch runaway upload-buffer growth before the OOM assert fires
-+    if (newsize >= 64 * 1024 * 1024)
-+    {
-+      NOTICE_LOG_FMT(VIDEO,
-+                     "[hifps] Preallocate growth: buffer={} amt={:#x} old={:#x} new={:#x} "
-+                     "cur_draw={} last_finished={}",
-+                     static_cast<int>(buffer_idx), amt, buffer.usage.Size(), newsize,
-+                     m_current_draw, last_draw);
-+    }
-     MTLResourceOptions options =
-         MTLResourceStorageModeShared | MTLResourceCPUCacheModeWriteCombined;
-     buffer.cpubuffer = MRCTransfer([g_device newBufferWithLength:newsize options:options]);
-diff --git a/Source/Core/VideoCommon/CommandProcessor.cpp b/Source/Core/VideoCommon/CommandProcessor.cpp
-index 1dbf466f1c..1d5515ad1c 100644
---- a/Source/Core/VideoCommon/CommandProcessor.cpp
-+++ b/Source/Core/VideoCommon/CommandProcessor.cpp
-@@ -450,8 +450,8 @@ void CommandProcessorManager::SetCPStatusFromGPU()
-     {
-       if (!breakpoint)
-       {
--        DEBUG_LOG_FMT(COMMANDPROCESSOR, "Hit breakpoint at {}",
--                      m_fifo.CPReadPointer.load(std::memory_order_relaxed));
-+        NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP HIT at {:08x}",
-+                       m_fifo.CPReadPointer.load(std::memory_order_relaxed));
-         m_fifo.bFF_Breakpoint.store(1, std::memory_order_relaxed);
-       }
-     }
-@@ -459,8 +459,8 @@ void CommandProcessorManager::SetCPStatusFromGPU()
-     {
-       if (breakpoint)
-       {
--        DEBUG_LOG_FMT(COMMANDPROCESSOR, "Cleared breakpoint at {}",
--                      m_fifo.CPReadPointer.load(std::memory_order_relaxed));
-+        NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP CLEARED at {:08x}",
-+                       m_fifo.CPReadPointer.load(std::memory_order_relaxed));
-         m_fifo.bFF_Breakpoint.store(0, std::memory_order_relaxed);
-       }
-     }
-@@ -580,6 +580,16 @@ void CommandProcessorManager::SetCpControlRegister()
-   }
-   m_fifo.bFF_GPReadEnable.store(m_cp_ctrl_reg.GPReadEnable, std::memory_order_relaxed);
-   m_fifo.bFF_BPInt.store(m_cp_ctrl_reg.BPInt, std::memory_order_relaxed);
-+  // [hifps] log BP arm/disarm transitions with the armed FIFO address
-+  if (m_cp_ctrl_reg.BPEnable != m_fifo.bFF_BPEnable.load(std::memory_order_relaxed))
+ void PerfQuery::ResetQuery()
+ {
++  if (g_ActiveConfig.bHiFpsNonBlockingReadbacks &&
++      m_query_count.load(std::memory_order_relaxed) != 0)
 +  {
-+    NOTICE_LOG_FMT(COMMANDPROCESSOR, "[hifps] BP {} addr={:08x} rd={:08x} wr={:08x} dist={:08x}",
-+                   m_cp_ctrl_reg.BPEnable ? "ARM" : "DISARM",
-+                   m_fifo.CPBreakpoint.load(std::memory_order_relaxed),
-+                   m_fifo.CPReadPointer.load(std::memory_order_relaxed),
-+                   m_fifo.CPWritePointer.load(std::memory_order_relaxed),
-+                   m_fifo.CPReadWriteDistance.load(std::memory_order_relaxed));
++    // [hifps] Don't drop in-flight queries (or vkCmdResetQueryPool over their slots, which
++    // would wipe unread results): only restart the accumulated counters. Pending queries are
++    // harvested later and land in the next measurement interval, so counts are conserved and
++    // the game sees them with up to a frame of lag instead of losing them.
++    for (auto& result : m_results)
++      result.store(0, std::memory_order_relaxed);
++    return;
 +  }
-   m_fifo.bFF_BPEnable.store(m_cp_ctrl_reg.BPEnable, std::memory_order_relaxed);
-   m_fifo.bFF_HiWatermarkInt.store(m_cp_ctrl_reg.FifoOverflowIntEnable, std::memory_order_relaxed);
-   m_fifo.bFF_LoWatermarkInt.store(m_cp_ctrl_reg.FifoUnderflowIntEnable, std::memory_order_relaxed);
++
+   m_query_count.store(0, std::memory_order_relaxed);
+   m_query_readback_pos = 0;
+   m_query_next_pos = 0;
+@@ -125,9 +137,20 @@ u32 PerfQuery::GetQueryResult(PerfQueryType type)
+ 
+ void PerfQuery::FlushResults()
+ {
+-  if (!IsFlushed())
+-    PartialFlush(true);
++  if (IsFlushed())
++    return;
++
++  if (g_ActiveConfig.bHiFpsNonBlockingReadbacks)
++  {
++    // [hifps] Harvest whatever has completed without waiting on fences; the caller gets the
++    // last completed counts (<=1 frame stale). PartialFlush(false) still submits the current
++    // command buffer asynchronously if the oldest pending query lives in it, so pending
++    // results become available on a later call rather than going permanently stale.
++    PartialFlush(false);
++    return;
++  }
+ 
++  PartialFlush(true);
+   ASSERT(IsFlushed());
+ }
+ 
+diff --git a/Source/Core/VideoBackends/Vulkan/VKTexture.cpp b/Source/Core/VideoBackends/Vulkan/VKTexture.cpp
+index ee6a1b7..9a1f624 100644
+--- a/Source/Core/VideoBackends/Vulkan/VKTexture.cpp
++++ b/Source/Core/VideoBackends/Vulkan/VKTexture.cpp
+@@ -1056,6 +1056,30 @@ void VKStagingTexture::Flush()
+   m_needs_flush = false;
+ }
+ 
++bool VKStagingTexture::TryFlush()
++{
++  if (!m_needs_flush)
++    return true;
++
++  // Is this copy in the current (unsubmitted) command buffer?
++  if (g_command_buffer_mgr->GetCurrentFenceCounter() == m_flush_fence_counter)
++  {
++    // Kick the buffer without waiting, so the fence can complete for a later call.
++    VKGfx::GetInstance()->ExecuteCommandBuffer(true, false);
++    return false;
++  }
++
++  if (g_command_buffer_mgr->GetCompletedFenceCounter() < m_flush_fence_counter)
++    return false;
++
++  // For readback textures, invalidate the CPU cache as there is new data there.
++  if (m_type == StagingTextureType::Readback || m_type == StagingTextureType::Mutable)
++    m_staging_buffer->InvalidateCPUCache();
++
++  m_needs_flush = false;
++  return true;
++}
++
+ VKFramebuffer::VKFramebuffer(VKTexture* color_attachment, VKTexture* depth_attachment,
+                              std::vector<AbstractTexture*> additional_color_attachments, u32 width,
+                              u32 height, u32 layers, u32 samples, VkFramebuffer fb,
+diff --git a/Source/Core/VideoBackends/Vulkan/VKTexture.h b/Source/Core/VideoBackends/Vulkan/VKTexture.h
+index 456b4fc..e720002 100644
+--- a/Source/Core/VideoBackends/Vulkan/VKTexture.h
++++ b/Source/Core/VideoBackends/Vulkan/VKTexture.h
+@@ -107,6 +107,7 @@ public:
+   bool Map() override;
+   void Unmap() override;
+   void Flush() override;
++  bool TryFlush() override;
+ 
+   static std::unique_ptr<VKStagingTexture> Create(StagingTextureType type,
+                                                   const TextureConfig& config);
+diff --git a/Source/Core/VideoCommon/AbstractStagingTexture.h b/Source/Core/VideoCommon/AbstractStagingTexture.h
+index 0baf65c..fd35205 100644
+--- a/Source/Core/VideoCommon/AbstractStagingTexture.h
++++ b/Source/Core/VideoCommon/AbstractStagingTexture.h
+@@ -67,6 +67,16 @@ public:
+   // call to CopyFromTexture()/CopyToTexture() and the Flush() call.
+   virtual void Flush() = 0;
+ 
++  // [hifps] Non-blocking variant of Flush(). Returns true if the last copy has completed and
++  // new data is visible to the CPU; returns false if it is still in flight, in which case the
++  // previously-flushed contents remain readable (stale). Backends without a cheap completion
++  // check fall back to the blocking Flush().
++  virtual bool TryFlush()
++  {
++    Flush();
++    return true;
++  }
++
+   // Reads the specified rectangle from the staging texture to out_ptr, with the specified stride
+   // (length in bytes of each row). CopyFromTexture must be called first. The contents of any
+   // texels outside of the rectangle used for CopyFromTexture is undefined.
+diff --git a/Source/Core/VideoCommon/FramebufferManager.cpp b/Source/Core/VideoCommon/FramebufferManager.cpp
+index 6277598..40e03cb 100644
+--- a/Source/Core/VideoCommon/FramebufferManager.cpp
++++ b/Source/Core/VideoCommon/FramebufferManager.cpp
+@@ -483,14 +483,23 @@ u32 FramebufferManager::PeekEFBColor(u32 x, u32 y)
+ 
+   u32 tile_index;
+   if (!IsEFBCacheTilePresent(false, x, y, &tile_index))
+-    PopulateEFBCache(false, tile_index);
++    PopulateEFBCacheForPeek(false, tile_index);
+ 
+   m_efb_color_cache.tiles[tile_index].frame_access_mask |= 1;
+ 
+   if (m_efb_color_cache.needs_flush)
+   {
+-    m_efb_color_cache.readback_texture->Flush();
+-    m_efb_color_cache.needs_flush = false;
++    if (g_ActiveConfig.bHiFpsNonBlockingReadbacks)
++    {
++      // [hifps] Serve the previous contents while the in-flight copy finishes.
++      if (m_efb_color_cache.readback_texture->TryFlush())
++        m_efb_color_cache.needs_flush = false;
++    }
++    else
++    {
++      m_efb_color_cache.readback_texture->Flush();
++      m_efb_color_cache.needs_flush = false;
++    }
+   }
+ 
+   u32 value;
+@@ -506,14 +515,23 @@ float FramebufferManager::PeekEFBDepth(u32 x, u32 y)
+ 
+   u32 tile_index;
+   if (!IsEFBCacheTilePresent(true, x, y, &tile_index))
+-    PopulateEFBCache(true, tile_index);
++    PopulateEFBCacheForPeek(true, tile_index);
+ 
+   m_efb_depth_cache.tiles[tile_index].frame_access_mask |= 1;
+ 
+   if (m_efb_depth_cache.needs_flush)
+   {
+-    m_efb_depth_cache.readback_texture->Flush();
+-    m_efb_depth_cache.needs_flush = false;
++    if (g_ActiveConfig.bHiFpsNonBlockingReadbacks)
++    {
++      // [hifps] Serve the previous contents while the in-flight copy finishes.
++      if (m_efb_depth_cache.readback_texture->TryFlush())
++        m_efb_depth_cache.needs_flush = false;
++    }
++    else
++    {
++      m_efb_depth_cache.readback_texture->Flush();
++      m_efb_depth_cache.needs_flush = false;
++    }
+   }
+ 
+   float value;
+@@ -521,6 +539,30 @@ float FramebufferManager::PeekEFBDepth(u32 x, u32 y)
+   return value;
+ }
+ 
++void FramebufferManager::PopulateEFBCacheForPeek(bool depth, u32 tile_index)
++{
++  EFBCacheData& data = depth ? m_efb_depth_cache : m_efb_color_cache;
++  EFBCacheTile& tile = data.tiles[tile_index];
++
++  if (g_ActiveConfig.bHiFpsNonBlockingReadbacks && tile.seeded)
++  {
++    // [hifps] The tile already holds data from an earlier completed readback: kick an async
++    // refresh at most once per frame and let the caller serve the stale contents. A skipped
++    // refetch leaves 'present' false, so the tile is refreshed again next frame.
++    if (!tile.async_populated_this_frame)
++    {
++      PopulateEFBCache(depth, tile_index, true);
++      tile.async_populated_this_frame = true;
++    }
++    return;
++  }
++
++  // Blocking populate. With non-blocking readbacks this only happens on the first access to a
++  // tile after the readback buffers are (re)created, so we never serve uninitialized memory.
++  PopulateEFBCache(depth, tile_index);
++  tile.seeded = true;
++}
++
+ void FramebufferManager::SetEFBCacheTileSize(u32 size)
+ {
+   if (m_efb_cache_tile_size == size)
+@@ -616,6 +658,9 @@ void FramebufferManager::EndOfFrame()
+   {
+     m_efb_color_cache.tiles[i].frame_access_mask <<= 1;
+     m_efb_depth_cache.tiles[i].frame_access_mask <<= 1;
++    // [hifps] Allow one stale-tile refetch per frame.
++    m_efb_color_cache.tiles[i].async_populated_this_frame = false;
++    m_efb_depth_cache.tiles[i].async_populated_this_frame = false;
+   }
+ }
+ 
+@@ -763,9 +808,9 @@ bool FramebufferManager::CreateReadbackFramebuffer()
+   }
+ 
+   m_efb_color_cache.tiles.resize(total_tiles);
+-  std::ranges::fill(m_efb_color_cache.tiles, EFBCacheTile{false, 0});
++  std::ranges::fill(m_efb_color_cache.tiles, EFBCacheTile{});
+   m_efb_depth_cache.tiles.resize(total_tiles);
+-  std::ranges::fill(m_efb_depth_cache.tiles, EFBCacheTile{false, 0});
++  std::ranges::fill(m_efb_depth_cache.tiles, EFBCacheTile{});
+ 
+   return true;
+ }
+diff --git a/Source/Core/VideoCommon/FramebufferManager.h b/Source/Core/VideoCommon/FramebufferManager.h
+index 9f10918..a529a64 100644
+--- a/Source/Core/VideoCommon/FramebufferManager.h
++++ b/Source/Core/VideoCommon/FramebufferManager.h
+@@ -141,8 +141,13 @@ protected:
+ 
+   struct EFBCacheTile
+   {
+-    bool present;
+-    u8 frame_access_mask;
++    bool present = false;
++    u8 frame_access_mask = 0;
++    // [hifps] Non-blocking readbacks: whether this tile's region of the readback texture has
++    // ever held real data (first access must block once, or peeks would return garbage).
++    bool seeded = false;
++    // [hifps] Limits stale-tile refetches to one async populate per frame.
++    bool async_populated_this_frame = false;
+   };
+ 
+   // EFB cache - for CPU EFB access
+@@ -182,6 +187,9 @@ protected:
+   bool IsEFBCacheTilePresent(bool depth, u32 x, u32 y, u32* tile_index) const;
+   MathUtil::Rectangle<int> GetEFBCacheTileRect(u32 tile_index) const;
+   void PopulateEFBCache(bool depth, u32 tile_index, bool async = false);
++  // [hifps] Populate policy for CPU peeks: blocks on first access to a tile, otherwise serves
++  // stale data with an async refresh when non-blocking readbacks are enabled.
++  void PopulateEFBCacheForPeek(bool depth, u32 tile_index);
+ 
+   void CreatePokeVertices(std::vector<EFBPokeVertex>* destination_list, u32 x, u32 y, float z,
+                           u32 color);
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.cpp b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
-index 248146e2b6..c52b5d7a8e 100644
+index 248146e..c52b5d7 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.cpp
 @@ -691,4 +691,41 @@ std::string GenerateImGuiPixelShader(bool linear_space_output)
@@ -481,7 +680,7 @@ index 248146e2b6..c52b5d7a8e 100644
 +
  }  // namespace FramebufferShaderGen
 diff --git a/Source/Core/VideoCommon/FramebufferShaderGen.h b/Source/Core/VideoCommon/FramebufferShaderGen.h
-index c97fec8991..ff505af8d9 100644
+index c97fec8..ff505af 100644
 --- a/Source/Core/VideoCommon/FramebufferShaderGen.h
 +++ b/Source/Core/VideoCommon/FramebufferShaderGen.h
 @@ -26,4 +26,9 @@ std::string GenerateEFBRestorePixelShader();
@@ -494,27 +693,8 @@ index c97fec8991..ff505af8d9 100644
 +std::string GenerateFrameBlendPixelShader();
 +
  }  // namespace FramebufferShaderGen
-diff --git a/Source/Core/VideoCommon/PixelEngine.cpp b/Source/Core/VideoCommon/PixelEngine.cpp
-index 63642d017d..feb466914a 100644
---- a/Source/Core/VideoCommon/PixelEngine.cpp
-+++ b/Source/Core/VideoCommon/PixelEngine.cpp
-@@ -232,6 +232,14 @@ void PixelEngineManager::SetToken(const u16 token, const bool interrupt, int cyc
- 
-   std::lock_guard lk(m_token_finish_mutex);
- 
-+  // [hifps] SMS DrawSyncManager diagnosis: an interrupt-token still pending when the next
-+  // one arrives is overwritten before the CPU-thread event consumed it -> LOST to the game.
-+  if (m_event_raised && m_token_interrupt_pending && interrupt && m_token_pending != token)
-+  {
-+    NOTICE_LOG_FMT(PIXELENGINE, "[hifps] TOKEN COALESCED: pending {:04x} overwritten by {:04x}",
-+                   m_token_pending, token);
-+  }
-+
-   m_token_pending = token;
-   m_token_interrupt_pending |= interrupt;
- 
 diff --git a/Source/Core/VideoCommon/Present.cpp b/Source/Core/VideoCommon/Present.cpp
-index 41d05f3652..27c5d485d0 100644
+index 41d05f3..3edff9d 100644
 --- a/Source/Core/VideoCommon/Present.cpp
 +++ b/Source/Core/VideoCommon/Present.cpp
 @@ -14,16 +14,27 @@
@@ -587,35 +767,35 @@ index 41d05f3652..27c5d485d0 100644
    PresentInfo present_info{
        .present_count = m_present_count++,
        .emulated_timestamp = ticks,
-@@ -212,13 +256,189 @@ void Presenter::ViSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height,
+@@ -212,15 +256,198 @@ void Presenter::ViSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height,
  
    video_events.before_present_event.Trigger(present_info);
  
 -  if (!is_duplicate || !g_ActiveConfig.bSkipPresentingDuplicateXFBs)
 +  if (interp > 1 && interp_ready && m_prev_valid)
-   {
++  {
 +    // Distinct frame: stream K-1 blended sub-frames across the real distinct-frame
 +    // interval, then present the real frame (with OSD) via the normal path.
 +    PresentInterpolatedSubframes(present_info.intended_present_time);
-     Present(&present_info);
++    Present(&present_info);
 +    m_prev_distinct_present_time = present_info.intended_present_time;
-     ProcessFrameDumping(ticks);
--
-     video_events.after_present_event.Trigger(present_info);
-   }
++    ProcessFrameDumping(ticks);
++    video_events.after_present_event.Trigger(present_info);
++  }
 +  else if (interp > 1 && is_duplicate && m_prev_valid)
 +  {
 +    // Duplicate content while interpolating (30fps game emitting 60Hz XFBs):
 +    // it's already covered by the blended stream, so don't present a static copy.
 +  }
 +  else if (!is_duplicate || !g_ActiveConfig.bSkipPresentingDuplicateXFBs)
-+  {
-+    Present(&present_info);
-+    ProcessFrameDumping(ticks);
-+    video_events.after_present_event.Trigger(present_info);
-+  }
-+}
-+
+   {
+     Present(&present_info);
+     ProcessFrameDumping(ticks);
+-
+     video_events.after_present_event.Trigger(present_info);
+   }
+ }
+ 
 +int Presenter::GetInterpolationFactor()
 +{
 +  if (m_interp_factor < 0)
@@ -723,6 +903,13 @@ index 41d05f3652..27c5d485d0 100644
 +  const DT hi = std::chrono::milliseconds(60);
 +  if (interval < lo || interval > hi)
 +    interval = std::chrono::microseconds(16667);  // first frame / hitch: fall back to ~60Hz
++  // Pace off the FLOOR of recent measurements, never the raw one: the raw
++  // interval includes delay our own pacing sleep injected into the pipeline,
++  // so using it directly is a positive-feedback slowdown (see Present.h note).
++  m_interp_interval_est = std::min(m_interp_interval_est * 51 / 50, interval);
++  if (m_interp_interval_est < lo)
++    m_interp_interval_est = lo;
++  interval = m_interp_interval_est;
 +
 +  const TimePoint base = Clock::now();
 +
@@ -776,11 +963,13 @@ index 41d05f3652..27c5d485d0 100644
 +                 presented, iv_ms);
 +    std::fflush(stderr);
 +  }
- }
- 
++}
++
  void Presenter::ImmediateSwap(u32 xfb_addr, u32 fb_width, u32 fb_stride, u32 fb_height)
+ {
+   if (m_immediate_swap_happened_this_field.exchange(true, std::memory_order_relaxed) &&
 diff --git a/Source/Core/VideoCommon/Present.h b/Source/Core/VideoCommon/Present.h
-index 91ba870967..e4d435093c 100644
+index 91ba870..22b1d39 100644
 --- a/Source/Core/VideoCommon/Present.h
 +++ b/Source/Core/VideoCommon/Present.h
 @@ -17,6 +17,9 @@
@@ -809,7 +998,7 @@ index 91ba870967..e4d435093c 100644
    void ProcessFrameDumping(u64 ticks) const;
  
    void OnBackBufferSizeChanged();
-@@ -193,6 +205,18 @@ private:
+@@ -193,6 +205,24 @@ private:
    TimePoint m_next_swap_estimated_time{Clock::now()};
  
    std::atomic_bool m_immediate_swap_happened_this_field{};
@@ -819,6 +1008,12 @@ index 91ba870967..e4d435093c 100644
 +  RcTcacheEntry m_prev_xfb_entry;
 +  bool m_prev_valid = false;
 +  TimePoint m_prev_distinct_present_time{};  // present time of the previous *distinct* frame
++  // Floor-tracking estimate of the distinct-frame interval used for sub-frame
++  // pacing. Pacing off the raw measured interval is a positive-feedback loop:
++  // our own pacing sleep delays the pipeline, inflating the next measurement
++  // (first playtest 2026-08-20: 5.6ms drifted to 10.9ms, fps sagged to ~120
++  // with the host mostly idle). Snap down instantly, drift up 2%/frame.
++  DT m_interp_interval_est = std::chrono::microseconds(16667);
 +  std::unique_ptr<AbstractShader> m_blend_vs;
 +  std::unique_ptr<AbstractShader> m_blend_ps;
 +  std::unique_ptr<AbstractPipeline> m_blend_pipeline;
@@ -829,7 +1024,7 @@ index 91ba870967..e4d435093c 100644
  
  }  // namespace VideoCommon
 diff --git a/Source/Core/VideoCommon/Statistics.cpp b/Source/Core/VideoCommon/Statistics.cpp
-index 642df5694a..a212dcf95c 100644
+index 642df56..a212dcf 100644
 --- a/Source/Core/VideoCommon/Statistics.cpp
 +++ b/Source/Core/VideoCommon/Statistics.cpp
 @@ -8,6 +8,8 @@
@@ -892,45 +1087,45 @@ index 642df5694a..a212dcf95c 100644
    {
      ImGui::End();
      return;
-diff --git a/Source/Core/VideoCommon/TextureCacheBase.cpp b/Source/Core/VideoCommon/TextureCacheBase.cpp
-index bbcd1140b4..00cd9b59a0 100644
---- a/Source/Core/VideoCommon/TextureCacheBase.cpp
-+++ b/Source/Core/VideoCommon/TextureCacheBase.cpp
-@@ -2387,6 +2387,13 @@ void TextureCacheBase::CopyRenderTargetToTexture(
+diff --git a/Source/Core/VideoCommon/VideoBackendBase.cpp b/Source/Core/VideoCommon/VideoBackendBase.cpp
+index 7eeefb7..273ebf8 100644
+--- a/Source/Core/VideoCommon/VideoBackendBase.cpp
++++ b/Source/Core/VideoCommon/VideoBackendBase.cpp
+@@ -357,6 +357,12 @@ bool VideoBackendBase::InitializeShared(std::unique_ptr<AbstractGfx> gfx,
+   g_Config.VerifyValidity();
+   UpdateActiveConfig();
  
-   if (copy_to_ram)
-   {
-+    // [hifps] SMS pollution-map forensics: log small (non-XFB) EFB->RAM copies with a
-+    // payload checksum after flush so map erosion vs zapping is visible in the log.
-+    if (!is_xfb_copy && width <= 512 && height <= 512)
-+    {
-+      NOTICE_LOG_FMT(VIDEO, "[hifps] EFBcopy->RAM dst={:08x} {}x{} fmt={} stride={}", dstAddr,
-+                     width, height, static_cast<int>(dstFormat), dstStride);
-+    }
-     const std::array<u32, 3> coefficients = GetRAMCopyFilterCoefficients(filter_coefficients);
-     PixelFormat srcFormat = bpmem.zcontrol.pixel_format;
-     EFBCopyParams format(srcFormat, dstFormat, is_depth_copy, isIntensity,
-@@ -2538,6 +2545,23 @@ void TextureCacheBase::WriteEFBCopyToRAM(u8* dst_ptr, u32 width, u32 height, u32
-   MathUtil::Rectangle<int> copy_rect(0, 0, static_cast<int>(width), static_cast<int>(height));
-   staging_texture->ReadTexels(copy_rect, dst_ptr, stride);
-   ReleaseEFBCopyStagingTexture(std::move(staging_texture));
-+
-+  // [hifps] payload summary for small copies: sum + count of nonzero bytes over the
-+  // first rows, so pollution-map content trends (fading vs zapped) show in the log.
-+  const u32 total = height * stride;
-+  if (total > 0 && total <= 512 * 512)
++  if (g_ActiveConfig.bHiFpsNonBlockingReadbacks)
 +  {
-+    u64 sum = 0;
-+    u32 nonzero = 0;
-+    const u32 n = std::min<u32>(total, 0x4000);
-+    for (u32 i = 0; i < n; i++)
-+    {
-+      sum += dst_ptr[i];
-+      nonzero += dst_ptr[i] != 0;
-+    }
-+    NOTICE_LOG_FMT(VIDEO, "[hifps]   flushed {} bytes: sum={} nonzero={}/{}", total, sum, nonzero,
-+                   n);
++    NOTICE_LOG_FMT(VIDEO, "[hifps] Non-blocking readbacks ACTIVE: perf-query results and EFB "
++                          "peeks are served from the last completed readback (<=1 frame stale)");
 +  }
- }
++
+   if (g_Config.bDumpTextures)
+   {
+     OSD::AddMessage(fmt::format("Texture Dumping is enabled. This will reduce performance."),
+diff --git a/Source/Core/VideoCommon/VideoConfig.cpp b/Source/Core/VideoCommon/VideoConfig.cpp
+index c56f32c..4a20c3d 100644
+--- a/Source/Core/VideoCommon/VideoConfig.cpp
++++ b/Source/Core/VideoCommon/VideoConfig.cpp
+@@ -196,6 +196,7 @@ void VideoConfig::Refresh()
+ #endif
  
- void TextureCacheBase::FlushEFBCopy(TCacheEntry* entry)
+   bPerfQueriesEnable = Config::Get(Config::GFX_PERF_QUERIES_ENABLE);
++  bHiFpsNonBlockingReadbacks = Config::Get(Config::GFX_HIFPS_NON_BLOCKING_READBACKS);
+ 
+   bGraphicMods = Config::Get(Config::GFX_MODS_ENABLE);
+ 
+diff --git a/Source/Core/VideoCommon/VideoConfig.h b/Source/Core/VideoCommon/VideoConfig.h
+index e160154..2cb7d12 100644
+--- a/Source/Core/VideoCommon/VideoConfig.h
++++ b/Source/Core/VideoCommon/VideoConfig.h
+@@ -287,6 +287,8 @@ struct VideoConfig final
+   bool bEFBAccessEnable = false;
+   bool bEFBAccessDeferInvalidation = false;
+   bool bPerfQueriesEnable = false;
++  // [hifps] Never block on GPU->CPU readback fences; serve last completed results instead.
++  bool bHiFpsNonBlockingReadbacks = false;
+   bool bBBoxEnable = false;
+   bool bCPUCull = false;
+ 
