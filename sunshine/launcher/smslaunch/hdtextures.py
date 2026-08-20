@@ -32,11 +32,21 @@ def video_settings(on: bool) -> dict:
     return {"HiresTextures": v, "CacheHiresTextures": v}
 
 
+def _is_link(dest: Path) -> bool:
+    """Symlink on any OS, or an NTFS junction on Windows. Junctions are the
+    unprivileged Windows equivalent (plain symlinks need admin/Developer Mode);
+    Dolphin follows both identically. Python 3.12+ has os.path.isjunction."""
+    if dest.is_symlink():
+        return True
+    isj = getattr(os.path, "isjunction", None)
+    return bool(isj and isj(dest))
+
+
 def status() -> str:
     """'linked' | 'linked-elsewhere' | 'realdir' | 'missing' — what currently
     sits at Load/Textures/GMSE01."""
     dest = C.HIRES_DEST
-    if dest.is_symlink():
+    if _is_link(dest):
         try:
             return "linked" if dest.resolve() == C.PRUNED_PACK.resolve() \
                    else "linked-elsewhere"
@@ -63,9 +73,21 @@ def ensure_installed(*, log=_noop) -> None:
             f"{dest} is a real directory (not our symlink) — leaving it alone. "
             "Move/remove it yourself if you want the launcher to manage it.")
     dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.is_symlink():                       # stale/wrong link — replace it
+    if _is_link(dest):                          # stale/wrong link — replace it
         dest.unlink()
-    os.symlink(C.PRUNED_PACK, dest)
+    try:
+        os.symlink(C.PRUNED_PACK, dest)
+    except OSError:
+        # Windows: plain symlinks need admin/Developer Mode. Fall back to an
+        # NTFS junction — unprivileged, and Dolphin follows it identically.
+        if os.name != "nt":
+            raise
+        import subprocess
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", str(dest),
+                            str(C.PRUNED_PACK.resolve())],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise OSError(f"junction fallback failed: {r.stderr.strip()}")
     n = sum(1 for _ in C.PRUNED_PACK.rglob("*.dds"))
     log(f"Installed HD texture pack: {dest} → GMSE01-pruned ({n} .dds).")
 

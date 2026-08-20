@@ -168,6 +168,13 @@ def enabled_set_for(ini: Ini, profile: dict, log=_noop) -> list[str]:
     if engine == "bse" and profile["fps"] != 30:      # 30 = native tick counts
         titles.append(C.MENU_REPEAT_TITLE_BSE.format(fps=profile["fps"]))
     titles += baseline_titles(ini, engine, log, fps=profile["fps"])
+    for _key, pat, _v in C.HARDENING_FIXES:   # engine-agnostic, always on
+        t = ini.resolve(pat)
+        if t:
+            titles.append(t)
+        else:
+            log(f"  !! hardening fix /{pat}/ matched NO [Gecko] code — "
+                "install it (see config.HARDENING_FIXES)")
     titles += widescreen_titles(ini, engine, profile["aspect"])  # aspect dropdown
     for _key, _label, wanted, title, avail in resolve_qol(ini, engine, profile["qol"]):
         if wanted and avail:
@@ -343,6 +350,17 @@ def apply(profile: dict, *, log=_noop, force=False):
     if C.PAUSE_JUMP_TITLE not in ini.titles():
         ini.add_code(C.PAUSE_JUMP_TITLE, C.PAUSE_JUMP_CODE)
         log(f"Installing ${C.PAUSE_JUMP_TITLE} (pause mid-air)…")
+
+    # 1a4. ALWAYS-ON hardening: the J3D duplicate-entry guard (both discs).
+    #      Ensure the body exists; HARDENING_FIXES enables it every launch.
+    if C.J3D_GUARD_TITLE not in ini.titles():
+        for stale in [t for t in ini.titles()
+                      if t.startswith("J3D duplicate-entry guard") and
+                      t != C.J3D_GUARD_TITLE]:
+            ini.remove_code(stale)
+            log(f"Removed stale ${stale} (superseded).")
+        ini.add_code(C.J3D_GUARD_TITLE, C.J3D_GUARD_CODE)
+        log(f"Installing ${C.J3D_GUARD_TITLE}…")
 
     # 1b. generate the FOV code (at the vertical fovy for this hFOV+aspect), or
     #     skip entirely when FOV is left blank (keep the game's stock FOV) -------

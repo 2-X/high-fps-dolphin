@@ -140,3 +140,167 @@ stamps/clears normally; Bianco Ep.1 still loads (the freeze can't recur: no
 batching means no duplicate entry()). The old standalone `$Noki pollution
 counting 30Hz gate` INI title and the pre-v3 120fps bundles still carry v1/v2
 blocks (harmless while unticked, but never enable them alongside a v3 bundle).
+
+## v4 (2026-08-19): the Bianco Ep.1 FREEZE was v3's own fin gate — FIXED
+
+v3's "no batching" claim above was WRONG in one corner, and it froze Bianco
+Ep.1's intro every time (the crash that got the gate CRASHES-quarantined under
+BSE on both machines — BSE was innocent). Live-debugged on the PC at BSE-240:
+emu thread spinning, ctrs frozen obj=521/tex=520, thread-context backtrace
+J3D packet walk <- 0x8019B4D0 (pollution layer draw) <- viewobj walker.
+
+**Root cause (disasm-verified):** `finish` (0x8019B334) is the ONLY resetter
+of the two model-stamp queue counts — its tail is `sth 0 -> this+0x28` (the
+drain's stamp queue) and `-> this+0xD4` (the push-task queue). v3 gates the
+fin CALL 1-in-N while the drain runs per frame, so on gated frames the counts
+never reset: the drain re-enters every STALE entry each frame, and the first
+same-model re-push (Bianco's goop stampers push their ONE persistent model
+every frame) makes a single drain pass entry() the same J3DModel twice ->
+J3D push-front self-loop -> the per-frame layer draw walks it forever.
+Selectivity explained: Noki Bay has no stamping actors (clean twice over);
+M-portal ripples are transient unique-model stamps (no same-model re-push);
+Bianco freezes ~2s into the intro, the moment its stampers activate.
+
+**Fix (`_fin_call`/`NOKI_QRESET` in fpspatch.py, stock AND BSE variants):**
+fin STAYS gated (it also zeroes the degree accumulators, which must stay in
+phase with the gated counting), but the gated skip path now does the queue
+resets itself — r3 holds the queue object (mgr+0x70) at the call site:
+`li r12,0; sth r12,0x28(r3); sth r12,0xD4(r3)`. Both `--check` suites enforce
+the resets in the fin block.
+
+## v5 (2026-08-19, same night): v4 alone was NOT ENOUGH — dedupe reinstated
+
+The freeze REPRODUCED IDENTICALLY with v4 in place: deterministic, counters
+frozen at exactly obj=521/tex=520 on both runs. So stale gated-frame queue
+counts were not the operative mechanism (v4's resets stay — they are correct
+by stock semantics and keep the queue one frame deep). The surviving
+mechanism is a **same-frame double-push of one model**: stock tolerates it
+only because the ungated counting pass draws-and-clears the buffer BETWEEN
+the two pushes; with counting gated, the duplicate survives into a single
+drain pass → double `entry()` → self-loop. Two pushes of one model land in
+one frame the moment the intro's stampers activate (pollution-frame 521),
+which is why the freeze is deterministic and intro-anchored.
+
+**The fix was already in the repo: the v2 `noki_dedupe()` push guard —
+verified in-game against this exact freeze on 2026-08-09 at 120fps.** v3's
+retirement rationale ("deletes legitimate same-frame stamps") only ever
+described v1's 2G-frame *batches*; with the per-frame drain the queue holds
+at most one frame of stamps, and a same-frame same-model duplicate is never
+legitimate (it would self-loop stock J3D too). The dedupe is also inherently
+self-gating — with fin running every frame (hack off) the queue empties
+between pushes and the scan never hits — so it ships unguarded under BSE.
+v5 = v4 resets + dedupe, `--check` now REQUIRES the dedupe with the gate
+(the exact inverse of the v3-era check). Ripple regression cannot recur
+(that needed v1's batching): verify rings still land ON dot impacts.
+
+**PC fps caveat:** with all readbacks gated 1-in-8 the PC's Bianco cap
+(~170 at 240) did not visibly move before the freeze — the readback stall is
+a Mac/Metal measurement and may not be the PC/Vulkan bottleneck. Profile the
+PC before crediting this gate with fps there; it is kept primarily for the
+Mac (measured 39% of the emu thread) and for correctness parity.
+
+## v5 FAILED TOO — QUARANTINED AGAIN (2026-08-19 late). Forensic state dump.
+
+**v5 (v4 resets + reinstated dedupe) froze byte-identically: THIRD freeze at
+exactly obj=521/tex=520.** That determinism across three code variants kills
+every queue-side theory, including v5's same-frame-double-push story. What
+the third live autopsy established (all scripts in the session scratchpad —
+regdump/bucketwalk/cyclehunt/streamdisasm, reusable):
+
+- The wedge is the emu thread streaming GX forever from the pollution stamp
+  draw path: stable backtrace `GX write-gather <- streamer 0x802E0390 <-
+  wrapper 0x802EDE04 <- packet walk 0x802EDCA4 <- bucket walk 0x802EFB08 <-
+  0x8019B4D0 (layer draw) <- viewobj walker`.
+- The J3DDrawBuffer (live at 0x8145E9E0 that run) was HEALTHY: 16 buckets,
+  ONE packet, no cycle, chain terminates. NOT the v1 self-loop.
+- The streamer runs with `this` = 0x804045DC — the pollution GLOBALS block —
+  and reads its loop bound (lhz +6 = 1910 that run) and "display list"
+  pointers from float-looking words there. Either that globals block is a
+  by-design material singleton whose fields were CLOBBERED, or a packet's
+  material pointer dangles into it. Frame 521 ≈ 2.2s = the intro demo's
+  actor handoff — the leading suspicion is an entry whose owner is torn down
+  before a draw/clear, leaving the buffer referencing dead state; the gates
+  perturb the entry()/draw/clear phasing enough to expose it. NOT RESOLVED.
+- Empirical A/B stands: gate off -> no freeze (long play sessions); gate on
+  -> deterministic freeze. And the gate did NOT raise PC Bianco fps.
+
+**Verdict (superseded within the hour — see RESOLVED below):** call-site
+gating of the counting pass looked unsafe pending a full phase-contract RE.
+On the PC the fps justification was absent anyway — profile PC/Vulkan first
+(thread-context SRR0 sampling of the CPU thread works and is how this freeze
+was located).
+
+## RESOLVED (2026-08-19, freezes #4 and #5): J3D push-front has no
+## already-head check. Fixed at the corruption site. Offline CONFIRMED.
+
+Freeze #4 (OFFLINE stock disc, stock 240 bundle — proving engine
+independence: same ctrs 521/520, same backtrace) finally yielded the
+structure: walking the drawbuffer at the SHAPE-packet level (which the
+earlier bucket-level walks never descended to) found **shape packet
+0x815A8708 with next(+4) == itself** — the v1 self-loop one level down.
+
+Root cause, complete:
+- `J3DMatPacket::addShapePacket` (USA **0x802EDC18**) is a bare push-front:
+  `head = this->0x34; if (head) packet->next = head; this->0x34 = packet` —
+  NO check whether packet is already entered. If packet == head, it writes
+  `packet->next = packet`. Same shape at 0x802ED914 (head at +0x8) and the
+  J3DDrawBuffer bucket entries 0x802EFA80 / 0x802EFAA0 (head at bucket[i]).
+- The invariant that normally prevents re-entry is the per-frame buffer
+  clear/rebuild; the noki gate's skipped passes break it in polluted
+  stamping levels, so the same shape packet re-enters while still head.
+  Frame 521 of Bianco Ep.1 = the intro demo's stamp cadence hits the
+  double-entry. Freezes #1-#3 were all this; v4/v5 (queue resets, push
+  dedupe) were upstream of the real site and couldn't reach it.
+
+**The fix: `$J3D duplicate-entry guard v1`** (canonical:
+`research/codes/j3d-dup-entry-guard-v1.txt`): 4 tiny C2s, one per insert —
+`if (head == packet) skip the insert` (already entered; beqlr on the leaf
+list inserts, `li r3,1; blr` on the bucket entries). Structurally kills the
+1-cycle on ANY engine, any gate state, zero behavior change otherwise.
+**Offline Bianco Ep.1 intro CONFIRMED surviving in-game with the stock 240
+bundle's gate active.** BSE re-test pending; the BSE bundle title is now
+"... v6 (safe with the J3D duplicate-entry guard — REQUIRES it enabled)".
+
+Deployment lesson (cost one false-negative test run): BOTH launchers
+rewrite `[Gecko_Enabled]` to their profile's exact set, silently dropping
+hand-enabled titles. The guard is now wired in permanently: smslaunch
+`config.HARDENING_FIXES` (+ auto-install of the body in `launcher.apply`,
+both engines) and switch_rate `STATIC_BSE_CODES`; shipped kit INIs carry it
+enabled. **Always verify hooks in MEMORY (gcmem: branch opcodes at the four
+sites), never just in the INI.**
+
+### Guard v2 (same night, freeze #6): head-check was not enough — chain-walk
+
+With v1 the offline session got much further (pollution-frame 2865 vs 521)
+then froze again: live walk showed a **3-cycle** — three DIFFERENT packet
+instances of the same stamp shape (0x815ACC48 -> 0x815AB668 -> 0x815AA088 ->
+back). Push-front re-entry of a packet sitting MID-chain weaves a cycle the
+head-check cannot see. **v2** (`research/codes/j3d-dup-entry-guard-v2.txt`,
+same INI title family): the two SHAPE-list inserts now do a bounded
+CHAIN-WALK (scan for the incoming packet, skip if present; 32-hop cap fails
+open to the stock insert; clobbers r11/r12/ctr only, r0/head preserved for
+the resumed code). The bucket-array inserts keep the cheap head-check
+(bucket chains can be long; no bucket-level weave ever observed). Any
+double-entry is now a no-op — the semantically correct outcome, since the
+packet is already scheduled. NEEDS-TEST: the same offline Bianco session.
+
+### Guard v3 (2026-08-20, freeze #7 — Bianco Ep.2): a FIFTH insert family
+
+v2 survived the Ep.1 intro and long play, then Ep.2 froze at pollution-frame
+13794 with **all four v2 guards verified live and innocent**: the corpse
+held a bucket-level mat-packet 1-cycle (0x813AD984 next=itself) created by
+the **J3DDrawBuffer sort-entry family** — four raw push-fronts v1/v2 never
+hooked: 0x802EF740 (the killer: fast path taken when packet+0x3C top bit
+is set), 0x802EF7D0 (by-index chain-end), 0x802EF89C (anm-sort),
+0x802EF998 (Z-sort). An exhaustive sweep of 0x802ED000–0x802F0400 confirms
+these four were the ONLY remaining unguarded push-fronts. **v3 = the v2
+blocks verbatim + four new capped chain-walk caves** (same v2.1
+pointer-validity discipline; these sites are mid-function so the dup path
+exits via mtctr/bctr to each function's epilogue — LR is stale there).
+Canonical: `research/codes/j3d-dup-entry-guard-v3.txt`. Deployed to live +
+kit INIs, smslaunch, switch_rate; enable v3 INSTEAD of v2 (shared hook
+addresses — double-hooking corrupts). This falsifies the v2 paragraph's
+"no bucket-level weave ever observed". New forensics tools persisted:
+`research/scripts/j3d_cycle_walker.py` (two-level cycle walk — the older
+probe silently swallowed mat-level cycles), `livedisasm.py`,
+`freeze7_pktdump.py`. NEEDS-TEST: full Bianco Ep.1 + Ep.2 sessions.

@@ -1,0 +1,72 @@
+$J3D duplicate-entry guard v2 (chain-walk; v1 head-check missed weave cycles)
+C22EDC18 00000008
+80030034 7C0C0378
+39600020 7D6903A6
+280C0000 41820028
+7C0C2040 4D820020
+558B463E 2C0B0080
+41800014 2C0B0081
+4181000C 818C0004
+4200FFD8 00000000
+C22ED914 00000008
+80030008 7C0C0378
+39600020 7D6903A6
+280C0000 41820028
+7C0C2040 4D820020
+558B463E 2C0B0080
+41800014 2C0B0081
+4181000C 818C0004
+4200FFD8 00000000
+C22EFA80 00000004
+7C002040 4182000C
+90040004 48000010
+38600001 4E800020
+60000000 00000000
+C22EFAA0 00000004
+7C002040 4182000C
+90040004 48000010
+38600001 4E800020
+60000000 00000000
+
+* Engine-independent ALWAYS-ON hardening for GMSE01 (stock disc AND BSE/BSMSO).
+*
+* WHAT IT FIXES (2026-08-19, six live autopsies — the "crashes loading Road to
+* the Big Windmill" Bianco Ep.1 freeze, deterministic at pollution-frame 521,
+* BOTH engines): J3D's push-front list inserts never check whether the packet
+* being entered is already in the list. Re-entry as head -> packet->next =
+* packet (1-cycle, freezes #1-#5); re-entry from MID-chain -> a weave cycle
+* (freeze #6 was a 3-cycle of three same-shape packets: A->B->C->A). Either
+* way J3DDrawBuffer::draw walks it forever: emu thread pegged, audio loops.
+* The clear/rebuild invariant that normally prevents re-entry breaks when the
+* pollution counting pass is gated (the noki 30Hz gate family), but the guard
+* is correct and inert regardless of any gate.
+*
+* v2 (this file): the two SHAPE-list inserts get a bounded CHAIN-WALK — scan
+* the (short, per-material) chain for the incoming packet; found -> skip
+* (beqlr; leaf fns, LR intact); 32-hop cap fails OPEN (stock insert).
+* Clobbers r11/r12/ctr only (all volatile at these leaf entries); r0 keeps
+* the head value the resumed original code relies on.
+* v2.1 SAME NIGHT: the walk must VALIDATE each next pointer before deref —
+* chain tails can hold non-pointer garbage the original code never reads
+* (live panic: "Invalid read from 0x0ff00004, PC=0x818015C8" = our own
+* lwz r12,4(r12) on a save-load black frame). rlwinm r11,r12,8,24,31 (high
+* byte) must be 0x80..0x81 (MEM1); anything else = treat as chain end,
+* fail-open insert. NEVER walk emulated pointers without a range check. The two bucket-array
+* inserts keep the v1 head==packet check (li r3,1; blr on skip = the fn's
+* normal return): no bucket-level weave has ever been observed, and bucket
+* chains can be long (a full walk there would tax every model entry).
+*
+* THE FOUR GUARDED INSERTS (USA):
+*   0x802EDC18  J3DMatPacket::addShapePacket   head at this+0x34  (chain-walk)
+*   0x802ED914  sibling list insert            head at this+0x8   (chain-walk)
+*   0x802EFA80  J3DDrawBuffer entry, bucket 0  head at *array[0]  (head check)
+*   0x802EFAA0  J3DDrawBuffer entry, by index  head at *array[i]  (head check)
+*
+* DEPLOYMENT GOTCHA THAT BURNED A TEST RUN: both launchers rewrite
+* [Gecko_Enabled] to their profile's exact set — a hand-enabled title gets
+* silently dropped on the next launch. This code is wired in as smslaunch
+* config.HARDENING_FIXES (+ auto-install in launcher.apply, both engines)
+* and switch_rate STATIC_BSE_CODES. ALWAYS verify hooks in MEMORY (gcmem:
+* branch opcodes at the four sites), not just in the INI.
+*
+* Full forensics: HANDOFF-NOKI-PERF.md (v4/v5/RESOLVED), catalog item 13.

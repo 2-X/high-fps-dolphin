@@ -229,6 +229,96 @@ MENU_REPEAT_BSE_RE = re.compile(r"^Menu key-repeat BSE-(\d+) v2 \(static\)$")
 PAUSE_JUMP_TITLE = "Pause while jumping v1"
 PAUSE_JUMP_CODE = "04297AD8 60000000"
 
+# ---- J3D duplicate-entry guard body (see HARDENING_FIXES below) --------------
+# Canonical copy + full RE: research/codes/j3d-dup-entry-guard-v1.txt.
+# Base main.dol code on both discs; framerate-independent; always on.
+J3D_GUARD_TITLE = ("J3D duplicate-entry guard v3 "
+                   "(v2 + the four sort-entry bucket inserts)")
+J3D_GUARD_CODE = "\n".join([
+    # v3 (2026-08-20, freeze #7): the v2 blocks verbatim + the four
+    # J3DDrawBuffer SORT-ENTRY push-fronts (0x802EF740/7D0/89C/998) that
+    # v1/v2 never hooked - a bucket-level self-link formed via the +0x3C
+    # fast path. Canonical + full RE: research/codes/
+    # j3d-dup-entry-guard-v3.txt. Same v2.1 discipline: capped chain-walk,
+    # 0x80/0x81 pointer validity, fail-open.
+    "C22EDC18 00000008",
+    "80030034 7C0C0378",
+    "39600020 7D6903A6",
+    "280C0000 41820028",
+    "7C0C2040 4D820020",
+    "558B463E 2C0B0080",
+    "41800014 2C0B0081",
+    "4181000C 818C0004",
+    "4200FFD8 00000000",
+    "C22ED914 00000008",
+    "80030008 7C0C0378",
+    "39600020 7D6903A6",
+    "280C0000 41820028",
+    "7C0C2040 4D820020",
+    "558B463E 2C0B0080",
+    "41800014 2C0B0081",
+    "4181000C 818C0004",
+    "4200FFD8 00000000",
+    "C22EFA80 00000004",
+    "7C002040 4182000C",
+    "90040004 48000010",
+    "38600001 4E800020",
+    "60000000 00000000",
+    "C22EFAA0 00000004",
+    "7C002040 4182000C",
+    "90040004 48000010",
+    "38600001 4E800020",
+    "60000000 00000000",
+    "C22EF740 0000000B",
+    "7C0C0378 39600020",
+    "7D6903A6 280C0000",
+    "41820028 7C0CF840",
+    "41820028 558B463E",
+    "2C0B0080 41800014",
+    "2C0B0081 4181000C",
+    "818C0004 4200FFD8",
+    "901F0004 48000018",
+    "38600001 3D80802E",
+    "618CF7DC 7D8903A6",
+    "4E800420 00000000",
+    "C22EF7D0 0000000B",
+    "7C0C0378 39600020",
+    "7D6903A6 280C0000",
+    "41820028 7C0CF840",
+    "41820028 558B463E",
+    "2C0B0080 41800014",
+    "2C0B0081 4181000C",
+    "818C0004 4200FFD8",
+    "901F0004 48000018",
+    "38600001 3D80802E",
+    "618CF7DC 7D8903A6",
+    "4E800420 00000000",
+    "C22EF89C 0000000B",
+    "7CAC2B78 39600020",
+    "7D6903A6 280C0000",
+    "41820028 7C0C2040",
+    "41820028 558B463E",
+    "2C0B0080 41800014",
+    "2C0B0081 4181000C",
+    "818C0004 4200FFD8",
+    "90A40004 48000018",
+    "38600001 3D80802E",
+    "618CF8AC 7D8903A6",
+    "4E800420 00000000",
+    "C22EF998 0000000B",
+    "7C0C0378 39600020",
+    "7D6903A6 280C0000",
+    "41820028 7C0CF840",
+    "41820028 558B463E",
+    "2C0B0080 41800014",
+    "2C0B0081 4181000C",
+    "818C0004 4200FFD8",
+    "901F0004 48000018",
+    "38600001 3D80802E",
+    "618CF9A4 7D8903A6",
+    "4E800420 00000000",
+])
+
 # ---- QOL toggles (user-facing) ---------------------------------------------
 # ONLY genuine quality-of-life / preference codes live here — the things you'd
 # actually want to turn on or off (camera, controls, save box, aim). The
@@ -282,6 +372,18 @@ WIDESCREEN_WIPE_FIX = r"Widescreen wipe fix v2"    # aspect-independent curtain 
 # natively compensates those rate consumers; quartering them again ~= frozen).
 # With it disabled — and Particle parity actually installed for the first
 # time (bracket-title fix) — all effects verified correct in-game.
+# ---- engine-agnostic hardening (always on, BOTH discs) ----------------------
+# J3D duplicate-entry guard: J3D's push-front inserts (J3DMatPacket::
+# addShapePacket 0x802EDC18 + three siblings) never check "already the list
+# head"; a double entry writes packet->next = packet and the draw walks the
+# 1-cycle forever — the Bianco Ep.1 "Road to the Big Windmill" intro freeze,
+# five identical live autopsies 2026-08-19 (HANDOFF-NOKI-PERF). The guard
+# skips the redundant insert at the corruption site: structurally impossible
+# to self-loop, zero behavior change otherwise, engine-independent.
+HARDENING_FIXES = [
+    ("j3dguard", r"J3D duplicate-entry guard", True),
+]
+
 #   key, regex, verified
 BASELINE_FIXES = [
     # The >120 game-speed fix: vanilla's substep scheduler runs the first

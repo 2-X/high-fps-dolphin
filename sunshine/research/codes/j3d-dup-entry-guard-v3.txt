@@ -1,0 +1,121 @@
+$J3D duplicate-entry guard v3 (v2 + the four sort-entry bucket inserts)
+C22EDC18 00000008
+80030034 7C0C0378
+39600020 7D6903A6
+280C0000 41820028
+7C0C2040 4D820020
+558B463E 2C0B0080
+41800014 2C0B0081
+4181000C 818C0004
+4200FFD8 00000000
+C22ED914 00000008
+80030008 7C0C0378
+39600020 7D6903A6
+280C0000 41820028
+7C0C2040 4D820020
+558B463E 2C0B0080
+41800014 2C0B0081
+4181000C 818C0004
+4200FFD8 00000000
+C22EFA80 00000004
+7C002040 4182000C
+90040004 48000010
+38600001 4E800020
+60000000 00000000
+C22EFAA0 00000004
+7C002040 4182000C
+90040004 48000010
+38600001 4E800020
+60000000 00000000
+C22EF740 0000000B
+7C0C0378 39600020
+7D6903A6 280C0000
+41820028 7C0CF840
+41820028 558B463E
+2C0B0080 41800014
+2C0B0081 4181000C
+818C0004 4200FFD8
+901F0004 48000018
+38600001 3D80802E
+618CF7DC 7D8903A6
+4E800420 00000000
+C22EF7D0 0000000B
+7C0C0378 39600020
+7D6903A6 280C0000
+41820028 7C0CF840
+41820028 558B463E
+2C0B0080 41800014
+2C0B0081 4181000C
+818C0004 4200FFD8
+901F0004 48000018
+38600001 3D80802E
+618CF7DC 7D8903A6
+4E800420 00000000
+C22EF89C 0000000B
+7CAC2B78 39600020
+7D6903A6 280C0000
+41820028 7C0C2040
+41820028 558B463E
+2C0B0080 41800014
+2C0B0081 4181000C
+818C0004 4200FFD8
+90A40004 48000018
+38600001 3D80802E
+618CF8AC 7D8903A6
+4E800420 00000000
+C22EF998 0000000B
+7C0C0378 39600020
+7D6903A6 280C0000
+41820028 7C0CF840
+41820028 558B463E
+2C0B0080 41800014
+2C0B0081 4181000C
+818C0004 4200FFD8
+901F0004 48000018
+38600001 3D80802E
+618CF9A4 7D8903A6
+4E800420 00000000
+
+* SUPERSEDES j3d-dup-entry-guard-v2.txt -- enable exactly ONE of v2/v3
+* (same first four hooks; double-hooking an address corrupts the site).
+*
+* WHY v3 (2026-08-20, freeze #7 live autopsy, Bianco Ep.2, 240 offline,
+* stock disc): v2's four hooks cover entryImm/entryMat (bucket head-check)
+* and the two shape-list inserts (chain-walk). Freeze #7 was a 1-cycle
+* (mat packet 0x813AD984, next == itself) in BUCKET 0 of drawbuffer
+* 0x81317040, created by a FIFTH insert path v2 never hooked: the
+* J3DDrawBuffer sort-entry family. Its fast path (packet+0x3C top bit set
+* -- the frozen packet had +0x3C = 0xC0000000) push-fronts into bucket 0
+* raw: head = arr[0]; pkt->next = head; arr[0] = pkt. Re-entry while
+* already head (noki 30Hz gate skipping the per-frame clear) self-links,
+* and J3DDrawBuffer::draw (0x802EFB08; mat-chain step lwz r29,4(r29) at
+* 0x802EFB54) walks it forever. SRR0 histogram parks in shape-draw/GX
+* (0x802E04xx/0x802E07xx) because each "lap" redraws the same packet.
+*
+* THE FOUR NEW HOOKS (USA) -- every remaining push-front found by a full
+* stw-to-offset-4 sweep of 0x802ED000..0x802F0400 (all others are ctors/
+* zero-inits/field copies, verified by disasm):
+*   0x802EF740  sort-entry FAST path (bucket 0)   head=r0  pkt=r31  <- freeze #7
+*   0x802EF7D0  sort-entry chain-end (bucket idx) head=r0  pkt=r31
+*   0x802EF89C  anm-sort-entry chain-end          head=r5  pkt=r4
+*   0x802EF998  Z-sort entry (bucket cnt-1-z)     head=r0  pkt=r31
+*
+* BODY (v2.1 discipline): bounded chain-walk from head, 32-hop cap,
+* pointer-validity high byte 0x80..0x81 (rlwinm 558B463E), cap/garbage =
+* FAIL-OPEN (stock insert). Found -> skip the insert AND the arr store,
+* li r3,1 (the fns' success return), absolute-jump to the fn epilogue via
+* lis/ori/mtctr/bctr (LR is stale mid-function at these sites -- beqlr is
+* NOT safe here, unlike the v2 leaf hooks). Epilogue targets: 0x802EF7DC
+* (both A-sites), 0x802EF8AC, 0x802EF9A4. Clobbers r11/r12/ctr only, all
+* dead at the hook points (these fns vcall via LR/blrl, never ctr).
+* Cost: the walk runs only on the fast path and on chain-end inserts
+* (original code already walked the chain to get there); 32-hop capped.
+*
+* Note: the dup path leaves pkt->next as the prologue zeroed it, so any
+* packets that had been chained behind a re-entering packet drop out of
+* that frame's draw (self-heals on the next rebuild). Render blip, not a
+* freeze -- same fail-soft the v2 entryImm hooks accepted.
+*
+* Deployment: replace v2 in smslaunch config.HARDENING_FIXES and
+* switch_rate STATIC_BSE_CODES; verify IN MEMORY (gcmem: branch opcodes
+* at all EIGHT sites). Full forensics: HANDOFF-NOKI-PERF.md, catalog 13.

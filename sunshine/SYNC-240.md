@@ -68,12 +68,37 @@ pin, so the constant 2 is exact.
 
 IN-GAME CONFIRMED at 240 on the PC: correct speed, 240/240, verify PASS.
 QOL now installed per-rate by switch_rate (FLUDD v3, $FOV 60 BSE, camera
-look-up; user-enabled titles preserved). OPEN: Bianco Hills caps ~170 —
-pollution readbacks 8x too often (item 13); the noki gate stays
-CRASHES-quarantined under BSE. NOTE the crash predates the substep pin —
-worth a guarded re-test with OSReport/panic logging armed. Birds feel slow
-to the user vs the (broken) 2x session; they are at the Mac-120 calibration
-— needs an eye-comparison against the Mac, not a code change, first.
+look-up; user-enabled titles preserved). THE BIANCO INTRO FREEZE: RESOLVED
+2026-08-19 late after five live autopsies (full story HANDOFF-NOKI-PERF
+§v4→§RESOLVED): J3D's push-front inserts have no already-head check; the
+noki gate's skipped clear/rebuild passes let a shape packet re-enter while
+still list head → packet->next = packet → eternal draw walk. Fixed at the
+corruption site by `$J3D duplicate-entry guard v1` (4 C2s; always-on
+hardening wired into smslaunch HARDENING_FIXES, switch_rate
+STATIC_BSE_CODES, and the kit INIs). OFFLINE Bianco intro CONFIRMED
+surviving with the gate active; BSE bundle retitled v6 (NEEDS-TEST).
+PC PERF (measured with the new Windows profilers — emulated-PC SRR0
+sampling + host-thread RIP sampling with our PDB, scripts in the
+2026-08-19 scratchpad): at Bianco-170 the emulated game idles 48%, CPU
+thread 46%, Video thread ~75% and ~30% of wall in waits incl. Vulkan
+PerfQuery — Video-thread/serialization-bound, NOT readback-CPU-bound; the
+Mac/Metal 39% readback profile does not transfer. NEXT LEVERS for 240
+stable / 360: fork-side non-blocking readbacks (stale PerfQuery/EFB-peek
+results — attacks the serialization the §3 wall measured), then re-measure
+the ceiling. Shine-select menu speed under BSE: PORTED 2026-08-20 as
+"$Select-menu 120Hz gate BSE-240 (UNVERIFIED...)" — installs unticked,
+needs one in-game menu A/B (protocol in the fpspatch bse_select_gate
+comment). CORRECTION: the "four 60.0f loads -> kxe fps variable" claim
+in an earlier revision of this file was a mislabel — those are BSE's
+WIDESCREEN left-edge geometry hooks (0.0f consts, verified vs BSE v400
+source), orthogonal to cadence; no double-compensation risk exists.
+STILL OPEN: shine-select menu runs way too fast under BSE-240 — the stock
+kit's select_gate/select_grad_gate were never ported to the BSE companion
+(BSE runtime-hooks four 60.0f loads in the TSelectDir/TSelectGrad TU —
+0x80176AA4/C40/FF4/0x80177198 -> kxe 0x804D86A8 — so a port must audit
+against double-compensation first). Birds feel slow to the user vs the
+(broken) 2x session; they are at the Mac-120 calibration — needs an
+eye-comparison against the Mac, not a code change, first.
 
 ## 2026-08-19 PC - online pairing handoff, need the server
 

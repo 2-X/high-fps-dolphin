@@ -655,8 +655,10 @@ SUN_PROBE = "0402E28C 60000000"
 # (call sites verified by disasm of perform 0x8019D8C8: obj cue rlwinm at
 # +0x08, tex cue at +0x30, layer extract at +0x38, draw bl 0x801887AC never
 # touched.) With per-frame drain there is no batch, so duplicates cannot
-# accumulate and the v2 dedupe is RETIRED — stock allows the queue semantics
-# it was second-guessing. noki_copy_gate stays: it reads texCtr WITHOUT
+# accumulate ACROSS frames and the v2 dedupe is RETIRED — but see the v4 note
+# at NOKI_QRESET below: the gated fin call still starved the queue-count
+# reset, so stale entries duplicated WITHIN a pass and froze Bianco Ep.1.
+# noki_copy_gate stays: it reads texCtr WITHOUT
 # ticking, and texCtr still ticks exactly once per rendered frame (layer 0),
 # so its phase contract is unchanged. r0/r11/r12/ctr/cr0 are dead at all four
 # hooks (each replaces a bl; the caller's live state is r3/r4 args + saved
@@ -682,9 +684,63 @@ def _call(target):
             0x618C0000 | (target & 0xFFFF),
             0x7D8903A6, 0x4E800421]                      # lis/ori/mtctr/bctrl
 
+# v4 (2026-08-19, the Bianco Ep.1 FREEZE root cause — live-debugged on the PC).
+# `finish` (0x8019B334) is the ONLY resetter of the two model-stamp queue
+# counts: `sth 0 -> this+0x28` (the drain's stamp queue) and `-> this+0xD4`
+# (the push-task queue), disasm-verified at 0x8019B390..0x8019B398. v3 gated
+# the fin CALL 1-in-N while the drain stayed per-frame, so on gated frames the
+# counts were never zeroed: the drain re-entered every STALE queue entry each
+# frame, and the first same-model re-push made one drain pass entry() the same
+# J3DModel twice -> J3D push-front self-loop (packet->next = packet) -> the
+# per-frame layer draw walks it forever. Symptom: silent freeze + looping
+# audio ~2s into Bianco Ep.1's intro (the moment its goop stampers activate —
+# they push their ONE persistent model every frame; Noki Bay has no stampers,
+# which is why it always tested clean, and transient unique-model stamps like
+# the M-portal ripples never collide). Live evidence 2026-08-19: emu thread
+# spinning, frozen ctrs obj=521/tex=520, backtrace ...J3D <- 0x8019B4D0
+# (pollution layer draw) <- viewobj walker. ENGINE-INDEPENDENT: latent in the
+# stock kit too (v3's Bianco line was never actually retested after the v2
+# dedupe was retired); the two Mac/PC "BSE noki crashes" were this.
+# fin must STAY gated — it also zeroes the degree accumulators, which must
+# stay in phase with the gated counting — so on the SKIP path the cave now
+# does the queue-count resets itself. r3 holds the queue object (mgr+0x70) at
+# the fin call site and is untouched by pre/gate; r12 is dead (bl site).
+#
+# v5 (2026-08-19 same night): v4 alone did NOT fix it — the freeze reproduced
+# IDENTICALLY (deterministic, ctrs 521/520 both runs). The surviving
+# mechanism is SAME-FRAME double-push of one model: stock tolerates it only
+# because the ungated counting pass draws-and-clears the buffer BETWEEN the
+# two pushes; gate the counting and the duplicate survives into a single
+# drain pass -> self-loop. The proven fix has existed since 2026-08-09: the
+# v2 noki_dedupe() push guard (verified in-game on this exact freeze at 120).
+# v3's reason for retiring it ("deletes legitimate same-frame stamps") only
+# ever applied to v1's 2G-frame BATCHES; with the per-frame drain the queue
+# holds at most one frame of stamps, and a same-frame same-model duplicate is
+# never legitimate (it would self-loop stock J3D). The dedupe is also
+# inherently self-gating: with fin running every frame (hack off) the queue
+# empties between pushes and the scan never hits. Ships REQUIRED with the
+# gate at every rate, stock and BSE, no guard needed. NOKI_QRESET stays
+# (stock-faithful; keeps the queue 1-frame-deep so the dedupe's scan window
+# is exactly "this frame").
+NOKI_QRESET = [0x39800000,                      # li  r12,0
+               0xB1830028,                      # sth r12,0x28(r3)  stamp-queue count
+               0xB18300D4]                      # sth r12,0xD4(r3)  push-task-queue count
+
+def _fin_call(gate, pre, guard=None):
+    """The v4 fin block: [guard?][pre][gate][bne RESET][call fin][b OUT]
+    [RESET li/sth/sth][OUT -> branch-back]. Gated frames skip fin but still
+    zero the queue counts exactly where stock fin would have."""
+    body = list(pre) + list(gate)
+    body.append(0x40820018)                     # bne +24 -> RESET (skip the call)
+    w = (list(guard) if guard else []) + body + _call(NOKI_FIN_CALL[1])
+    w.append(0x48000010)                        # b +16 -> OUT (past the resets)
+    w += NOKI_QRESET
+    return _c2(NOKI_FIN_CALL[0], w)
+
 def noki_gate(fps):
     """Pollution-counting call-site gates at native 30Hz; the stamp-queue drain
-    runs every frame. None when FPS/30 is not integral."""
+    runs every frame; gated fin frames still reset the queue counts (v4).
+    None when FPS/30 is not integral."""
     if fps % 30 or fps < 60:
         return None
     n = int(fps // 30)
@@ -700,7 +756,8 @@ def noki_gate(fps):
         gated_call(*NOKI_OBJ_CALL, pre=_tick(NOKI_OBJ_CTR)),
         _c2(NOKI_DRAIN_CALL[0], _tick(NOKI_TEX_CTR) + _call(NOKI_DRAIN_CALL[1])),
         gated_call(*NOKI_TEX_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
-        gated_call(*NOKI_FIN_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+        _fin_call(gate, pre=_read_ctr(NOKI_TEX_CTR)),
+        noki_dedupe(),          # v5: REQUIRED with the gate — see the v5 note
     ]
     return "\n".join(blocks)
 
@@ -746,7 +803,9 @@ def noki_copy_gate(fps):
     return _c2(0x802F8CF8, w)
 
 
-# ---- Noki gate COMPANION: model-stamp dedupe (v2, the Bianco freeze fix) ----
+# ---- Noki gate COMPANION: model-stamp dedupe (v2, the Bianco freeze fix; ----
+# ---- RETIRED by v3 2026-08-11, REINSTATED as part of v5 2026-08-19 — v3's ----
+# ---- no-batching argument missed the same-frame double-push case)         ----
 # Gating TPollutionManager::perform lets pushModelStampTask accumulate G frames
 # of tasks, so the SAME J3DModel is queued up to G times. calcViewMtx then calls
 # model->entry() once per queue slot, and J3D's entry() is a push-front onto an
@@ -1691,8 +1750,9 @@ def build(fps, forceopen=True, anmrate_fix=True, substep=True, audio=True,
         ng = noki_gate(fps)
         if ng:
             parts.append(ng)
-            # v3 retires noki_dedupe(): the drain runs every frame, so stamp
-            # batches (and the duplicate-entry freeze) cannot form.
+            # v5: noki_gate() now carries noki_dedupe() again — v3's "the
+            # per-frame drain makes duplicates impossible" was disproven
+            # 2026-08-19 (same-frame double-push self-loop; see the v5 note).
             parts.append(noki_copy_gate(fps))  # REQUIRED companion — see noki_copy_gate
     # Test5 treatment at G>=3 (120fps keeps the stock 64px tile morph): the
     # default is the Test4 swap (see wipe5_swap — the tile morph was rejected
@@ -1854,11 +1914,18 @@ def bse_noki_gate(fps=120):
         i_call = 5 + len(pre)
         w = _bse_guard(i_call, fps=fps) + pre + call
         return _c2(hook, w)
+    # fin (v4): guard-fail -> the fin call (stock: fin runs, resets its own
+    # queues); guard-pass gated -> our queue-count resets (see NOKI_QRESET).
+    # Guard target = start of _call = guard(5) + pre(2) + gate(L) + bne(1).
+    fin = _fin_call(gate, pre=_read_ctr(NOKI_TEX_CTR),
+                    guard=_bse_guard(8 + L, fps=fps))
     return "\n".join([
         gated_call(*NOKI_OBJ_CALL, pre=_tick(NOKI_OBJ_CTR)),
         plain_call(*NOKI_DRAIN_CALL, pre=_tick(NOKI_TEX_CTR)),
         gated_call(*NOKI_TEX_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
-        gated_call(*NOKI_FIN_CALL, pre=_read_ctr(NOKI_TEX_CTR)),
+        fin,
+        noki_dedupe(),      # v5: REQUIRED; self-gating, so no BSE guard —
+                            # with fin running every frame the scan never hits
     ])
 
 
@@ -2161,6 +2228,157 @@ def bse_bluecoin(fps=120):
     return out
 
 
+# ---- Shine-select cadence under BSE — PORT of select_gate, UNVERIFIED ------
+# The 2026-08-19 PC playtest symptom at BSE-240: the in-stage episode/shine
+# select menu RACES (way too fast) — exactly the stock-kit class-of-bug.  Under
+# BSE the TSelectDir tick is UNGATED at every rate: TSelectDir::direct calls
+# plain JDrama::TDirector::direct (no substep scheduler, no pad latch), so the
+# menu SIM ticks at the render rate (240 Hz), while its repeat thresholds
+# (N * (menu+0x14C), +0x14C = 1/SMSGetAnmFrameRate cached at 0x801744D0, and
+# the pad's own 20/rate & 6/rate constants) are ticks-of-a-120Hz-menu once the
+# bse_substep() ANMRATE_STUB pins the rate at 0.5f.  240 ticks/s against
+# 120Hz-calibrated tick counts = 2x-fast menu.  Same fix as stock: hold the
+# tick to 1-in-ceil(G/2) = 120 Hz.
+#
+# DOUBLE-COMPENSATION AUDIT (the quarantine lesson, resolved 2026-08-20):
+# SYNC-240 flagged "BSE runtime-hooks four 60.0f loads in the TSelectDir/
+# TSelectGrad TU (0x80176AA4/C40/FF4/0x80177198 -> kxe 0x804D86A8)" as a
+# possible BSE-side cadence compensation.  DOL disasm + the BSE v4.0.0 source
+# (src/patches/widescreen.cpp) settle it: all four sites are the SAME inlined
+# `lfs f0,-0x47CC(r2)` = 0.0f — the J2D ortho box LEFT constant stored to
+# +0x30 — and BSE's runtime hook is SMS_PATCH_BL -> getScreenX1f(), its
+# WIDESCREEN left-edge adjust (kxe 0x804D86A8 is that trampoline, not an fps
+# variable; the "60.0f" reading was a mislabel).  Pure GEOMETRY — orthogonal
+# to cadence.  BSE's only other select-TU hooks are pane construction / shine
+# flags / BMG names (area.cpp, extendcount.cpp) and the grad DRAW-branch
+# vertex hook at 0x80175868 (PAST our join 0x80175728, and we never gate the
+# draw branch).  Nothing in BSE touches the tick dispatch (0x802F7DBC), the
+# repeat constants, the +0x14C reciprocal site, the grad ADVANCER (0x80175584)
+# or the pad read (0x802A600C/0x802A8054) — corroborated by the symptom
+# itself: a BSE-compensated menu would not race.  Verdict: NO double
+# compensation; gate exactly like stock.
+#
+# SHAPE (the three session-8 traps all apply unchanged under BSE):
+#   * gate ONLY CUE_MOVE; gated frames still testPerform with CUE_CALC_ANIM
+#     (J3D shine entry) and the CUE_DRAW pass is untouched;
+#   * TSelectGrad's RAW +/-2 ramp rides CALC_ANIM -> its own 1-in-2G (native
+#     30 Hz) gate on the same counter, read-only;
+#   * pad reads must stay phase-locked to the menu tick or 240 Hz read()
+#     computes 1-frame trigger edges that land on gated MOVE frames (~half of
+#     all A-presses eaten).  The stock kit extends input_latch's block for
+#     this, but under BSE that C2 (@0x802A600C) belongs to the ALWAYS-ON
+#     substep-pin section and this section must stay independently tickable —
+#     two C2s on one hook silently last-writer-wins.  So the select pad gate
+#     hooks READ()'S OWN ENTRY instead (0x802A8054, single caller: the
+#     gameLoop bl @0x802A600C — DOL-scanned): TSelectDir frames failing the
+#     predicted (ctr+1) % n predicate zero all 4 pads' trigger words and blr
+#     out, exactly the stock latch's select-case semantics.  The director is
+#     read through the gpApplication OBJECT (0x803E9700, +0x4 mDirector,
+#     +0x20..0x2C mGamePads — offsets proven by the shipping input_latch
+#     against gameLoop's r31 = this), so no caller register is trusted.
+#
+# Every block carries the _bse_guard: guard-fail (BSE not at float(G)) = stock
+# behavior — MOVE fires with cue=3, the ramp advances, read() runs.  All three
+# ship in ONE section (a grad/pad gate without the MOVE gate would freeze on
+# the never-incremented counter; a MOVE gate without the grad strobes the
+# background — the session-8 v3 regression).  At fps <= 120 nothing is
+# emitted: the cadence is already 120 Hz (the select screen was always fine at
+# BSE-120), matching the stock kit's G=2 no-gate.
+#
+# UNVERIFIED (2026-08-20): built from disasm + the stock kit's in-game-proven
+# design, but NOT yet A/B'd in-game under BSE-240.  Emitted with UNVERIFIED in
+# the title so switch_rate installs it UNTICKED (NEVER_ENABLE marker).
+# Residual risk to eyeball in the A/B: a BSE-added CALC_ANIM consumer on the
+# select screen would be a new raw advancer the stock audit never saw (the
+# audited set: TSelectMenu ignores it, TSelectShineManager idempotent,
+# TSelectGrad gated here, TEmitterViewObj MOVE-only).
+BSE_READ_HOOK = 0x802A8054      # pad read() entry; sole caller bl @0x802A600C
+BSE_READ_ORIG = 0x7C0802A6      # mflr r0 — read()'s first instruction
+GP_APPLICATION = 0x803E9700     # gpApplication object (BSE us.map; gameLoop r31)
+
+def bse_select_gate(fps=120):
+    """The shine-select 120 Hz cadence port: MOVE-pass gate + grad 30 Hz gate
+    + read()-entry pad gate, each BSE-guarded. None at fps <= 120."""
+    g = int(fps) // 60
+    n = _select_divisor(g)                    # 1-in-ceil(G/2) = 120 Hz tick
+    if n is None:
+        return None
+    G = 5                                     # guard words
+    # -- MOVE gate: the stock select_gate body behind a guard. Guard-fail ->
+    # the CALL words with r4 still 3 (CUE_MOVE|CALC_ANIM, stock). r0/r11/r12/
+    # cr0 dead at the hook (r0 spilled at -8, r4 is the live arg — untouched).
+    gate = _rate_gate(n, ctr=11, tmp=0, tmp2=10)
+    L = len(gate)
+    i_call = G + 11 + L
+    move = [0x819E0000,                               # lwz r12,0(r30)  this->vptr
+            0x3D600000 | (SELECT_DIR_VTABLE >> 16),   # lis r11,hi(vtable)
+            0x616B0000 | (SELECT_DIR_VTABLE & 0xFFFF),  # ori r11,r11,lo
+            0x7C0C5800,                               # cmpw r12,r11
+            0x40820000 | (((i_call - (G + 4)) * 4) & 0xFFFC),  # other dir -> CALL
+            0x3D808000,                               # lis r12,0x8000
+            0x80000000 | (11 << 21) | (12 << 16) | SELECT_CTR,  # lwz r11,ctr
+            0x396B0001,                               # addi r11,r11,1
+            0x90000000 | (11 << 21) | (12 << 16) | SELECT_CTR]  # stw r11,ctr
+    move += gate                                      # cr0 <- ctr % n
+    move += [0x41820008,                              # pass frame -> CALL (cue=3)
+             0x38800002,                              # gated: r4 = CUE_CALC_ANIM only
+             0x3D800000 | (TESTPERFORM >> 16),        # CALL: lis r12,hi
+             0x618C0000 | (TESTPERFORM & 0xFFFF),     # ori r12,r12,lo
+             0x7D8903A6, 0x4E800421]                  # mtctr ; bctrl testPerform
+    assert move[i_call - G] == 0x3D800000 | (TESTPERFORM >> 16)
+    b_move = _c2(SELECT_HOOK, _bse_guard(i_call, fps=fps) + move)
+    # -- grad gate: the stock select_grad_gate with the guard INSIDE the
+    # cue&2-set path (cr0 holds the cue test at the hook and must be consumed
+    # by word 0 before the guard recomputes it). Guard-fail -> fall through to
+    # the branch-back = ramp body runs every CALC_ANIM (stock).
+    n2 = 2 * g                                        # fps/30: native 30 Hz
+    gate2 = _rate_gate(n2, ctr=11, tmp=0, tmp2=10)
+    L2 = len(gate2)
+    i_end = 13 + L2                                   # past the last word -> ramp
+    grad = [0x40820014,                               # cue&2 set -> GUARD (word 5)
+            0x3D800000 | (SELECT_GRAD_JOIN >> 16),    # EXIT: lis r12,hi(join)
+            0x618C0000 | (SELECT_GRAD_JOIN & 0xFFFF),   # ori r12,r12,lo
+            0x7D8903A6, 0x4E800420]                   # mtctr ; bctr (skip body)
+    grad += _bse_guard(i_end - 5, fps=fps)            # target rel. to guard w0
+    grad += [0x3D808000,                              # lis r12,0x8000
+             0x80000000 | (11 << 21) | (12 << 16) | SELECT_CTR]  # lwz r11,ctr
+    grad += gate2                                     # cr0 <- ctr % 2G
+    grad.append(0x40820000 | (((1 - (12 + L2)) * 4) & 0xFFFC))   # != 0 -> EXIT
+    b_grad = _c2(SELECT_GRAD_HOOK, grad)              # == 0: fall to ramp body
+    # -- pad gate at read()'s entry: predicted (ctr+1) % n, like the stock
+    # latch's select case (read runs BEFORE direct's increment). Gated frames
+    # zero mGamePads[0..3] triggers (+0x1C/+0x20) and blr past the whole read;
+    # LR/CTR untouched, only r0/r11/r12/cr0 clobbered (all volatile-dead at a
+    # function entry whose first insn is mflr r0; read's first cr0 use is its
+    # own addic. @0x802A8068).
+    gate3 = _rate_gate(n, ctr=11, tmp=0, tmp2=10)
+    L3 = len(gate3)
+    i_orig = 33 + L3                                  # the re-executed mflr r0
+    pad = [0x3D800000 | (GP_APPLICATION >> 16),       # lis r12,hi(gpApplication)
+           0x618C0000 | (GP_APPLICATION & 0xFFFF),    # ori r12,r12,lo
+           0x816C0004,                                # lwz r11,4(r12)   mDirector
+           0x280B0000,                                # cmplwi r11,0
+           0x41820000 | (((i_orig - 9) * 4) & 0xFFFC),   # null -> read()
+           0x816B0000,                                # lwz r11,0(r11)   vptr
+           0x3C000000 | (SELECT_DIR_VTABLE >> 16),    # lis r0,hi(vtable)
+           0x60000000 | (SELECT_DIR_VTABLE & 0xFFFF),   # ori r0,r0,lo
+           0x7C0B0000,                                # cmpw r11,r0
+           0x40820000 | (((i_orig - 14) * 4) & 0xFFFC),  # other dir -> read()
+           0x3D608000,                                # lis r11,0x8000
+           0x80000000 | (11 << 21) | (11 << 16) | SELECT_CTR,  # lwz r11,ctr
+           0x396B0001]                                # addi r11,r11,1 (predicted)
+    pad += gate3                                      # cr0 <- (ctr+1) % n
+    pad.append(0x41820000 | (((i_orig - (18 + L3)) * 4) & 0xFFFC))  # pass -> read()
+    pad.append(0x38000000)                            # li r0,0
+    for off in (0x20, 0x24, 0x28, 0x2C):              # mGamePads[0..3]
+        pad += [0x816C0000 | off, 0x900B001C, 0x900B0020]
+    pad.append(0x4E800020)                            # blr — skip read this frame
+    pad.append(BSE_READ_ORIG)                         # read(): mflr r0 (original)
+    assert len(pad) + G == i_orig + 1 and pad[-1] == BSE_READ_ORIG
+    b_pad = _c2(BSE_READ_HOOK, _bse_guard(i_orig, fps=fps) + pad)
+    return "\n".join([b_move, b_grad, b_pad])
+
+
 def bse_supported(fps):
     """(ok, reason). A rate is emittable as a BSE companion iff:
       1. FPS % 60 == 0 and G = FPS/60 >= 2      — BSE writes float(G) to the
@@ -2289,8 +2507,20 @@ def bse_build(fps):
                          bse_substep(fps)))
     sections += [
         (f"$Particle parity {tag} (JPA 60Hz gate, guarded)", bse_parity(fps)),
-        (f"$Noki pollution 30Hz gate {tag} (CRASHES Bianco Ep.1 under BSE — "
-         "DISABLED pending root-cause, do not enable)",
+        # RESOLVED 2026-08-19 late (five live autopsies): the freeze was J3D's
+        # push-front inserts having no already-head check — a double entry
+        # under the gate's skipped clear/rebuild passes wrote packet->next =
+        # packet and the draw walked the 1-cycle forever. Fixed AT THE
+        # CORRUPTION SITE by the standalone "$J3D duplicate-entry guard v1"
+        # (research/codes/j3d-dup-entry-guard-v1.txt), which both launchers
+        # now install+enable unconditionally. The gate is UNSAFE without that
+        # guard; safe and freeze-free with it (offline in-game confirmed).
+        # The v4 fin-skip resets + v5 dedupe stay (stock-faithful hardening).
+        # PC fps note: the readback gating gave no measured PC/Vulkan win
+        # (Video-thread-bound there); the gate earns its keep on Mac/Metal
+        # (measured 39%) and for cross-machine parity.
+        (f"$Noki pollution 30Hz gate {tag} v6 (safe with the J3D "
+         "duplicate-entry guard — REQUIRES it enabled; NEEDS-TEST under BSE)",
          bse_noki_gate(fps) + "\n" + bse_noki_copy_gate(fps)),
         (f"$HUD StarFix v4 {tag} (guarded)", bse_starfix(fps)),
         (f"$Blue-coin lifetime v6-BSE{bsfx} (keep 1-of-{nsim}; self-gated {g:g}.0f; "
@@ -2316,6 +2546,14 @@ def bse_build(fps):
         (f"$Heat-haze shimmer pace{sfx} (self-gated; active under BSE {g:g}.0f)",
          bse_shimmer(fps)),
     ]
+    # Shine-select 120 Hz cadence port — fps > 120 only (None at 120: the
+    # cadence is already 120 Hz there and the stock kit never gated G=2).
+    # The UNVERIFIED marker keeps switch_rate from auto-enabling it (installed,
+    # unticked) until the in-game menu A/B — see the bse_select_gate comment.
+    sel = bse_select_gate(fps)
+    if sel:
+        sections.append((f"$Select-menu 120Hz gate {tag} (UNVERIFIED — do not "
+                         f"enable without an in-game menu pass)", sel))
     out = []
     for title, body in sections:
         out.append(title)
@@ -2499,6 +2737,14 @@ def _check_bse(codes, n_c2, errs, fps=120):
                             f"run every frame)")
         elif n != N:
             errs.append(f"BSE noki @{hook:08X}: encodes 1-in-{n}, expected 1-in-{N}")
+        if hook == NOKI_FIN_CALL[0] and not all(wd in body for wd in NOKI_QRESET):
+            errs.append(f"BSE noki fin @{hook:08X}: v4 queue-count resets absent — "
+                        f"a gated fin without them re-freezes Bianco Ep.1 "
+                        f"(stale stamp queue -> J3D entry() self-loop)")
+    if codes.get(("C2", 0x8019B120)) is None:
+        errs.append("BSE noki: dedupe @0x8019B120 MISSING — v5 requires it with "
+                    "the gate (same-frame same-model double-push self-loops J3D "
+                    "when the counting pass is gated; Bianco intro freeze)")
     copy = codes.get(("C2", 0x802F8CF8))
     if copy is None:
         errs.append("BSE noki copy gate @0x802F8CF8 missing")
@@ -2678,6 +2924,90 @@ def _check_bse(codes, n_c2, errs, fps=120):
             errs.append("BSE Poink @0x800E5E44: missing the flyTimer<40 compare "
                         "(cmpwi r0,0x28)")
 
+    # m. Shine-select cadence port — the three blocks ship TOGETHER at fps >
+    #    120 (a grad/pad gate without the MOVE gate freezes on the dead
+    #    counter; a MOVE gate without the grad strobes the background — the
+    #    session-8 v3 regression) and are ABSENT at 120 (cadence already
+    #    120 Hz; the stock kit never gated G=2). All three carry the guard.
+    sel = codes.get(("C2", SELECT_HOOK))
+    sgrad = codes.get(("C2", SELECT_GRAD_HOOK))
+    spad = codes.get(("C2", BSE_READ_HOOK))
+    sel_n = _select_divisor(G)
+    if fps <= 120:
+        for hook, b in ((SELECT_HOOK, sel), (SELECT_GRAD_HOOK, sgrad),
+                        (BSE_READ_HOOK, spad)):
+            if b is not None:
+                errs.append(f"BSE select block @{hook:08X} present at {fps}fps — "
+                            f"the select tick is already 120 Hz there (stock kit "
+                            f"G=2 precedent: never gate)")
+    else:
+        for hook, b, what in ((SELECT_HOOK, sel, "MOVE gate"),
+                              (SELECT_GRAD_HOOK, sgrad, "grad 30Hz gate"),
+                              (BSE_READ_HOOK, spad, "pad read gate")):
+            if b is None:
+                errs.append(f"BSE select {what} @{hook:08X} missing — the three "
+                            f"blocks ship together (see bse_select_gate)")
+                continue
+            if not _has_bse_guard(b, fps):
+                errs.append(f"BSE select {what} @{hook:08X}: guard prologue absent")
+        def _lisori12(body):        # lis r12,hi ; ori r12,r12,lo -> 32-bit target
+            for j, w in enumerate(body[:-1]):
+                if (w >> 26) == 15 and ((w >> 21) & 31) == 12:
+                    nxt = body[j + 1]
+                    if (nxt >> 26) == 24 and ((nxt >> 21) & 31) == 12:
+                        return ((w & 0xFFFF) << 16) | (nxt & 0xFFFF)
+            return None
+        if sel is not None:
+            if _implied_divisor(sel, ctr=11) != sel_n:
+                errs.append(f"BSE select gate @{SELECT_HOOK:08X}: encodes "
+                            f"1-in-{_implied_divisor(sel, ctr=11)}, expected "
+                            f"1-in-{sel_n} (ceil(G/2) = 120 Hz tick)")
+            if _lisori12(sel) != TESTPERFORM:
+                errs.append(f"BSE select gate @{SELECT_HOOK:08X}: call target != "
+                            f"TViewObj::testPerform {TESTPERFORM:08X}")
+            if 0x819E0000 not in sel:
+                errs.append(f"BSE select gate @{SELECT_HOOK:08X}: missing the vptr "
+                            f"load lwz r12,0(r30) — would throttle every "
+                            f"plain-direct director (logo/menu/movie)")
+            if 0x38800002 not in sel:
+                errs.append(f"BSE select gate @{SELECT_HOOK:08X}: missing `li r4,2` "
+                            f"— gated frames must still testPerform with "
+                            f"CUE_CALC_ANIM or the J3D shines flicker (the "
+                            f"session-8 v2 regression)")
+        if sgrad is not None:
+            gn = _implied_divisor(sgrad, ctr=11)
+            if gn != 2 * G:
+                errs.append(f"BSE grad gate @{SELECT_GRAD_HOOK:08X}: encodes "
+                            f"1-in-{gn}, expected 1-in-{2 * G} (2G = native 30 Hz)")
+            if _lisori12(sgrad) != SELECT_GRAD_JOIN:
+                errs.append(f"BSE grad gate @{SELECT_GRAD_HOOK:08X}: exit target != "
+                            f"the no-CALC_ANIM join {SELECT_GRAD_JOIN:08X} — any "
+                            f"other exit skips or double-runs the draw branch")
+        if spad is not None:
+            if _implied_divisor(spad, ctr=11) != sel_n:
+                errs.append(f"BSE pad read gate @{BSE_READ_HOOK:08X}: encodes "
+                            f"1-in-{_implied_divisor(spad, ctr=11)}, expected "
+                            f"1-in-{sel_n} — must match the MOVE gate or trigger "
+                            f"edges land off-phase")
+            if (0x3D800000 | (GP_APPLICATION >> 16)) not in spad or \
+                    (0x618C0000 | (GP_APPLICATION & 0xFFFF)) not in spad:
+                errs.append(f"BSE pad read gate @{BSE_READ_HOOK:08X}: does not "
+                            f"reach the director via the gpApplication object "
+                            f"{GP_APPLICATION:08X} — caller registers must not "
+                            f"be trusted at a function entry")
+            if 0x4E800020 not in spad:
+                errs.append(f"BSE pad read gate @{BSE_READ_HOOK:08X}: missing the "
+                            f"blr (gated frames must skip the whole read)")
+            if spad.count(0x900B001C) != 4 or spad.count(0x900B0020) != 4:
+                errs.append(f"BSE pad read gate @{BSE_READ_HOOK:08X}: trigger "
+                            f"zeroing must cover all 4 pads (+0x1C/+0x20 each) — "
+                            f"stale edges would fire on the next menu tick")
+            real = [w for w in spad if w not in (0, NOP)]
+            if not real or real[-1] != BSE_READ_ORIG:
+                errs.append(f"BSE pad read gate @{BSE_READ_HOOK:08X}: last real "
+                            f"word != the re-executed original mflr r0 "
+                            f"({BSE_READ_ORIG:08X})")
+
     # 2. Shimmer — byte-identical to research/codes/shimmer-pace-v1.txt.
     shim = codes.get(("C2", 0x8019F89C))
     want_shim = next(b for k, a, b in _iter_codes(bse_shimmer(fps)))
@@ -2767,9 +3097,6 @@ def check(bundle, fps=None, bse=False):
         errs.append("old whole-perform Noki gate @0x8019D8C8 present — v3 gates "
                     "the counting CALL SITES; the blr design batches model "
                     "stamps and delays the M-portal impact ripples")
-    if codes.get(("C2", 0x8019B120)) is not None:
-        errs.append("retired noki_dedupe @0x8019B120 present — with the "
-                    "per-frame drain it deletes LEGITIMATE same-frame stamps")
     noki_bodies = {h: codes.get(("C2", h)) for h, _ in
                    (NOKI_OBJ_CALL, NOKI_DRAIN_CALL, NOKI_TEX_CALL, NOKI_FIN_CALL)}
     if any(b is not None for b in noki_bodies.values()):
@@ -2789,6 +3116,16 @@ def check(bundle, fps=None, bse=False):
             elif n != want_n:
                 errs.append(f"Noki v3 @{hook:08X}: encodes 1-in-{n}, expected "
                             f"1-in-{want_n} (FPS/30)")
+            if hook == NOKI_FIN_CALL[0] and not all(wd in b for wd in NOKI_QRESET):
+                errs.append(f"Noki fin @{hook:08X}: v4 queue-count resets absent — "
+                            f"a gated fin without them freezes polluted stamping "
+                            f"levels (Bianco Ep.1 J3D self-loop; see NOKI_QRESET)")
+        if codes.get(("C2", 0x8019B120)) is None:
+            errs.append("noki_dedupe @0x8019B120 MISSING — v5 requires it with "
+                        "the gate: gated counting no longer clears the buffer "
+                        "between same-frame pushes, so an undeduped same-model "
+                        "double-push self-loops J3D (the Bianco Ep.1 intro "
+                        "freeze, reproduced twice 2026-08-19 with v4 alone)")
 
     # Every anmrate block must reach the framerate global through r2, never a
     # neighbouring constant in the SDA2 pool — the -0x3C8/-0x3E8 slip read 60.0f

@@ -1,5 +1,5 @@
 {
-  "last": "Offline 120",
+  "last": "Offline 360",
   "profiles": [
     {
       "name": "Moveset 120",
@@ -39,17 +39,17 @@
       "name": "Offline 240",
       "mode": "offline",
       "fps": 240,
-      "fov": 95,
-      "aspect": "mac",
+      "fov": 70,
+      "aspect": "tv",
       "ghost": false,
-      "hd_portals": false,
+      "hd_portals": true,
       "player_name": "Kris",
       "qol": {
         "camera": true,
         "fludd": true,
         "savebox": true,
         "tank": false,
-        "pausejump": false
+        "pausejump": true
       }
     },
     {
@@ -135,6 +135,40 @@
         "savebox": false,
         "tank": false,
         "pausejump": false
+      }
+    },
+    {
+      "name": "Online 240",
+      "mode": "online",
+      "fps": 240,
+      "fov": 70,
+      "aspect": "tv",
+      "ghost": false,
+      "hd_portals": true,
+      "player_name": "Kris PC",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false,
+        "pausejump": true
+      }
+    },
+    {
+      "name": "Offline 360",
+      "mode": "offline",
+      "fps": 240,
+      "fov": 70,
+      "aspect": "none",
+      "ghost": false,
+      "hd_portals": true,
+      "player_name": "Kris",
+      "qol": {
+        "camera": true,
+        "fludd": true,
+        "savebox": true,
+        "tank": false,
+        "pausejump": true
       }
     }
   ]

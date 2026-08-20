@@ -41,15 +41,25 @@ BUNDLE = os.path.join(REPO, "sunshine", "research", "codes", "bse{fps}-companion
 CODES_DIR = os.path.join(REPO, "sunshine", "research", "codes")
 
 # Titles that must NEVER land in [Gecko_Enabled], per the codified verdicts:
-#   CRASHES ........ Noki gate (crashes Bianco Ep.1; still installed for the
-#                    investigation, enabled never)
+#   CRASHES ........ the PRE-v4 Noki gate titles only. Root-caused 2026-08-19
+#                    (fpspatch NOKI_QRESET: the gated fin call starved the
+#                    stamp-queue-count reset -> J3D entry() self-loop freeze);
+#                    the regenerated "v4 (fin-skip queue reset)" title has no
+#                    CRASHES marker and installs+enables normally. This entry
+#                    stays to fence off any stale old-title copies.
 #   Raw anim-rate .. QUARANTINED 2026-08-14: froze water-slide/bonk-star/warp
 #                    anims in-game (BSE natively compensates those consumers)
 #   Animal x4 ...... never correct under BSE ("mach 10" birds) -- current
 #                    bundles no longer emit them; this guards stale fallbacks
 #   Force .......... the 120 bundle's stock-kxe mFPSValue poke; bse_force.py
 #                    emits the discovered-address version instead
-NEVER_ENABLE = ("CRASHES", "Raw anim-rate", "Animal x4", "Force")
+#   UNVERIFIED ..... blocks built from disasm but not yet A/B'd in-game
+#                    (currently: the Select-menu 120Hz gate BSE-240 port).
+#                    Installed so the user can tick them for the playtest,
+#                    never auto-enabled; drop the marker from the fpspatch
+#                    title once the in-game pass confirms the block.
+NEVER_ENABLE = ("CRASHES", "FREEZES", "Raw anim-rate", "Animal x4", "Force",
+                "UNVERIFIED")
 
 APPDATA = os.environ.get("APPDATA", "")
 GAME_INI = os.path.join(APPDATA, "Dolphin Emulator", "GameSettings", "GMSE01.ini")
@@ -130,6 +140,14 @@ STATIC_BSE_CODES = [
     # FLUDD aim invert, BSE dialect (v3 adds Mecha Bowser; the stock v2 misses
     # BSE consumers -- same dialect split as the FOV code).
     ("fludd-aim-invert-v3.txt",       True),
+    # ALWAYS-ON engine-independent hardening: the J3D push-front duplicate-
+    # entry guard (the Bianco intro freeze, 2026-08-19 — HANDOFF-NOKI-PERF).
+    # The noki gate is UNSAFE without it; install+enable unconditionally.
+    # v3 (2026-08-20, freeze #7) adds the four J3DDrawBuffer sort-entry
+    # push-fronts v1/v2 never hooked (bucket-level self-link via the +0x3C
+    # fast path). v2 = chain-walk on the shape-list inserts (v1's head-check missed
+    # weave cycles — freeze #6 was a 3-cycle).
+    ("j3d-dup-entry-guard-v3.txt",    True),
 ]
 
 # QOL titles that already live in the INI (both machines) and work under BSE:
@@ -159,6 +177,21 @@ STALE_TITLES = [
     "Bird walk accel x2.83 BSE-240 (guarded; sqrt literal, NEEDS-TEST)",
     "Blue-coin lifetime v6-BSE-240 (keep 1-of-8; self-gated 4.0f; "
     "NEEDS-TEST ~20s)",
+    # pre-v4 quarantined Noki gates (matched as a PREFIX: the full titles carry
+    # an em-dash), plus the briefly-shipped v4 title that lacked a quarantine
+    # marker (2026-08-19: the freeze reproduced with v4 — see fpspatch).
+    "Noki pollution 30Hz gate BSE-120 (CRASHES",
+    "Noki pollution 30Hz gate BSE-240 (CRASHES",
+    "Noki pollution 30Hz gate BSE-120 v4 (fin-skip",
+    "Noki pollution 30Hz gate BSE-240 v4 (fin-skip",
+    "Noki pollution 30Hz gate BSE-120 v5 (v4 fin-skip",
+    "Noki pollution 30Hz gate BSE-240 v5 (v4 fin-skip",
+    "Noki pollution 30Hz gate BSE-120 v5 (FREEZES",
+    "Noki pollution 30Hz gate BSE-240 v5 (FREEZES",
+    # guard v1 superseded by the v2 chain-walk (weave-cycle freeze #6)
+    "J3D duplicate-entry guard v1",
+    # v2 superseded by v3 (freeze #7: sort-entry bucket inserts unhooked)
+    "J3D duplicate-entry guard v2",
 ]
 
 
@@ -279,7 +312,9 @@ def main():
     # --- drop superseded titles (they break title-regex resolution) --------
     present0 = set(ini_titles())
     for stale in STALE_TITLES:
-        if stale in present0:
+        # prefix/substring semantics: gecko.py remove matches substrings, and
+        # some stale titles are listed truncated (em-dash encoding hazard)
+        if any(stale in t for t in present0):
             _run([sys.executable, GECKO, "remove", "--title", stale])
             print(f"[switch] removed stale ${stale[:60]}…")
 
